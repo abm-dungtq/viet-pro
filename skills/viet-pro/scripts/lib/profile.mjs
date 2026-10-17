@@ -27,7 +27,7 @@ function scalar(raw, lineNo) {
     return v.slice(1, -1).replace(/\\(.)/gu, '$1');
   }
   if (/^-?\d+$/u.test(v)) return Number(v);
-  if (/^[[{|>&*!#']/u.test(v) || /\s#|:\s/u.test(v)) throw new Error(`dòng ${lineNo}: giá trị ngoài tập con YAML được hỗ trợ: ${v}`);
+  if (/^[[{|>&*!#'@`%]/u.test(v) || /\s#|:\s|:$/u.test(v)) throw new Error(`dòng ${lineNo}: giá trị ngoài tập con YAML được hỗ trợ: ${v}`);
   return v;
 }
 
@@ -46,7 +46,7 @@ function flowMap(raw, lineNo) {
   }
   if (quoted) throw new Error(`dòng ${lineNo}: chuỗi trong ngoặc kép không đóng`);
   if (cur.trim()) parts.push(cur);
-  const map = {};
+  const map = Object.create(null);
   for (const part of parts) {
     const m = part.match(/^\s*([a-z_]+):\s*(.+?)\s*$/u);
     if (!m) throw new Error(`dòng ${lineNo}: cặp khóa-giá trị không hợp lệ: ${part.trim()}`);
@@ -63,7 +63,7 @@ export function parseProfile(text) {
   const end = src.indexOf('\n---\n', 3);
   if (end < 0) throw new Error('frontmatter không đóng');
   const lines = src.slice(4, end).split('\n');
-  const meta = {};
+  const meta = Object.create(null);
   const lists = { limits: [], sources: [] };
   let list = null;
   const seenLists = new Set();
@@ -150,7 +150,7 @@ const LINK = /https?:\/\/[^\s)>\]]+/gu;
 // a draft without those headings is a single `body` field.
 // A leading `---` block is dropped only when every line in it is a common frontmatter key: a thread
 // may itself start with a `---` separator, and its first post may look like `Lưu ý: ...`.
-// Headings inside ``` fences are ignored.
+// Headings inside ``` or ~~~ fences are ignored.
 const FRONTMATTER_KEYS = new Set(['title', 'description', 'platform', 'surface', 'channel', 'slug', 'date',
   'tags', 'author', 'lang', 'language', 'keywords', 'canonical', 'summary', 'draft', 'layout', 'category', 'categories', 'image']);
 export function splitDraft(text) {
@@ -159,9 +159,10 @@ export function splitDraft(text) {
   if (lines[0]?.trim() === '---') {
     const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
     const isKey = (l) => FRONTMATTER_KEYS.has(l.match(/^([a-z_]+):(?:\s|$)/u)?.[1]);
-    if (end > 1 && lines.slice(1, end).every((l) => !l.trim() || isKey(l))) src = lines.slice(end + 1).join('\n');
+    const block = lines.slice(1, end);
+    if (end > 1 && isKey(block[0]) && block.every((l) => !l.trim() || isKey(l) || /^\s+- /u.test(l))) src = lines.slice(end + 1).join('\n');
   }
-  const fences = [...src.matchAll(/^```[^\n]*\n[\s\S]*?^```[ \t]*$/gmu)].map((m) => [m.index, m.index + m[0].length]);
+  const fences = [...src.matchAll(/^(```|~~~)[^\n]*\n[\s\S]*?^\1[ \t]*$/gmu)].map((m) => [m.index, m.index + m[0].length]);
   const heading = new RegExp(`^##[ \\t]+(${DRAFT_FIELDS.join('|')})[ \\t]*$`, 'gimu');
   const marks = [...src.matchAll(heading)].filter((m) => !fences.some(([a, b]) => m.index > a && m.index < b));
   if (!marks.length) return { body: src.trim() };
@@ -224,7 +225,7 @@ export function checkDraft(profile, fields, { surface } = {}) {
     }
     const text = target[l.field];
     if (text === undefined || (text === '' && l.field === 'max_chars')) {
-      const want = { max_title_chars: 'title', max_description_chars: 'description' }[l.field] || 'body';
+      const want = { max_title_chars: 'title', max_description_chars: 'description', max_caption_chars: 'caption' }[l.field] || 'body';
       if (!missing.has(want)) findings.push({ level: 'WARN', field: l.field, detail: `bản thảo thiếu khối "## ${want}", chưa đo được` });
       missing.add(want);
       continue;

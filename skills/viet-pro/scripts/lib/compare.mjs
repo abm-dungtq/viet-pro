@@ -16,8 +16,6 @@ function multiset(items) {
 
 const normalizeQuotes = (s) => s.replace(/[“”„]/gu, '"').replace(/[‘’]/gu, "'");
 
-// Occurrences of a --keep string not glued to a letter or digit, so "An" does not match inside "Anh".
-// A bare number such as "3" still matches inside "3.000", because "." is neither.
 // An item may not continue a word or number of the same kind: "An" does not match inside "Anh",
 // "45.000" does not match inside "45.0001" or "145.000", but does match "45.000đ".
 function edgeGuard(ch, side) {

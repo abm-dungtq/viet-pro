@@ -222,8 +222,9 @@ function grade(c, raw) {
 
   if (c.chapters) {
     // YouTube chapters: first stamp 00:00, at least three stamps, in increasing order. A stamp may sit
-    // after a list marker, a number, a quote marker or markdown emphasis: "1. **00:00** Mở đầu".
-    const stamps = [...output.matchAll(/^\s*(?:\d+[.)]\s*|[-*•>]\s*)?[[*`]*(?:(\d{1,2}):)?(\d{1,2}):(\d{2})[\]*`]*\s+\S/gmu)].map((m) => Number(m[1] || 0) * 3600 + Number(m[2]) * 60 + Number(m[3]));
+    // after a list marker, a number, a quote marker, a table cell or markdown emphasis or link:
+    // "1. **00:00** Mở đầu", "| 00:00 | Mở đầu |", "[00:00](https://...) Mở đầu", "00:00: Mở đầu".
+    const stamps = [...output.matchAll(/^\s*(?:\|\s*)?(?:\d+[.)]\s*|[-*•>]\s*)?[[*`]*(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\]\([^)\s]*\))?[\]*`]*:?\s*(?:\|\s*)?\s\S/gmu)].map((m) => Number(m[1] || 0) * 3600 + Number(m[2]) * 60 + Number(m[3]));
     const ok = stamps.length >= 3 && stamps[0] === 0 && stamps.every((t, i) => i === 0 || t - stamps[i - 1] >= 10);
     checks.chapters = { ok, detail: ok ? '' : `mốc chapter: ${stamps.length ? stamps.join(', ') : 'không có'} giây` };
   }

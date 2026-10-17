@@ -47,18 +47,20 @@ export const LINE_RULES = [
   },
 ];
 
-// Drops a leading `---` ... `---` block (YAML frontmatter). An unclosed block is left as is.
+// A leading `---` ... `---` block is YAML frontmatter; an unclosed `---` is ordinary text.
+const frontmatterEnd = (lines) => (lines[0]?.trim() === '---' ? lines.findIndex((l, i) => i > 0 && l.trim() === '---') : -1);
+const hasFrontmatter = (lines) => frontmatterEnd(lines) > 0;
+
 export function stripFrontmatter(text) {
   const lines = text.replace(/\r\n/gu, '\n').split('\n');
-  if (lines[0]?.trim() !== '---') return text;
-  const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
-  return end < 0 ? text : lines.slice(end + 1).join('\n');
+  const end = frontmatterEnd(lines);
+  return end > 0 ? lines.slice(end + 1).join('\n') : text;
 }
 
 function stripProtectedBlocks(text) {
   const lines = text.split('\n');
   let inFence = false;
-  let inFrontmatter = lines[0]?.trim() === '---';
+  let inFrontmatter = hasFrontmatter(lines);
   return lines.map((line, i) => {
     if (i === 0 && inFrontmatter) return '';
     if (inFrontmatter) {
@@ -142,7 +144,7 @@ export function lintText(text, opts = {}) {
   const findings = [];
   const lines = text.split('\n');
   let inFence = false;
-  let inFrontmatter = lines[0]?.trim() === '---';
+  let inFrontmatter = hasFrontmatter(lines);
   lines.forEach((line, i) => {
     if (i === 0 && inFrontmatter) return;
     if (inFrontmatter) {

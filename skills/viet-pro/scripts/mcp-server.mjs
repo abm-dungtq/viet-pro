@@ -47,8 +47,8 @@ const SERVER_INFO = { name: 'viet-pro', version: readVersion() };
 
 const KEEP_SCHEMA = {
   type: 'array',
-  items: { type: 'string', maxLength: 200 },
-  maxItems: 200,
+  items: { type: 'string', maxLength: MAX_KEEP_CHARS },
+  maxItems: MAX_KEEP_ITEMS,
   description: 'Tên riêng, thương hiệu, thuật ngữ phải giữ nguyên (khớp nguyên từ).',
 };
 const TOOLS = [
@@ -116,7 +116,7 @@ function keepList(args) {
   if (args.keep === undefined) return [];
   if (!Array.isArray(args.keep) || !args.keep.every((k) => typeof k === 'string')) throw new InputError('"keep" phải là mảng chuỗi');
   if (args.keep.length > MAX_KEEP_ITEMS) throw new InputError(`"keep" tối đa ${MAX_KEEP_ITEMS} mục`);
-  if (args.keep.some((k) => k.length > MAX_KEEP_CHARS)) throw new InputError(`mỗi mục "keep" tối đa ${MAX_KEEP_CHARS} ký tự`);
+  if (args.keep.some((k) => [...k].length > MAX_KEEP_CHARS)) throw new InputError(`mỗi mục "keep" tối đa ${MAX_KEEP_CHARS} ký tự`);
   return args.keep;
 }
 
