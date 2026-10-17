@@ -56,6 +56,17 @@ installer_ref="$(sed -n 's/^DEFAULT_REF="\(.*\)"$/\1/p' install.sh)"
 if [ "v$skill_version" != "$installer_ref" ]; then echo "FAIL: SKILL.md $skill_version khác DEFAULT_REF $installer_ref" >&2; exit 1; fi
 echo "OK: v$skill_version"
 
+step "Phiên bản plugin đồng bộ với SKILL.md"
+for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
+  if ! grep -q "\"version\": \"$skill_version\"" "$f"; then echo "FAIL: $f không ghi version $skill_version" >&2; exit 1; fi
+done
+if command -v claude >/dev/null 2>&1; then
+  if ! claude plugin validate --strict .claude-plugin/plugin.json >/dev/null || ! claude plugin validate --strict . >/dev/null; then echo "FAIL: manifest plugin không hợp lệ" >&2; exit 1; fi
+  echo "OK: manifest plugin hợp lệ"
+else
+  echo "SKIP: không có claude CLI để validate manifest"
+fi
+
 step "Kiểm thử installer"
 bash tests/install/test-install.sh .
 

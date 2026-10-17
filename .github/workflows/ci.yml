@@ -24,5 +24,7 @@ jobs:
       - name: Shellcheck
         if: runner.os == 'Linux'
         run: shellcheck -S warning install.sh tests/run-all.sh tests/install/test-install.sh
+      - name: Install Claude Code CLI for manifest validation
+        run: npm install -g @anthropic-ai/claude-code
       - name: Deterministic checks
         run: bash tests/run-all.sh

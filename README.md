@@ -37,6 +37,17 @@ Sau khi cài, **mở một phiên làm việc mới** trong công cụ của b�
 
 Muốn chỉ cài cho một công cụ, cài riêng cho một dự án, hoặc tự kiểm tra checksum? Xem [INSTALL.md](INSTALL.md).
 
+### Cài dạng plugin Claude Code
+
+Nếu bạn dùng Claude Code, có thể cài Viết Pro như một plugin, không cần lệnh curl:
+
+```bash
+claude plugin marketplace add abm-dungtq/viet-pro-codex
+claude plugin install viet-pro@viet-pro
+```
+
+Khi cài dạng plugin, skill vẫn tên `viet-pro`: gọi bằng `/viet-pro` hoặc nhắc tên Viết Pro trong yêu cầu. Chọn một trong hai cách cài cho Claude Code, đừng cài cả hai, để không có hai bản skill cùng tên.
+
 ---
 
 ## Cách dùng
