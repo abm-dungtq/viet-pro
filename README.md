@@ -2,7 +2,7 @@
 
 **Viết Pro** là một skill giúp trợ lý AI viết và biên tập tiếng Việt tự nhiên, đúng dữ kiện, đúng từng kênh đăng bài.
 
-Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.5.0**.
+Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.5.1**.
 
 ---
 
@@ -23,7 +23,7 @@ Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antig
 Mở **Terminal** và dán lệnh sau:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/v5.5.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.5.1/install.sh | bash
 ```
 
 Lệnh này tự làm ba việc:
@@ -45,7 +45,7 @@ Muốn gọi lint, đối chiếu dữ kiện và kiểm tra theo kênh như too
 Nếu bạn dùng Claude Code, có thể cài Viết Pro như một plugin, không cần lệnh curl:
 
 ```bash
-claude plugin marketplace add abm-dungtq/viet-pro-codex
+claude plugin marketplace add abm-dungtq/viet-pro
 claude plugin install viet-pro@viet-pro
 ```
 
@@ -161,7 +161,7 @@ rm -rf ~/.claude/skills/viet-pro ~/.agents/skills/viet-pro ~/.gemini/config/skil
 Mở Terminal tại thư mục dự án, rồi chạy:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/v5.5.0/install.sh | bash -s -- --workspace
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.5.1/install.sh | bash -s -- --workspace
 ```
 
 **Skill có tự tra cứu web không?**
@@ -226,6 +226,13 @@ Khi sửa nội dung skill, hãy sinh lại `SKILL_SHA256SUMS` theo [INSTALL.md]
 ## Lịch sử phiên bản
 
 <details>
+<summary>5.5.1: Đổi tên repo</summary>
+
+- Repo đổi tên từ `viet-pro-codex` thành `viet-pro`. Link và lệnh cài cũ vẫn chạy nhờ chuyển hướng của GitHub.
+
+</details>
+
+<details>
 <summary>5.5.0: Hồ sơ nền tảng</summary>
 
 - Mỗi kênh có hồ sơ ghi giới hạn ký tự, hashtag và link, kèm nguồn, độ tin cậy và hạn rà soát. Thêm Threads, TikTok và YouTube.
@@ -277,7 +284,7 @@ Khi sửa nội dung skill, hãy sinh lại `SKILL_SHA256SUMS` theo [INSTALL.md]
 
 </details>
 
-Các bản phát hành và file zip: [GitHub Releases](https://github.com/abm-dungtq/viet-pro-codex/releases).
+Các bản phát hành và file zip: [GitHub Releases](https://github.com/abm-dungtq/viet-pro/releases).
 
 ---
 

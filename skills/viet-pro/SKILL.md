@@ -3,7 +3,7 @@ name: viet-pro
 description: "Viết, biên tập, humanize, audit dấu hiệu AI, kiểm chứng và chuyển thể nội dung tiếng Việt chuyên nghiệp cho bài dài, blog, SEO, mạng xã hội, newsletter và kịch bản video. Kích hoạt khi người dùng yêu cầu viết mới, biên tập, rà văn phong tiếng Việt, chống AI slop, kiểm chứng nguồn/claim hoặc định dạng xuất bản theo kênh; không dùng cho dịch ngắn hay chỉnh một câu đơn giản."
 metadata:
   author: ABM-DungTQ
-  version: "5.5.0"
+  version: "5.5.1"
   category: content
   keywords: [vietnamese, writing, editing, humanize, fact-check, publishing, content-engine]
 ---
@@ -58,7 +58,7 @@ Chỉ đọc những phần cần cho yêu cầu hiện tại:
 - Chuyển thể theo kênh: đọc [publishing/lead.md](references/publishing/lead.md), đúng một file kênh và `repurpose-matrix.md` khi làm nhiều kênh.
 - Rà soát: đọc [review/lead.md](references/review/lead.md), các reference ngôn ngữ liên quan và `fact-check.md` khi có claim cần kiểm chứng. Mọi văn xuôi công khai chạy kiểm tra Humanizer nhẹ theo `review/anti-ai.md`; chỉ đọc đủ `review/humanizer-patterns.md` khi người dùng yêu cầu humanize/audit dấu hiệu AI hoặc một đoạn có nhiều dấu hiệu đồng thời.
 - Bài mẫu/pattern: chỉ đọc [archive/lead.md](references/archive/lead.md) khi cần bắt chước một cấu trúc đã chọn. Không biến pattern thành công thức bắt buộc.
-- Cải tiến chính skill: tài liệu bảo trì nằm ở `docs/development/` trong repo nguồn https://github.com/abm-dungtq/viet-pro-codex, không đi kèm bản cài. Chỉ dùng khi người dùng yêu cầu sửa hoặc nâng cấp skill.
+- Cải tiến chính skill: tài liệu bảo trì nằm ở `docs/development/` trong repo nguồn https://github.com/abm-dungtq/viet-pro, không đi kèm bản cài. Chỉ dùng khi người dùng yêu cầu sửa hoặc nâng cấp skill.
 
 ## Nghiên cứu và nguồn
 

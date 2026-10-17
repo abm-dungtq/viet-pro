@@ -3,12 +3,12 @@ set -euo pipefail
 
 # ==============================================================================
 # Viết Pro — trình cài đặt cho Claude Code, OpenAI Codex và Google Antigravity
-# Repository: https://github.com/abm-dungtq/viet-pro-codex
+# Repository: https://github.com/abm-dungtq/viet-pro
 # ==============================================================================
 
-REPO_URL="https://github.com/abm-dungtq/viet-pro-codex.git"
+REPO_URL="https://github.com/abm-dungtq/viet-pro.git"
 SKILL_NAME="viet-pro"
-DEFAULT_REF="v5.5.0"
+DEFAULT_REF="v5.5.1"
 REF="${VIET_PRO_REF:-$DEFAULT_REF}"
 REF_EXPLICIT=false
 INSTALL_MODE="copy" # copy | symlink
@@ -34,7 +34,7 @@ Viết Pro — trình cài đặt cho Claude Code, OpenAI Codex và Google Antig
 
 Cách dùng:
   ./install.sh [tuỳ chọn]
-  curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/$DEFAULT_REF/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/$DEFAULT_REF/install.sh | bash
 
 Tuỳ chọn:
   --claude              Cài cho Claude Code ($CLAUDE_DIR)
@@ -105,9 +105,9 @@ else
   command -v git >/dev/null 2>&1 || die "Cần cài git để tải Viết Pro"
   echo "==> Đang tải Viết Pro $REF từ GitHub..."
   TEMP_DIR="$(mktemp -d)"
-  git clone --quiet --depth 1 --branch "$REF" "$REPO_URL" "$TEMP_DIR/viet-pro-codex" \
+  git clone --quiet --depth 1 --branch "$REF" "$REPO_URL" "$TEMP_DIR/viet-pro" \
     || die "Không tải được phiên bản $REF. Kiểm tra lại tag hoặc kết nối mạng."
-  SOURCE_ROOT="$TEMP_DIR/viet-pro-codex"
+  SOURCE_ROOT="$TEMP_DIR/viet-pro"
   REMOTE=true
   INSTALL_MODE="copy" # bản tải về là thư mục tạm, không thể symlink
 fi
