@@ -15,7 +15,7 @@ review_by: 2027-01-16
 
 ### Nguyên tắc cốt lõi
 
-- Mỗi tweet ≤280 theo cách đếm có trọng số của X: chữ có dấu thuộc dải U+1EA0-U+1EF9 (ế, ộ, ạ, ữ…) tính 2, URL luôn tính 23. Một câu tiếng Việt thường dài thêm 10-20% so với số ký tự nhìn thấy. Kiểm bằng `node scripts/check-x-length.mjs <file>` (ngăn các tweet bằng dòng trống, hoặc bằng dòng `---` khi một tweet có nhiều đoạn).
+- Mỗi tweet ≤280 theo cách đếm có trọng số của X: chữ có dấu thuộc dải U+1EA0-U+1EF9 (ế, ộ, ạ, ữ…) tính 2, URL luôn tính 23. Một câu tiếng Việt thường dài thêm 10-20% so với số ký tự nhìn thấy. Kiểm bằng `node <thư-mục-skill>/scripts/check-x-length.mjs <file>` (ngăn các tweet bằng dòng trống, hoặc bằng dòng `---` khi một tweet có nhiều đoạn).
 - **Tweet 1 phải TỰ ĐỨNG ĐƯỢC** — người không đọc thread vẫn nhận được giá trị; đây là hook + lời hứa nội dung
 - 1 tweet = 1 ý trọn vẹn. Không cắt câu giữa chừng sang tweet sau
 - 5-12 tweet/thread. Quá 12 → cắt bớt ý, không phải viết ngắn từng ý đi

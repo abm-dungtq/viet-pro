@@ -14,7 +14,7 @@ function splitTweets(text) {
     lines = end === -1 ? [] : lines.slice(end + 1);
   }
   const body = lines.join('\n');
-  const blocks = lines.some((l) => l.trim() === '---') ? body.split(/^---[ \t]*$/mu) : body.split(/\n\s*\n/u);
+  const blocks = /^[ \t]*---[ \t]*$/mu.test(body) ? body.split(/^[ \t]*---[ \t]*$/mu) : body.split(/\n\s*\n/u);
   return blocks.map((b) => b.trim()).filter(Boolean);
 }
 
@@ -37,8 +37,10 @@ const args = process.argv.slice(2);
 if (args[0] === '--self-test') selfTest();
 if (args.length !== 1) { console.error('Usage: node check-x-length.mjs <thread.md> | --self-test'); process.exit(2); }
 
+const tweets = splitTweets(readFileSync(args[0], 'utf8'));
+if (!tweets.length) { console.error('KHÔNG CÓ TWEET — file rỗng hoặc frontmatter chưa đóng'); process.exit(1); }
 let over = false;
-splitTweets(readFileSync(args[0], 'utf8')).forEach((tweet, i) => {
+tweets.forEach((tweet, i) => {
   const n = xWeightedLength(tweet);
   const ok = n <= X_MAX;
   if (!ok) over = true;

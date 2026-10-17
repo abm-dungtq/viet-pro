@@ -94,6 +94,7 @@ Có thể chạy các script trong thư mục `scripts/` của skill. Đường 
 ```bash
 node <thư-mục-skill>/scripts/lint-vietnamese-content.mjs <file.md> [--keep "Tên riêng"]
 node <thư-mục-skill>/scripts/compare-preserved-content.mjs <before.md> <after.md> --keep "Tên riêng" [--strict-quotes]
+node <thư-mục-skill>/scripts/check-x-length.mjs <thread.md>
 ```
 
 Lint chỉ là tín hiệu hỗ trợ. WARN không tự động làm bài thất bại; ERROR phải được xem trong ngữ cảnh. Yêu cầu phong cách rõ ràng của người dùng có thể override house style, nhưng không override lỗi sự thật hoặc an toàn.
