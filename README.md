@@ -246,4 +246,5 @@ Các bản phát hành và file zip: [GitHub Releases](https://github.com/abm-du
 
 ## Giấy phép
 
-Humanizer 3.0.0 được dùng theo giấy phép MIT, chi tiết trong [THIRD_PARTY_NOTICES.md](skills/viet-pro/THIRD_PARTY_NOTICES.md).
+Viết Pro phát hành theo giấy phép MIT, xem [LICENSE](LICENSE).
+Phần tham khảo chuyển thể từ Humanizer cũng theo giấy phép MIT, chi tiết trong [THIRD_PARTY_NOTICES.md](skills/viet-pro/THIRD_PARTY_NOTICES.md).
