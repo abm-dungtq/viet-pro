@@ -1,6 +1,15 @@
 ---
+schema: viet-pro/platform-profile@1
+id: newsletter
+name: Newsletter / Email
+tier: 2
+counting: graphemes
 last_verified: 2026-10-16
 review_by: 2027-01-16
+limits:
+  - { surface: email, field: max_title_chars, value: 50, confidence: F, source: activecampaign-subject, note: "tiêu đề email (## title)" }
+sources:
+  - { id: activecampaign-subject, url: "https://www.activecampaign.com/glossary/subject-line-length", accessed: 2026-10-17 }
 ---
 # Newsletter / Email — Format Hiển Thị
 
@@ -47,7 +56,7 @@ Preview text: ≤90 ký tự — nối tiếp subject, KHÔNG lặp lại subjec
 
 ## Checklist
 
-- [ ] 3 phương án subject ≤50 ký tự, preview ≤90
+- [ ] 3 phương án subject ≤50 ký tự, preview ≤90 (kiểm bằng `check-platform.mjs newsletter`: đặt 3 phương án dưới `## title`, mỗi dòng một phương án)
 - [ ] Mở bằng 1-2 câu cá nhân, vào thẳng chủ đề
 - [ ] 1 chủ đề duy nhất, 50-70% độ dài draft
 - [ ] 1 CTA duy nhất, dòng riêng

@@ -2,18 +2,19 @@
 
 **Viết Pro** là một skill giúp trợ lý AI viết và biên tập tiếng Việt tự nhiên, đúng dữ kiện, đúng từng kênh đăng bài.
 
-Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.4.0**.
+Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.5.0**.
 
 ---
 
 ## Viết Pro giúp bạn làm gì?
 
-- **Viết bài mới:** blog, bài SEO, LinkedIn, Facebook, Zalo, newsletter, thread X, kịch bản video.
+- **Viết bài mới:** blog, bài SEO, LinkedIn, Facebook, Instagram, Zalo, Threads, TikTok, YouTube, newsletter, thread X, kịch bản video.
 - **Biên tập bản nháp:** câu chữ mượt hơn, bớt lủng củng, bớt "giọng dịch".
 - **Bớt giọng AI (humanize):** bỏ những kiểu câu sáo rỗng mà AI hay viết, như "Trong bối cảnh...", "Không phải X, mà là Y", "Và đó mới là điều đáng suy ngẫm".
 - **Giữ nguyên dữ kiện:** tên, số liệu, ngày, link và trích dẫn không bị đổi khi sửa bài.
 - **Chuyển thể nhiều kênh:** từ một bài gốc, viết lại cho LinkedIn, Facebook, Zalo... mà vẫn giữ cùng thông điệp và số liệu.
 - **Không bịa:** không tự thêm số liệu, nguồn hay câu trích dẫn. Claim chưa có nguồn sẽ được đánh dấu rõ.
+- **Đúng giới hạn từng kênh:** mỗi kênh có hồ sơ ghi giới hạn ký tự, hashtag, link kèm nguồn và độ tin cậy; `check-platform.mjs` kiểm bản thảo theo hồ sơ đó. Cách viết hồ sơ: [platform-profile-schema.md](docs/development/platform-profile-schema.md).
 
 ---
 
@@ -22,7 +23,7 @@ Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antig
 Mở **Terminal** và dán lệnh sau:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/v5.4.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/v5.5.0/install.sh | bash
 ```
 
 Lệnh này tự làm ba việc:
@@ -36,6 +37,8 @@ Sau khi cài, **mở một phiên làm việc mới** trong công cụ của b�
 > Cần có `git` và `bash` (đã có sẵn trên macOS và Linux). Trên Windows, installer chưa được kiểm thử; hãy làm theo cách cài thủ công trong [INSTALL.md](INSTALL.md).
 
 Muốn chỉ cài cho một công cụ, cài riêng cho một dự án, hoặc tự kiểm tra checksum? Xem [INSTALL.md](INSTALL.md).
+
+Muốn gọi lint, đối chiếu dữ kiện và kiểm tra theo kênh như tool MCP trong Claude Code, Codex hay client khác? Xem [INSTALL.md mục 6](INSTALL.md#6-công-cụ-kiểm-tra-qua-mcp).
 
 ### Cài dạng plugin Claude Code
 
@@ -158,7 +161,7 @@ rm -rf ~/.claude/skills/viet-pro ~/.agents/skills/viet-pro ~/.gemini/config/skil
 Mở Terminal tại thư mục dự án, rồi chạy:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/v5.4.0/install.sh | bash -s -- --workspace
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/v5.5.0/install.sh | bash -s -- --workspace
 ```
 
 **Skill có tự tra cứu web không?**
@@ -201,7 +204,7 @@ bash tests/run-all.sh
 
 ### Eval chất lượng bài viết
 
-Eval đưa 18 yêu cầu mẫu trong `tests/eval/cases.json` cho Claude Code chạy với Viết Pro, rồi chấm kết quả. Các kiểm tra tự động quyết định đạt hay không (giữ dữ kiện, không lỗi lint, đúng độ dài...); điểm do LLM chấm chỉ để tham khảo.
+Eval đưa 21 yêu cầu mẫu trong `tests/eval/cases.json` cho Claude Code chạy với Viết Pro, rồi chấm kết quả. Các kiểm tra tự động quyết định đạt hay không (giữ dữ kiện, không lỗi lint, đúng độ dài...); điểm do LLM chấm chỉ để tham khảo.
 
 ```bash
 node tests/eval/run-eval.mjs --judge --compare tests/eval/baseline.json
@@ -210,6 +213,7 @@ node tests/eval/run-eval.mjs --judge --compare tests/eval/baseline.json
 - Bản 5.2.1 (baseline): 11/12 ca đạt.
 - Bản 5.3.0: 12/12 ca đạt, không ca nào tụt hạng.
 - Bản 5.4.0: 17/18 ca đạt trên Claude (ca `ai-audit` vượt giới hạn độ dài, đạt khi chạy lại), 18/18 trên Codex.
+- Bản 5.5.0: 21/21 ca đạt trên cả Claude và Codex, gồm 3 ca mới kiểm giới hạn Threads, TikTok, YouTube. Ca `ai-audit` đạt cả 3 lần chạy riêng.
 
 Mỗi bản chỉ chạy một lần, nên con số này là tín hiệu để theo dõi, chưa phải bằng chứng thống kê. Mỗi lần chạy eval tốn khoảng 0,3-0,5 USD cho mỗi ca khi bật judge. Workflow `eval` trên GitHub chỉ chạy khi repository có secret `ANTHROPIC_API_KEY`.
 
@@ -220,6 +224,17 @@ Khi sửa nội dung skill, hãy sinh lại `SKILL_SHA256SUMS` theo [INSTALL.md]
 ---
 
 ## Lịch sử phiên bản
+
+<details>
+<summary>5.5.0: Hồ sơ nền tảng</summary>
+
+- Mỗi kênh có hồ sơ ghi giới hạn ký tự, hashtag và link, kèm nguồn, độ tin cậy và hạn rà soát. Thêm Threads, TikTok và YouTube.
+- `check-platform.mjs` kiểm bản thảo theo hồ sơ: đếm byte emoji như Threads, đếm có trọng số như X, tách từng bài trong thread.
+- Gọi lint, đối chiếu dữ kiện và kiểm kênh như tool MCP trong Claude Code, Codex hoặc client khác.
+- `--keep` khớp nguyên từ ("An" không khớp trong "Anh"); cảnh báo cụm lặp gộp các cụm chồng lên nhau thành một.
+- Eval có 21 ca, chấm giới hạn kênh và chapter YouTube.
+
+</details>
 
 <details>
 <summary>5.4.0: Sửa đúng và đo được</summary>

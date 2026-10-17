@@ -16,6 +16,23 @@ function multiset(items) {
 
 const normalizeQuotes = (s) => s.replace(/[“”„]/gu, '"').replace(/[‘’]/gu, "'");
 
+// An item may not continue a word or number of the same kind: "An" does not match inside "Anh",
+// "45.000" does not match inside "45.0001" or "145.000", but does match "45.000đ".
+function edgeGuard(ch, side) {
+  if (/\p{N}/u.test(ch)) return side === 'before' ? '(?<!\\p{N}[.,]?)' : '(?![.,]?\\p{N})';
+  if (/\p{L}/u.test(ch)) return side === 'before' ? '(?<![\\p{L}\\p{M}\\p{N}])' : '(?![\\p{L}\\p{M}\\p{N}])';
+  return '';
+}
+
+function countWhole(text, item) {
+  const norm = item.normalize('NFC');
+  if (!norm) return 0;
+  const escaped = norm.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const chars = [...norm];
+  const re = new RegExp(`${edgeGuard(chars[0], 'before')}${escaped}${edgeGuard(chars.at(-1), 'after')}`, 'gu');
+  return [...text.normalize('NFC').matchAll(re)].length;
+}
+
 function collect(text, keep = [], { strictQuotes = false } = {}) {
   const patterns = {
     url: /https?:\/\/[^\s)>\]]+/gu,
@@ -34,7 +51,7 @@ function collect(text, keep = [], { strictQuotes = false } = {}) {
       return m[0];
     });
   }
-  found.keep = keep.flatMap((item) => Array(text.split(item).length - 1).fill(item));
+  found.keep = keep.flatMap((item) => Array(countWhole(text, item)).fill(item));
   return found;
 }
 

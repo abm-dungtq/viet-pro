@@ -22,6 +22,9 @@
 | linkedin | 1.300-3.000 ký tự | Dòng 1 đứng riêng, gây tò mò trước "see more" | mình/tôi professional | Chi tiết nền, giữ 2-3 luận điểm mạnh nhất | Insight + 1 ví dụ đắt nhất + số liệu chủ lực |
 | x-thread | 5-12 tweet | Tweet 1 tự đứng được (≤280, đếm có trọng số) | gọn, trực diện | Mọi câu chuyển tiếp; 1 ý = 1 tweet | Insight, số liệu, kết luận hoặc CTA được yêu cầu |
 | instagram | Caption ≤2.200 ký tự / carousel 6-10 slide | 125 ký tự đầu trước fold | gần gũi, cảm xúc | Lập luận dài — chỉ giữ kết luận từng bước | Insight dạng khẳng định ngắn + số liệu sốc |
+| threads | 1-7 bài, mỗi bài ≤500 ký tự (emoji tính theo byte) | Bài đầu tự đứng, một ý kiến rõ | mình/bạn, gần FB cá nhân | Số liệu phụ, nhánh phụ | 1 ý mỗi bài + số liệu chủ lực |
+| tiktok (caption) | Caption 1-3 dòng, ≤5 hashtag | Dòng đầu có cụm từ khóa người xem tìm | văn nói, nhanh | Gần hết — lời thoại nằm ở video-script | Tên sản phẩm, giá, cụm từ khóa |
+| youtube (tiêu đề + mô tả) | Tiêu đề ≤100 ký tự, mô tả 2-3 dòng đầu + chapter | Từ khóa và lời hứa trong 60-70 ký tự đầu tiêu đề | rõ ràng, không giật tít | Lập luận dài — đã nằm trong video | Chapter, nguồn, dòng công bố |
 | zalo | 300-800 ký tự | Tiêu đề ≤100 ký tự, lợi ích trực tiếp | gần gũi, tôn trọng (theo tệp khách) | Gần hết — chỉ thông điệp chính | 1 thông điệp + 1 CTA |
 | video-script (ngắn) | 15-90 giây (~40-230 từ nói) | 3 giây đầu — dữ kiện/câu hỏi vào thẳng ý | văn nói, ngôi mình/bạn | Mọi thứ trừ 1 insight + 1-2 dẫn chứng | Insight + số liệu chính + CTA nếu brief yêu cầu |
 | video-script (YouTube dài) | 5-15 phút | Cold-open 15-30s từ đoạn đắt nhất | văn nói, giữ chiều sâu | Ít — chuyển cấu trúc sang chapter | Toàn bộ lập luận, thêm re-hook mỗi 2-3 phút |
@@ -30,8 +33,8 @@
 
 ```
 draft (blog-level) → review nội dung PASS
-→ SONG SONG nhóm text: facebook, blog-seo, linkedin, newsletter, x-thread, instagram, zalo
-→ SONG SONG nhóm transformation: video-script (tách instance ngắn/dài nếu cần cả hai)
+→ SONG SONG nhóm text: facebook, blog-seo, linkedin, newsletter, x-thread, threads, instagram, zalo
+→ SONG SONG nhóm transformation: video-script (tách instance ngắn/dài nếu cần cả hai), kèm caption tiktok và tiêu đề/mô tả youtube
 → review format 1 lượt cuối cho toàn bộ published/
 ```
 

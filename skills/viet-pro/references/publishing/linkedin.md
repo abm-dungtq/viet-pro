@@ -1,6 +1,17 @@
 ---
+schema: viet-pro/platform-profile@1
+id: linkedin
+name: LinkedIn
+tier: 2
+counting: graphemes
 last_verified: 2026-10-16
 review_by: 2027-01-16
+limits:
+  - { surface: post, field: max_chars, value: 3000, confidence: F, source: authoredup-li, note: "trang help chính thức a528176 ghi 3.000 nhưng chưa tải được để kiểm" }
+  - { surface: post, field: fold_chars, value: 140, confidence: F, source: authoredup-li, note: "điện thoại; máy tính khoảng 210" }
+sources:
+  - { id: authoredup-li, url: "https://authoredup.com/blog/linkedin-character-limit", accessed: 2026-10-17 }
+  - { id: ppc-land-li-feed, url: "https://ppc.land/linkedin-rebuilds-its-feed-from-scratch-with-llms-and-gpu-powered-ranking/", accessed: 2026-10-16 }
 ---
 # LinkedIn — Format Hiển Thị
 
@@ -15,7 +26,7 @@ review_by: 2027-01-16
 
 ### Nguyên tắc cốt lõi
 
-- Độ dài đích 1.300-3.000 ký tự (LinkedIn cắt "see more" quanh ~200 ký tự đầu)
+- Độ dài đích 1.300-3.000 ký tự. LinkedIn cắt "see more" ở khoảng 210 ký tự trên máy tính và khoảng 140 trên điện thoại (kinh nghiệm thực hành), nên ý chính phải nằm trong 140 ký tự đầu
 - **Dòng 1 phải tự đứng được:** nêu thông tin hoặc vấn đề đủ rõ trước "see more"; tò mò chỉ là lựa chọn, không được che ý chính
 - Đoạn NGẮN 1-3 câu, nhiều khoảng trắng — người đọc lướt trên mobile
 - KHÔNG markdown (LinkedIn không render `**`, `#`) — plaintext thuần
@@ -34,13 +45,13 @@ review_by: 2027-01-16
 
 [Câu hỏi mở thảo luận HOẶC CTA nhẹ]
 
-[3-5 hashtag — dòng cuối cùng, tiếng Việt không dấu hoặc tiếng Anh phổ biến]
+[0-3 hashtag nếu brief cần — dòng cuối cùng, tiếng Việt không dấu hoặc tiếng Anh phổ biến]
 ```
 
 ### Quy tắc kênh
 
 - Giọng "mình" hoặc "tôi", professional nhưng không cứng — như chia sẻ với đồng nghiệp
-- Link ngoài → để ở comment đầu tiên (ghi chú cuối bài: "Link trong comment"), không dán vào thân bài
+- Link ngoài: LinkedIn chưa từng xác nhận hạ bài có link. Mẹo "để link ở comment" chỉ là kinh nghiệm truyền miệng; nếu link là nội dung chính thì dán trong thân bài, đặt sau ý chính
 - Nhấn mạnh: LinkedIn post không render bold; chỉ tách dòng hoặc IN HOA khi thêm nghĩa, đúng giọng mẫu hoặc brief yêu cầu
 - Số liệu giữ nguyên từ draft, ghi nguồn ngắn gọn inline
 
@@ -57,7 +68,7 @@ review_by: 2027-01-16
 - [ ] Dòng 1 tự đứng được và nêu rõ vấn đề trước "see more"
 - [ ] 1.300-3.000 ký tự, đoạn 1-3 câu
 - [ ] Không markdown, không bullet `-`
-- [ ] Link ngoài để comment, không trong thân
+- [ ] Link (nếu có) đặt sau ý chính
 - [ ] Nếu có IN HOA, mỗi cụm đều có lý do rõ
-- [ ] 3-5 hashtag dòng cuối
+- [ ] Tối đa 3 hashtag ở dòng cuối, chỉ khi brief cần
 - [ ] Copy-paste đăng được ngay

@@ -17,6 +17,8 @@ step "Self-test của skill"
 node "$SCRIPTS/lint-vietnamese-content.mjs" --self-test
 node "$SCRIPTS/compare-preserved-content.mjs" --self-test
 node "$SCRIPTS/test-humanizer-contract.mjs"
+node "$SCRIPTS/check-platform.mjs" --self-test
+node "$SCRIPTS/mcp-server.mjs" --self-test
 
 step "Lint fixture: bản sau khi humanize và tài liệu kỹ thuật không có vi phạm"
 for f in tests/humanizer/facebook-after.md tests/humanizer/technical.md; do
@@ -42,6 +44,21 @@ step "Hạn rà soát dữ kiện nền tảng"
 node tests/check-freshness.mjs
 if node tests/check-freshness.mjs --today 2099-01-01 >/dev/null 2>&1; then echo "FAIL: check-freshness không báo hết hạn" >&2; exit 1; fi
 node "$SCRIPTS/check-x-length.mjs" --self-test
+node "$SCRIPTS/check-platform.mjs" --validate
+
+step "Kiểm bản thảo theo hồ sơ nền tảng"
+expect_exit() { # <exit-code> <kênh> <file> [dòng-phải-có]
+  set +e; out="$(node "$SCRIPTS/check-platform.mjs" "$2" "$3")"; code=$?; set -e
+  echo "$out"
+  if [ "$code" != "$1" ]; then echo "FAIL: check-platform $2 $3 thoát $code, cần $1" >&2; exit 1; fi
+  if [ -n "${4:-}" ]; then case "$out" in *"$4"*) ;; *) echo "FAIL: $3 phải có \"$4\"" >&2; exit 1 ;; esac; fi
+}
+expect_exit 1 threads tests/platform/threads-over.md "ERROR [threads/post] max_chars đoạn 2"
+expect_exit 1 threads tests/platform/threads-6-links.md "ERROR [threads/post] max_links đoạn 1"
+expect_exit 1 x-thread tests/platform/x-thread-weighted-over.md "ERROR [x-thread/post] max_chars đoạn 1"
+expect_exit 0 youtube tests/platform/youtube-ok.md "PASS"
+expect_exit 1 instagram tests/platform/instagram-6-hashtags.md "ERROR [instagram/post] max_hashtags"
+expect_exit 0 linkedin tests/platform/linkedin-long-fold.md "WARN [linkedin/post] fold_chars"
 
 step "Manifest checksum của skill"
 sha256_check SKILL_SHA256SUMS

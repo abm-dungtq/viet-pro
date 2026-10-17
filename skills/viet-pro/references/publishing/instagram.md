@@ -1,6 +1,19 @@
 ---
+schema: viet-pro/platform-profile@1
+id: instagram
+name: Instagram
+tier: 2
+counting: graphemes
 last_verified: 2026-10-16
 review_by: 2027-01-16
+limits:
+  - { surface: post, field: max_chars, value: 2200, confidence: O, source: ig-graph-media }
+  - { surface: post, field: max_hashtags, value: 5, confidence: S, source: smt-ig-hashtags }
+  - { surface: post, field: fold_chars, value: 125, confidence: F, source: sendible-ig }
+sources:
+  - { id: ig-graph-media, url: "https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-user/media", accessed: 2026-10-17 }
+  - { id: smt-ig-hashtags, url: "https://www.socialmediatoday.com/news/instagram-implements-new-limits-on-hashtag-use/808309/", accessed: 2026-10-17 }
+  - { id: sendible-ig, url: "https://www.sendible.com/insights/instagram-character-limit", accessed: 2026-10-17 }
 ---
 # Instagram — Format Hiển Thị
 

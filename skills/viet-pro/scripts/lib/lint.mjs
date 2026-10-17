@@ -47,10 +47,20 @@ export const LINE_RULES = [
   },
 ];
 
+// A leading `---` ... `---` block is YAML frontmatter; an unclosed `---` is ordinary text.
+const frontmatterEnd = (lines) => (lines[0]?.trim() === '---' ? lines.findIndex((l, i) => i > 0 && l.trim() === '---') : -1);
+const hasFrontmatter = (lines) => frontmatterEnd(lines) > 0;
+
+export function stripFrontmatter(text) {
+  const lines = text.replace(/\r\n/gu, '\n').split('\n');
+  const end = frontmatterEnd(lines);
+  return end > 0 ? lines.slice(end + 1).join('\n') : text;
+}
+
 function stripProtectedBlocks(text) {
   const lines = text.split('\n');
   let inFence = false;
-  let inFrontmatter = lines[0]?.trim() === '---';
+  let inFrontmatter = hasFrontmatter(lines);
   return lines.map((line, i) => {
     if (i === 0 && inFrontmatter) return '';
     if (inFrontmatter) {
@@ -69,23 +79,41 @@ const FUNCTION_WORDS = new Set('và của là có được cho các những mộ
 function phraseReuse(text, keep = []) {
   const keepLower = keep.map((k) => k.toLowerCase());
   const segments = text.toLowerCase().split(/[.!?;:\n]+/u).map((s) => s.match(/[\p{L}\p{N}]+/gu) || []);
+  // found: { at: [[segment, start], ...], len, c }; at holds every occurrence of the span.
   const found = [];
+  const words = (f) => segments[f.at[0][0]].slice(f.at[0][1], f.at[0][1] + f.len).join(' ');
+  const shifted = (at, by) => at.map(([s, i]) => `${s}:${i + by}`).join(',');
   for (let n = 8; n >= 5; n--) {
-    const counts = new Map();
-    for (const toks of segments) for (let i = 0; i + n <= toks.length; i++) {
-      const g = toks.slice(i, i + n);
-      if (g.every((t) => FUNCTION_WORDS.has(t))) continue;
-      const key = g.join(' ');
-      counts.set(key, (counts.get(key) || 0) + 1);
-    }
-    for (const [phrase, c] of counts) {
+    const occ = new Map();
+    segments.forEach((toks, s) => {
+      for (let i = 0; i + n <= toks.length; i++) {
+        const g = toks.slice(i, i + n);
+        if (g.every((t) => FUNCTION_WORDS.has(t))) continue;
+        const key = g.join(' ');
+        if (!occ.has(key)) occ.set(key, []);
+        occ.get(key).push([s, i]);
+      }
+    });
+    for (const [phrase, at] of occ) {
+      const c = at.length;
       if (c < 3) continue;
-      if (found.some((f) => f.phrase.includes(phrase))) continue;
+      if (found.some((f) => ` ${words(f)} `.includes(` ${phrase} `))) continue;
       if (keepLower.some((k) => ` ${k} `.includes(` ${phrase} `) || ` ${phrase} `.includes(` ${k} `))) continue;
-      found.push({ phrase, c });
+      // A longer repeated span yields n-grams shifted by one word. Extend the earlier finding only when
+      // every occurrence sits right after (or right before) one of its occurrences.
+      const here = shifted(at, 0);
+      const after = found.find((f) => f.c === c && shifted(f.at, f.len - n + 1) === here);
+      if (after) { after.len++; continue; }
+      const before = found.find((f) => f.c === c && shifted(f.at, -1) === here);
+      if (before) { before.at = at; before.len++; continue; }
+      found.push({ at, len: n, c });
     }
   }
-  return found.map(({ phrase, c }) => ({ level: 'WARN', id: 'phrase-reuse', line: 0, excerpt: `"${phrase}" lặp ${c} lần` }));
+  return found.map((f) => {
+    const phrase = words(f);
+    const shown = phrase.length > 120 ? `${phrase.slice(0, 117)}...` : phrase;
+    return { level: 'WARN', id: 'phrase-reuse', line: 0, excerpt: `"${shown}" lặp ${f.c} lần` };
+  });
 }
 
 // Whole-text rules
@@ -116,7 +144,7 @@ export function lintText(text, opts = {}) {
   const findings = [];
   const lines = text.split('\n');
   let inFence = false;
-  let inFrontmatter = lines[0]?.trim() === '---';
+  let inFrontmatter = hasFrontmatter(lines);
   lines.forEach((line, i) => {
     if (i === 0 && inFrontmatter) return;
     if (inFrontmatter) {

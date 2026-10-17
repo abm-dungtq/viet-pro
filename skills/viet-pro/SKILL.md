@@ -3,7 +3,7 @@ name: viet-pro
 description: "Viết, biên tập, humanize, audit dấu hiệu AI, kiểm chứng và chuyển thể nội dung tiếng Việt chuyên nghiệp cho bài dài, blog, SEO, mạng xã hội, newsletter và kịch bản video. Kích hoạt khi người dùng yêu cầu viết mới, biên tập, rà văn phong tiếng Việt, chống AI slop, kiểm chứng nguồn/claim hoặc định dạng xuất bản theo kênh; không dùng cho dịch ngắn hay chỉnh một câu đơn giản."
 metadata:
   author: ABM-DungTQ
-  version: "5.4.0"
+  version: "5.5.0"
   category: content
   keywords: [vietnamese, writing, editing, humanize, fact-check, publishing, content-engine]
 ---
@@ -95,6 +95,7 @@ Có thể chạy các script trong thư mục `scripts/` của skill. Đường 
 node <thư-mục-skill>/scripts/lint-vietnamese-content.mjs <file.md> [--keep "Tên riêng"]
 node <thư-mục-skill>/scripts/compare-preserved-content.mjs <before.md> <after.md> --keep "Tên riêng" [--strict-quotes]
 node <thư-mục-skill>/scripts/check-x-length.mjs <thread.md>
+node <thư-mục-skill>/scripts/check-platform.mjs <kênh> <bản-thảo.md> [--surface <bề-mặt>]
 ```
 
 Lint chỉ là tín hiệu hỗ trợ. WARN không tự động làm bài thất bại; ERROR phải được xem trong ngữ cảnh. Yêu cầu phong cách rõ ràng của người dùng có thể override house style, nhưng không override lỗi sự thật hoặc an toàn.

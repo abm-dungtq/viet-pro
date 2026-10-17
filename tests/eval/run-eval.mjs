@@ -6,29 +6,35 @@
 //   node tests/eval/run-eval.mjs [--cases id1,id2] [--concurrency 3] [--model <id>] [--judge]
 //                                [--runner claude|codex]
 //                                [--out tests/eval/results/<file>.json] [--compare <results.json>]
+//                                [--max-bytes-growth 0.02] [--events-dir <dir>]
 //   node tests/eval/run-eval.mjs --regrade <results.json> [--out <file>] [--compare <results.json>]
 //
 // Requires the `claude` CLI on PATH, authenticated by subscription login or ANTHROPIC_API_KEY.
 // --runner codex requires the codex CLI, logged in; HOME is isolated so only viet-pro is installed.
+// --events-dir keeps codex's raw --json event stream per case, for checking what the model read.
 // The judge always runs on claude.
 // Deterministic checks gate pass/fail; judge scores are advisory and tracked over time.
+// --compare fails on any case that passed in the baseline and fails now, or when the skill's
+// Markdown grows by more than --max-bytes-growth (default 2%).
 
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, copyFileSync, existsSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkDraft, loadProfile, splitDraft } from '../../skills/viet-pro/scripts/lib/profile.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const SKILL_DIR = join(ROOT, 'skills/viet-pro');
 const LINT = join(SKILL_DIR, 'scripts/lint-vietnamese-content.mjs');
 const COMPARE = join(SKILL_DIR, 'scripts/compare-preserved-content.mjs');
+const PUBLISHING = join(SKILL_DIR, 'references/publishing');
 const START = '<<<BAI>>>';
 const END = '<<<HET>>>';
 const FORMAT_NOTE = `\n\nYêu cầu định dạng của bộ kiểm thử: đặt toàn bộ sản phẩm cuối giao cho người đọc giữa một dòng ${START} và một dòng ${END}. Ghi chú, giả định hoặc cảnh báo (nếu có) đặt ngoài cặp dấu này. Không tra cứu web.`;
 
 function parseArgs(argv) {
-  const opts = { concurrency: 3, judge: false, cases: null, model: null, out: null, compare: null, regrade: null, runner: 'claude' };
+  const opts = { concurrency: 3, judge: false, cases: null, model: null, out: null, compare: null, regrade: null, runner: 'claude', maxBytesGrowth: 0.02, eventsDir: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => { if (i + 1 >= argv.length) throw new Error(`${a} cần giá trị`); return argv[++i]; };
@@ -40,9 +46,12 @@ function parseArgs(argv) {
     else if (a === '--compare') opts.compare = next();
     else if (a === '--regrade') opts.regrade = next();
     else if (a === '--runner') opts.runner = next();
+    else if (a === '--max-bytes-growth') opts.maxBytesGrowth = Number(next());
+    else if (a === '--events-dir') opts.eventsDir = next();
     else throw new Error(`Tuỳ chọn không hợp lệ: ${a}`);
   }
   if (!['claude', 'codex'].includes(opts.runner)) throw new Error('--runner chỉ nhận claude hoặc codex');
+  if (!(opts.maxBytesGrowth >= 0)) throw new Error('--max-bytes-growth cần một tỷ lệ không âm, ví dụ 0.1');
   return opts;
 }
 
@@ -114,11 +123,14 @@ async function generateCodex(c, opts, ws, home) {
     rmSync(codexHome, { recursive: true, force: true });
   }
   const duration_ms = Date.now() - started;
+  if (opts.eventsDir) { mkdirSync(opts.eventsDir, { recursive: true }); writeFileSync(join(opts.eventsDir, `${c.id}-${started}.jsonl`), res.stdout); }
   const raw = existsSync(lastFile) ? readFileSync(lastFile, 'utf8') : '';
   if (!raw.trim()) return { error: `codex không ghi last message (exit ${res.code}): ${(res.stderr || '').slice(0, 300)}`, duration_ms };
-  // --json streams events to stdout; a viet-pro/SKILL.md path there shows the skill was actually read.
+  // --json streams events to stdout. `$viet-pro` already puts SKILL.md in context, so Codex sometimes
+  // skips re-reading it and opens references/ directly; skill_used counts either as the skill being used.
   const skill_read = /viet-pro\/SKILL\.md/u.test(res.stdout);
-  return { raw, cost_usd: null, num_turns: null, model: opts.model || 'codex-default', duration_ms, is_error: false, skill_read };
+  const skill_used = skill_read || /viet-pro\/references\//u.test(res.stdout);
+  return { raw, cost_usd: null, num_turns: null, model: opts.model || 'codex-default', duration_ms, is_error: false, skill_read, skill_used };
 }
 
 async function generate(c, opts) {
@@ -202,6 +214,21 @@ function grade(c, raw) {
     checks.edit_ratio = { ok: c.max_edit_ratio == null || ratio <= c.max_edit_ratio, detail: `${(ratio * 100).toFixed(1)}% token bị sửa${c.max_edit_ratio != null ? ` (cho phép ${(c.max_edit_ratio * 100).toFixed(0)}%)` : ''}` };
   }
 
+  if (c.platform) {
+    const res = checkDraft(loadProfile(PUBLISHING, c.platform), splitDraft(output), { surface: c.surface });
+    const errs = res.findings.filter((f) => f.level === 'ERROR');
+    checks.platform = { ok: errs.length === 0, detail: errs.map((f) => `${f.field}: ${f.detail}`).join(' | ') };
+  }
+
+  if (c.chapters) {
+    // YouTube chapters: first stamp 00:00, at least three stamps, in increasing order. A stamp may sit
+    // after a list marker, a number, a quote marker, a table cell or markdown emphasis or link:
+    // "1. **00:00** Mở đầu", "| 00:00 | Mở đầu |", "[00:00](https://...) Mở đầu", "00:00: Mở đầu".
+    const stamps = [...output.matchAll(/^\s*(?:\|\s*)?(?:\d+[.)]\s*|[-*•>]\s*)?[[*`]*(?:(\d{1,2}):)?(\d{1,2}):(\d{2})(?:\]\([^)\s]*\))?[\]*`]*:?\s*(?:\|\s*)?\s\S/gmu)].map((m) => Number(m[1] || 0) * 3600 + Number(m[2]) * 60 + Number(m[3]));
+    const ok = stamps.length >= 3 && stamps[0] === 0 && stamps.every((t, i) => i === 0 || t - stamps[i - 1] >= 10);
+    checks.chapters = { ok, detail: ok ? '' : `mốc chapter: ${stamps.length ? stamps.join(', ') : 'không có'} giây` };
+  }
+
   // Required phrases ignore case; forbidden phrases stay case-sensitive (e.g. a ban on ALL CAPS).
   const included = (c.must_include || []).filter((s) => !output.toLowerCase().includes(s.toLowerCase()));
   const forbidden = (c.must_not_include || []).filter((s) => output.includes(s));
@@ -258,7 +285,7 @@ function summarize(results) {
   return { pass, total: results.length, judge_avg, cost_usd: Number(cost.toFixed(4)) };
 }
 
-function compareWith(current, baselinePath) {
+function compareWith(current, baselinePath, maxBytesGrowth = 0.02) {
   const base = JSON.parse(readFileSync(baselinePath, 'utf8'));
   const byId = Object.fromEntries(base.cases.map((r) => [r.id, r]));
   const regressions = current.cases.filter((r) => byId[r.id]?.pass && !r.pass).map((r) => r.id);
@@ -268,10 +295,11 @@ function compareWith(current, baselinePath) {
   console.log(`  Tụt từ pass xuống fail: ${regressions.length ? regressions.join(', ') : 'không có'}`);
   console.log(`  Từ fail lên pass: ${fixed.length ? fixed.join(', ') : 'không có'}`);
   console.log(`  Dung lượng skill: ${base.meta.skill_bytes} -> ${current.meta.skill_bytes} byte (${(bytesDelta * 100).toFixed(2)}%)`);
+  if (bytesDelta > maxBytesGrowth) console.log(`  Skill phình quá ngưỡng ${(maxBytesGrowth * 100).toFixed(1)}% (đặt bằng --max-bytes-growth)`);
   if (base.summary.judge_avg && current.summary.judge_avg) {
     for (const k of JUDGE_KEYS) console.log(`  judge ${k}: ${base.summary.judge_avg[k]} -> ${current.summary.judge_avg[k]}`);
   }
-  return regressions.length === 0 && bytesDelta <= 0.02;
+  return regressions.length === 0 && bytesDelta <= maxBytesGrowth;
 }
 
 function report(results) {
@@ -304,7 +332,7 @@ async function main() {
       const gen = await generate(c, opts);
       if (gen.error) { console.error(`ERROR ${c.id}: ${gen.error}`); return { id: c.id, pass: false, error: gen.error, duration_ms: gen.duration_ms }; }
       const g = grade(c, gen.raw);
-      const row = { id: c.id, pass: g.pass, checks: g.checks, words: g.words, model: gen.model, skill_read: gen.skill_read, cost_usd: gen.cost_usd, num_turns: gen.num_turns, duration_ms: gen.duration_ms, output: g.output, raw: gen.raw };
+      const row = { id: c.id, pass: g.pass, checks: g.checks, words: g.words, model: gen.model, skill_read: gen.skill_read, skill_used: gen.skill_used, cost_usd: gen.cost_usd, num_turns: gen.num_turns, duration_ms: gen.duration_ms, output: g.output, raw: gen.raw };
       if (opts.judge && g.output) row.judge = await judge(c, g.output, opts);
       console.error(`${g.pass ? 'pass' : 'fail'} ${c.id} (${Math.round(gen.duration_ms / 1000)}s)`);
       return row;
@@ -323,7 +351,7 @@ async function main() {
   writeFileSync(outPath, JSON.stringify(out, null, 2) + '\n');
   console.log(`Đã ghi kết quả: ${outPath}`);
 
-  if (opts.compare && !compareWith(out, opts.compare)) process.exit(1);
+  if (opts.compare && !compareWith(out, opts.compare, opts.maxBytesGrowth)) process.exit(1);
 }
 
 main().catch((err) => { console.error(err.message); process.exit(2); });

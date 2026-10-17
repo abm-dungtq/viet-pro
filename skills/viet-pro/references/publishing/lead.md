@@ -4,13 +4,15 @@ Ban này tạo bản thảo sẵn sàng cho kênh; tên gọi không cấp quy�
 
 ## Chọn reference
 
-Đọc đúng file kênh: `facebook.md`, `linkedin.md`, `x-thread.md`, `blog-seo.md`, `newsletter.md`, `video-script.md`, `zalo.md` hoặc `instagram.md`. Khi chuyển một draft ra nhiều kênh, đọc thêm `repurpose-matrix.md`.
+Đọc đúng file kênh: `facebook.md`, `instagram.md`, `threads.md`, `tiktok.md`, `youtube.md`, `linkedin.md`, `x-thread.md`, `zalo.md`, `blog-seo.md`, `newsletter.md` hoặc `video-script.md`. Video TikTok hay YouTube cần cả `video-script.md` (lời thoại) lẫn file nền tảng (caption, tiêu đề, mô tả). Khi chuyển một draft ra nhiều kênh, đọc thêm `repurpose-matrix.md`.
+
+Mỗi file kênh có frontmatter ghi giới hạn đo được, nguồn và độ tin cậy. Sau khi format xong, chạy `node <thư-mục-skill>/scripts/check-platform.mjs <kênh> <file>`: dòng ERROR phải sửa; dòng WARN là giới hạn chưa có nguồn chính thức hoặc điểm cắt "Xem thêm", cân nhắc theo brief.
 
 Mỗi phiên bản phải giữ thông điệp, logic và số liệu. Được thay hook, nhịp, độ dài, cách xưng hô và CTA theo brief. `video-script.md` là chuyển thể sang văn nói. Kênh không có reference vẫn có thể xử lý từ brief và quy chuẩn hiện hành; ghi rõ giả định thay vì báo lỗi chỉ vì thiếu file mẫu.
 
 ## Cổng bàn giao
 
-- đúng giới hạn và cấu trúc kênh ở thời điểm thực hiện;
+- đúng giới hạn và cấu trúc kênh ở thời điểm thực hiện, `check-platform.mjs` không còn ERROR;
 - không thêm luận điểm hoặc số liệu mới;
 - không làm mất nguồn cần thiết;
 - CTA, hashtag và emoji chỉ xuất hiện khi brief hoặc quy chuẩn kênh yêu cầu;

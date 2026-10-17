@@ -1,13 +1,25 @@
 ---
+schema: viet-pro/platform-profile@1
+id: x-thread
+name: X (Twitter)
+tier: 2
+counting: x_weighted
+segments: "---"
 last_verified: 2026-10-16
 review_by: 2027-01-16
+limits:
+  - { surface: post, field: max_chars, value: 280, confidence: O, source: twitter-text-v3 }
+  - { surface: premium, field: max_chars, value: 25000, confidence: F, source: hootsuite-x-premium, note: "trang help.x.com ghi 25.000 nhưng chưa tải được để kiểm" }
+sources:
+  - { id: twitter-text-v3, url: "https://github.com/twitter/twitter-text/blob/master/config/v3.json", accessed: 2026-10-16 }
+  - { id: hootsuite-x-premium, url: "https://www.hootsuite.com/whats-new/longer-captions-for-x-twitter-premium-users", accessed: 2026-10-17 }
 ---
-# X (Twitter) Thread & Threads — Format Hiển Thị
+# X (Twitter) Thread — Format Hiển Thị
 
 **Nhân viên:** x-thread.md — Ban Xuất bản (publishing/)
-**Mục đích:** Format nội dung thành thread cho X và post cho Threads. Chỉ format, không viết nội dung.
+**Mục đích:** Format nội dung thành thread cho X. Chỉ format, không viết nội dung.
 
-**Mặc định:** X thread. Threads (Meta) khi user chỉ định.
+Bài cho Threads (Meta) đọc ở `threads.md`.
 
 ---
 
@@ -15,7 +27,7 @@ review_by: 2027-01-16
 
 ### Nguyên tắc cốt lõi
 
-- Mỗi tweet ≤280 theo cách đếm có trọng số của X: chữ có dấu thuộc dải U+1EA0-U+1EF9 (ế, ộ, ạ, ữ…) tính 2, URL luôn tính 23. Một câu tiếng Việt thường dài thêm 10-20% so với số ký tự nhìn thấy. Kiểm bằng `node <thư-mục-skill>/scripts/check-x-length.mjs <file>` (ngăn các tweet bằng dòng trống, hoặc bằng dòng `---` khi một tweet có nhiều đoạn).
+- Mỗi tweet ≤280 theo cách đếm có trọng số của X: chữ có dấu thuộc dải U+1EA0-U+1EF9 (ế, ộ, ạ, ữ…) tính 2, URL luôn tính 23. Một câu tiếng Việt thường dài thêm 10-20% so với số ký tự nhìn thấy. Kiểm bằng `node <thư-mục-skill>/scripts/check-x-length.mjs <file>` (ngăn các tweet bằng dòng trống, hoặc bằng dòng `---` khi một tweet có nhiều đoạn), hoặc `check-platform.mjs x-thread <file>` khi các tweet ngăn bằng `---`.
 - **Tweet 1 phải TỰ ĐỨNG ĐƯỢC** — người không đọc thread vẫn nhận được giá trị; đây là hook + lời hứa nội dung
 - 1 tweet = 1 ý trọn vẹn. Không cắt câu giữa chừng sang tweet sau
 - 5-12 tweet/thread. Quá 12 → cắt bớt ý, không phải viết ngắn từng ý đi
@@ -36,14 +48,7 @@ Tweet n:  Dữ kiện hoặc kết luận ngắn HOẶC CTA nếu brief yêu c�
 - Cắt bỏ TOÀN BỘ câu chuyển tiếp ("Tuy nhiên", "Bên cạnh đó") — thread tự chuyển bằng cấu trúc
 - Giọng gọn, trực diện; vẫn thuần Việt, không trộn tiếng Anh
 - Số liệu: mỗi tweet chứa tối đa 1-2 con số, ghi nguồn ở tweet riêng gần cuối nếu cần
-- Link để tweet cuối, không rải giữa thread
-
-## 2. Threads (Meta) — khi user chỉ định
-
-- ≤500 ký tự/post, chuỗi 3-7 post
-- Mỗi bài 1 topic tag, tối đa 5 link; emoji đếm theo số byte UTF-8 (Threads API docs, 2025).
-- Giọng casual hơn X, gần Facebook cá nhân
-- Không đánh số bắt buộc; post đầu vẫn phải tự đứng được
+- Link đặt ở tweet nói về nó. Không cần dồn link xuống tweet cuối: lãnh đạo X nói nền tảng không còn hạ bài có link (07/2026, chưa có tài liệu chính thức)
 
 ---
 

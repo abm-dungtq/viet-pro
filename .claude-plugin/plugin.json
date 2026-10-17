@@ -1,10 +1,16 @@
 {
   "name": "viet-pro",
-  "version": "5.4.0",
+  "version": "5.5.0",
   "description": "Viết và biên tập tiếng Việt tự nhiên, giữ đúng dữ kiện, đúng chuẩn từng kênh: blog, SEO, mạng xã hội, newsletter, kịch bản video.",
   "author": { "name": "ABM-DungTQ" },
   "homepage": "https://github.com/abm-dungtq/viet-pro-codex",
   "repository": "https://github.com/abm-dungtq/viet-pro-codex",
   "license": "MIT",
-  "keywords": ["vietnamese", "tiếng Việt", "writing", "editing", "content", "humanize"]
+  "keywords": ["vietnamese", "tiếng Việt", "writing", "editing", "content", "humanize"],
+  "mcpServers": {
+    "viet-pro": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/skills/viet-pro/scripts/mcp-server.mjs"]
+    }
+  }
 }
