@@ -4,15 +4,18 @@
 //
 // Usage:
 //   node tests/eval/run-eval.mjs [--cases id1,id2] [--concurrency 3] [--model <id>] [--judge]
+//                                [--runner claude|codex]
 //                                [--out tests/eval/results/<file>.json] [--compare <results.json>]
 //   node tests/eval/run-eval.mjs --regrade <results.json> [--out <file>] [--compare <results.json>]
 //
 // Requires the `claude` CLI on PATH, authenticated by subscription login or ANTHROPIC_API_KEY.
+// --runner codex requires the codex CLI, logged in; HOME is isolated so only viet-pro is installed.
+// The judge always runs on claude.
 // Deterministic checks gate pass/fail; judge scores are advisory and tracked over time.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, copyFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, copyFileSync, existsSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,7 +28,7 @@ const END = '<<<HET>>>';
 const FORMAT_NOTE = `\n\nYêu cầu định dạng của bộ kiểm thử: đặt toàn bộ sản phẩm cuối giao cho người đọc giữa một dòng ${START} và một dòng ${END}. Ghi chú, giả định hoặc cảnh báo (nếu có) đặt ngoài cặp dấu này. Không tra cứu web.`;
 
 function parseArgs(argv) {
-  const opts = { concurrency: 3, judge: false, cases: null, model: null, out: null, compare: null, regrade: null };
+  const opts = { concurrency: 3, judge: false, cases: null, model: null, out: null, compare: null, regrade: null, runner: 'claude' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => { if (i + 1 >= argv.length) throw new Error(`${a} cần giá trị`); return argv[++i]; };
@@ -36,14 +39,16 @@ function parseArgs(argv) {
     else if (a === '--out') opts.out = next();
     else if (a === '--compare') opts.compare = next();
     else if (a === '--regrade') opts.regrade = next();
+    else if (a === '--runner') opts.runner = next();
     else throw new Error(`Tuỳ chọn không hợp lệ: ${a}`);
   }
+  if (!['claude', 'codex'].includes(opts.runner)) throw new Error('--runner chỉ nhận claude hoặc codex');
   return opts;
 }
 
-function run(cmd, args, { cwd, input, timeoutMs = 600000 } = {}) {
+function run(cmd, args, { cwd, input, env = process.env, timeoutMs = 600000 } = {}) {
   return new Promise((resolvePromise) => {
-    const child = spawn(cmd, args, { cwd, env: process.env });
+    const child = spawn(cmd, args, { cwd, env });
     let stdout = '';
     let stderr = '';
     const timer = setTimeout(() => child.kill('SIGTERM'), timeoutMs);
@@ -79,7 +84,7 @@ function makeWorkspace() {
   const res = spawnSync('bash', [join(ROOT, 'install.sh'), '--workspace'], { cwd: ws, env: { ...process.env, HOME: home }, encoding: 'utf8' });
   if (res.status !== 0) throw new Error(`install.sh --workspace thất bại: ${res.stderr || res.stdout}`);
   spawnSync('git', ['init', '-q'], { cwd: ws });
-  return ws;
+  return { ws, home };
 }
 
 function claudeArgs(prompt, model, tools) {
@@ -88,9 +93,28 @@ function claudeArgs(prompt, model, tools) {
   return args;
 }
 
+async function generateCodex(c, opts, ws, home) {
+  const lastFile = join(mkdtempSync(join(tmpdir(), 'viet-pro-eval-codex-')), 'last.md');
+  const args = ['exec', '--skip-git-repo-check', '--ephemeral', '--ignore-user-config', '-s', 'workspace-write', '-C', ws, '-o', lastFile];
+  if (opts.model) args.push('-m', opts.model);
+  args.push('-');
+  // Isolated CODEX_HOME: only auth.json is copied, so skills under the real ~/.codex/skills are not loaded.
+  const codexHome = mkdtempSync(join(tmpdir(), 'viet-pro-eval-codexhome-'));
+  const realAuth = join(process.env.CODEX_HOME || join(homedir(), '.codex'), 'auth.json');
+  if (existsSync(realAuth)) copyFileSync(realAuth, join(codexHome, 'auth.json'));
+  const env = { ...process.env, HOME: home, CODEX_HOME: codexHome };
+  const started = Date.now();
+  const res = await run('codex', args, { cwd: ws, env, input: `$viet-pro ${c.prompt}${FORMAT_NOTE}` });
+  const duration_ms = Date.now() - started;
+  const raw = existsSync(lastFile) ? readFileSync(lastFile, 'utf8') : '';
+  if (!raw.trim()) return { error: `codex không ghi last message (exit ${res.code}): ${(res.stderr || '').slice(0, 300)}`, duration_ms };
+  return { raw, cost_usd: null, num_turns: null, model: opts.model || 'codex-default', duration_ms, is_error: false };
+}
+
 async function generate(c, opts) {
-  const ws = makeWorkspace();
+  const { ws, home } = makeWorkspace();
   if (c.source_file) copyFileSync(join(ROOT, c.source_file), join(ws, 'input.md'));
+  if (opts.runner === 'codex') return generateCodex(c, opts, ws, home);
   const prompt = `Dùng skill viet-pro. ${c.prompt}${FORMAT_NOTE}`;
   const started = Date.now();
   const res = await run('claude', claudeArgs(prompt, opts.model, 'Read,Glob,Grep,Bash(node:*)'), { cwd: ws });
@@ -111,6 +135,19 @@ function extract(raw) {
 
 const wordCount = (text) => text.split(/\s+/u).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
 const countOf = (text, needle) => text.split(needle).length - 1;
+
+// Share of syllable tokens changed (Levenshtein distance / longer length). 0 = identical.
+function editRatio(a, b) {
+  const ta = a.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  const tb = b.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  let prev = Array.from({ length: tb.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= ta.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= tb.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ta[i - 1] === tb[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[tb.length] / Math.max(ta.length, tb.length, 1);
+}
 
 // Deterministic checks. Each returns { ok, detail }.
 function grade(c, raw) {
@@ -148,6 +185,11 @@ function grade(c, raw) {
       return !before.includes(word);
     });
     checks.polarity = { ok: bad.length === 0, detail: bad.map(([w, n]) => `"${w}" không đứng trước ${n}`).join(', ') };
+  }
+
+  if (c.source_file && !c.grade_full_response) {
+    const ratio = editRatio(readFileSync(join(ROOT, c.source_file), 'utf8'), output);
+    checks.edit_ratio = { ok: c.max_edit_ratio == null || ratio <= c.max_edit_ratio, detail: `${(ratio * 100).toFixed(1)}% token bị sửa${c.max_edit_ratio != null ? ` (cho phép ${(c.max_edit_ratio * 100).toFixed(0)}%)` : ''}` };
   }
 
   // Required phrases ignore case; forbidden phrases stay case-sensitive (e.g. a ban on ALL CAPS).
@@ -257,7 +299,7 @@ async function main() {
       console.error(`${g.pass ? 'pass' : 'fail'} ${c.id} (${Math.round(gen.duration_ms / 1000)}s)`);
       return row;
     });
-    meta = { date: new Date().toISOString(), runner: 'claude', model: opts.model || 'default', skill_version: skillVersion(), skill_bytes: skillBytes(), judge: opts.judge };
+    meta = { date: new Date().toISOString(), runner: opts.runner, model: opts.model || 'default', skill_version: skillVersion(), skill_bytes: skillBytes(), judge: opts.judge };
   }
   meta.skill_bytes_now = skillBytes();
 

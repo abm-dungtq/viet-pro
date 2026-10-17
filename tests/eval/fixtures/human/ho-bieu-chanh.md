@@ -1,0 +1,3 @@
+Trần Văn Sửu đi thăm ruộng từ hồi trưa, nửa chiều anh ta mới lơn tơn trở về nhà. Anh ta ở Giồng Ké, mà làm ruộng của bà Hương quản Tồn dưới giồng Phú Tiên, nên bận đi cũng vậy mà bận về cũng vậy, phải di khúc lộ Càng Long lên Vũng Liêm chớ không có ngã khác.
+
+Anh ta mặc một cái áo đen nhùn nhục, một cái quần vắn lại đứt tả tơi, đầu bịt trùm một cái khăn rằn, miệng ngậm trầu một búng, tay mặt cầm một khúc cây cóc, tay trái xách một xâu hai con cá lóc với ba bốn con cá rô đi thăm ruộng thấy ruộng trúng, lúa gần chín mà lại bắt cá cạn được ít con, bởi vậy anh ta đi về, ngoài mặt hân hoan, trong lòng thơ thới.

@@ -214,5 +214,71 @@
     ],
     "min_words": 170,
     "max_words": 420
+  },
+  {
+    "id": "no-change-ho-bieu-chanh",
+    "task": "edit",
+    "source_file": "tests/eval/fixtures/human/ho-bieu-chanh.md",
+    "prompt": "Rà văn phong tiếng Việt cho đoạn trong file input.md trước khi đăng lên blog. Chỉ sửa lỗi thật sự; giữ nguyên giọng và cách dùng từ của tác giả. Trả lại toàn bộ đoạn sau khi rà.",
+    "keep": [],
+    "compare_source": true,
+    "max_edit_ratio": 0.1,
+    "min_words": 70,
+    "max_words": 230
+  },
+  {
+    "id": "no-change-nam-cao-lao-hac",
+    "task": "edit",
+    "source_file": "tests/eval/fixtures/human/nam-cao-lao-hac.md",
+    "prompt": "Rà văn phong tiếng Việt cho đoạn trong file input.md trước khi đăng lên blog. Chỉ sửa lỗi thật sự; giữ nguyên giọng và cách dùng từ của tác giả. Trả lại toàn bộ đoạn sau khi rà.",
+    "keep": [],
+    "compare_source": true,
+    "max_edit_ratio": 0.1,
+    "min_words": 70,
+    "max_words": 230
+  },
+  {
+    "id": "no-change-thach-lam-gio-lanh",
+    "task": "edit",
+    "source_file": "tests/eval/fixtures/human/thach-lam-gio-lanh.md",
+    "prompt": "Rà văn phong tiếng Việt cho đoạn trong file input.md trước khi đăng lên blog. Chỉ sửa lỗi thật sự; giữ nguyên giọng và cách dùng từ của tác giả. Trả lại toàn bộ đoạn sau khi rà.",
+    "keep": [],
+    "compare_source": true,
+    "max_edit_ratio": 0.1,
+    "min_words": 70,
+    "max_words": 230
+  },
+  {
+    "id": "no-change-thach-lam-hai-dua-tre",
+    "task": "edit",
+    "source_file": "tests/eval/fixtures/human/thach-lam-hai-dua-tre.md",
+    "prompt": "Rà văn phong tiếng Việt cho đoạn trong file input.md trước khi đăng lên blog. Chỉ sửa lỗi thật sự; giữ nguyên giọng và cách dùng từ của tác giả. Trả lại toàn bộ đoạn sau khi rà.",
+    "keep": [],
+    "compare_source": true,
+    "max_edit_ratio": 0.1,
+    "min_words": 70,
+    "max_words": 230
+  },
+  {
+    "id": "no-change-hanh-chinh-1",
+    "task": "edit",
+    "source_file": "tests/eval/fixtures/human/hanh-chinh-1.md",
+    "prompt": "Rà văn phong cho đoạn trích văn bản hành chính trong file input.md. Giữ đúng văn phong hành chính và thuật ngữ; chỉ sửa lỗi thật sự. Trả lại toàn bộ đoạn sau khi rà.",
+    "keep": [],
+    "compare_source": true,
+    "max_edit_ratio": 0.1,
+    "min_words": 70,
+    "max_words": 230
+  },
+  {
+    "id": "no-change-hanh-chinh-2",
+    "task": "edit",
+    "source_file": "tests/eval/fixtures/human/hanh-chinh-2.md",
+    "prompt": "Rà văn phong cho đoạn trích văn bản hành chính trong file input.md. Giữ đúng văn phong hành chính và thuật ngữ; chỉ sửa lỗi thật sự. Trả lại toàn bộ đoạn sau khi rà.",
+    "keep": [],
+    "compare_source": true,
+    "max_edit_ratio": 0.1,
+    "min_words": 70,
+    "max_words": 230
   }
 ]
