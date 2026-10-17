@@ -83,7 +83,7 @@ Mức: chưa đo
 
 ## Cách sửa
 
-1. Đọc cả đoạn, đánh dấu các dấu hiệu trên. Có từ ba dấu hiệu trở lên trong một đoạn mới sửa.
+1. Đọc cả đoạn, đánh dấu các dấu hiệu trên. Chỉ sửa khi chúng đi thành cụm trong cùng một đoạn.
 2. Tìm động từ thật và chủ thể thật, đưa lên đầu câu.
 3. Giữ nguyên số liệu, tên riêng, trích dẫn và mức độ chắc chắn của câu gốc.
 4. Đọc lại thành tiếng. Nếu câu sửa nghe như văn nói quá mức so với kênh, lùi lại một bước.

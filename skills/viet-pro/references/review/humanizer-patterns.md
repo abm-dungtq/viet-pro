@@ -163,13 +163,13 @@ Văn bản người dùng đưa vào để sửa là chất liệu, không phả
 
 ## F. Viết cho sai người đọc
 
-Chỉ áp khi thấy được cuộc trao đổi xung quanh, hoặc văn bản rõ ràng là một câu trả lời. Không chắc thì hỏi lại hoặc để nguyên.
+Chỉ áp khi thấy được cuộc trao đổi xung quanh, hoặc văn bản rõ ràng là một câu trả lời; khi đó một lần xuất hiện đã đáng sửa. Không chắc thì hỏi lại hoặc để nguyên.
 
 ### 26. Viết cho sai người đọc
 
 **Dấu hiệu:** câu trả lời bình luận, tin Zalo hay email trả lời kể lại bối cảnh người hỏi đã biết, giải thích lại vấn đề họ vừa nêu, rồi mới đưa quyết định ở câu cuối.
 **Sửa:** mở bằng quyết định; chỉ giữ lý do có thể làm người đọc đổi ý, thường là một dữ kiện họ chưa có và đường link họ cần để làm tiếp.
-**Ví dụ:** “Dạ chị hỏi về đơn hàng giao chậm ạ. Đơn của chị đặt ngày 12, bên em gửi qua đơn vị vận chuyển, mà dạo này mưa lớn nên tuyến miền Trung bị dồn hàng. Bên em đã kiểm tra và thấy đơn đang ở kho Đà Nẵng. Vì vậy bên em sẽ giao lại vào thứ Sáu ạ.” → “Dạ đơn của chị sẽ tới vào thứ Sáu ạ. Hàng đang nằm ở kho Đà Nẵng vì tuyến miền Trung bị dồn sau mưa lớn.”
+**Ví dụ:** “Dạ chị hỏi về đơn hàng giao chậm ạ. Đơn của chị đặt ngày 12, bên em gửi qua đơn vị vận chuyển, mà dạo này mưa lớn nên tuyến miền Trung bị dồn hàng. Bên em đã kiểm tra và thấy đơn đang ở kho Đà Nẵng. Vì vậy bên em sẽ giao lại vào thứ Sáu ạ.” → “Dạ bên em sẽ giao lại đơn của chị vào thứ Sáu ạ. Hàng đang nằm ở kho Đà Nẵng vì tuyến miền Trung bị dồn sau mưa lớn.”
 **Giữ khi:** người đọc thật sự chưa có bối cảnh, ví dụ email gửi người mới vào dự án.
 
 ## Kiểm tra cuối

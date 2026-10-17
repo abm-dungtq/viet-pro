@@ -99,7 +99,7 @@ shasum -a 256 -c SHA256SUMS
 
 Trên Linux, thay `shasum -a 256` bằng `sha256sum`.
 
-Humanizer 3.0.0 được tích hợp nội bộ trong `viet-pro`; không có lệnh `$humanizer` riêng. Thông báo MIT đầy đủ nằm tại `skills/viet-pro/THIRD_PARTY_NOTICES.md`.
+Humanizer 3.1.0 được tích hợp nội bộ trong `viet-pro`; không có lệnh `$humanizer` riêng. Thông báo MIT đầy đủ nằm tại `skills/viet-pro/THIRD_PARTY_NOTICES.md`.
 
 ---
 
