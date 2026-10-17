@@ -6,5 +6,11 @@
   "homepage": "https://github.com/abm-dungtq/viet-pro-codex",
   "repository": "https://github.com/abm-dungtq/viet-pro-codex",
   "license": "MIT",
-  "keywords": ["vietnamese", "tiếng Việt", "writing", "editing", "content", "humanize"]
+  "keywords": ["vietnamese", "tiếng Việt", "writing", "editing", "content", "humanize"],
+  "mcpServers": {
+    "viet-pro": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/skills/viet-pro/scripts/mcp-server.mjs"]
+    }
+  }
 }

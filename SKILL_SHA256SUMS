@@ -45,4 +45,5 @@ db9e2e2686736c462741ade1958c773abaea24dad5320230a78524ac11e7ed9e  skills/viet-pr
 280331710f8fb94be93b3b7ee33fffbe421867454ed24efb8b7d2799bf83ee87  skills/viet-pro/scripts/lib/profile.mjs
 63189a6c5e95c9f01b92929b71146927d85766b042ef25f02e42814c1e820387  skills/viet-pro/scripts/lib/x-weighted.mjs
 43d27b6c0a684abd90a912ca69ab0359ea37054efda05197aa9316d4c413c70d  skills/viet-pro/scripts/lint-vietnamese-content.mjs
+cccc095479d680e71be45a8f2d2b42e11cb04f694e9bbb2590792f3ddce64e26  skills/viet-pro/scripts/mcp-server.mjs
 67b90107f9d39d48d9dbda86e39acd7a1538dc582cdc5b00a0d18733731dced4  skills/viet-pro/scripts/test-humanizer-contract.mjs

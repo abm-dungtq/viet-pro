@@ -118,3 +118,54 @@ Mỗi lần phát hành phiên bản mới:
 
 3. Chạy `bash tests/run-all.sh`, phải in `ALL CHECKS PASS`. Khi đổi nội dung skill, chạy thêm `node tests/eval/run-eval.mjs --judge --compare tests/eval/baseline.json` và không để ca nào tụt từ pass xuống fail.
 4. Gắn tag `vX.Y.Z` lên commit đã merge vào `main`, rồi thử lại lệnh cài tự động.
+
+---
+
+## 6. Công cụ kiểm tra qua MCP
+
+`skills/viet-pro/scripts/mcp-server.mjs` là một MCP server chạy qua stdio. Server cung cấp 3 tool chỉ đọc, chỉ nhận văn bản (không đọc file theo đường dẫn, không ghi file, không gọi mạng):
+
+| Tool | Tham số | Tác dụng |
+| :--- | :--- | :--- |
+| `lint_vietnamese` | `text`, `keep?` | Tìm dấu hiệu văn AI và lỗi trình bày, như `lint-vietnamese-content.mjs` |
+| `compare_preserved` | `before`, `after`, `keep?`, `strict_quotes?` | Đối chiếu dữ kiện trước/sau khi sửa, như `compare-preserved-content.mjs` |
+| `check_platform` | `platform`, `text`, `surface?` | Đo bản thảo theo hồ sơ kênh, như `check-platform.mjs` |
+
+Server chỉ cần Node.js, không có phụ thuộc npm. Mỗi trường văn bản tối đa 1 MB. Server hỗ trợ cả client theo spec MCP 2026-07-28 (`server/discover`) lẫn client cũ gửi `initialize`.
+
+**Claude Code cài bằng plugin:** server được khai báo sẵn trong plugin, không cần làm gì thêm. Kiểm tra bằng `claude mcp list`, phải thấy dòng `plugin:viet-pro:viet-pro` ở trạng thái `Connected`.
+
+**Claude Code cài bằng `install.sh`:**
+
+```bash
+claude mcp add --scope user viet-pro -- node ~/.claude/skills/viet-pro/scripts/mcp-server.mjs
+claude mcp list
+```
+
+`--scope user` bật server cho mọi dự án; bỏ tham số này thì server chỉ có trong thư mục hiện tại.
+
+**OpenAI Codex** (skill nằm ở `~/.agents/skills/viet-pro` khi cài bằng `install.sh`):
+
+```bash
+codex mcp add viet-pro -- node ~/.agents/skills/viet-pro/scripts/mcp-server.mjs
+codex mcp list
+```
+
+**Client MCP khác:** khai báo một server stdio với đường dẫn tuyệt đối tới file, ví dụ:
+
+```json
+{
+  "mcpServers": {
+    "viet-pro": {
+      "command": "node",
+      "args": ["/đường/dẫn/tới/viet-pro/scripts/mcp-server.mjs"]
+    }
+  }
+}
+```
+
+Kiểm tra server không cần client:
+
+```bash
+node skills/viet-pro/scripts/mcp-server.mjs --self-test
+```

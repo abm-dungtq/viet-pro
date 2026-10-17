@@ -18,6 +18,7 @@ node "$SCRIPTS/lint-vietnamese-content.mjs" --self-test
 node "$SCRIPTS/compare-preserved-content.mjs" --self-test
 node "$SCRIPTS/test-humanizer-contract.mjs"
 node "$SCRIPTS/check-platform.mjs" --self-test
+node "$SCRIPTS/mcp-server.mjs" --self-test
 
 step "Lint fixture: bản sau khi humanize và tài liệu kỹ thuật không có vi phạm"
 for f in tests/humanizer/facebook-after.md tests/humanizer/technical.md; do

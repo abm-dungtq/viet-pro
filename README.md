@@ -37,6 +37,8 @@ Sau khi cài, **mở một phiên làm việc mới** trong công cụ của b�
 
 Muốn chỉ cài cho một công cụ, cài riêng cho một dự án, hoặc tự kiểm tra checksum? Xem [INSTALL.md](INSTALL.md).
 
+Muốn gọi lint, đối chiếu dữ kiện và kiểm tra theo kênh như tool MCP trong Claude Code, Codex hay client khác? Xem [INSTALL.md mục 6](INSTALL.md#6-công-cụ-kiểm-tra-qua-mcp).
+
 ### Cài dạng plugin Claude Code
 
 Nếu bạn dùng Claude Code, có thể cài Viết Pro như một plugin, không cần lệnh curl:
