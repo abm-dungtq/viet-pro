@@ -180,7 +180,7 @@
     "id": "ai-audit",
     "task": "edit",
     "source_file": "tests/humanizer/facebook-before.md",
-    "prompt": "Audit dấu hiệu AI trong file input.md. Liệt kê pattern tìm thấy, đoạn liên quan, lý do sửa, rồi đưa bản cuối đã sửa.",
+    "prompt": "Audit dấu hiệu AI trong file input.md. Liệt kê pattern tìm thấy, đoạn liên quan, lý do sửa, rồi đưa bản cuối đã sửa. Toàn bộ câu trả lời không quá 600 chữ.",
     "keep": [
       "Minh Châu",
       "18%",
@@ -214,6 +214,58 @@
     ],
     "min_words": 170,
     "max_words": 420
+  },
+  {
+    "id": "threads-post",
+    "task": "edit",
+    "source_file": "tests/humanizer/facebook-before.md",
+    "prompt": "Chuyển bài Facebook trong file input.md thành chuỗi 2-4 bài Threads, các bài ngăn nhau bằng một dòng chỉ có ---. Giữ nguyên tên, số liệu và ngày.",
+    "keep": [
+      "Minh Châu",
+      "18%",
+      "10/09/2026"
+    ],
+    "platform": "threads",
+    "must_not_include": [
+      "Dưới đây là"
+    ],
+    "min_words": 30,
+    "max_words": 260
+  },
+  {
+    "id": "tiktok-caption",
+    "task": "write",
+    "prompt": "Viết caption TikTok cho video giới thiệu bánh bông lan trứng muối của tiệm Bếp Nhà Lan ở Cần Thơ. Giá 45.000đ một hộp 4 cái, giao trong nội thành Cần Thơ. Tối đa 5 hashtag.",
+    "keep": [
+      "Bếp Nhà Lan",
+      "45.000"
+    ],
+    "platform": "tiktok",
+    "must_not_include": [
+      "Dưới đây là"
+    ],
+    "min_words": 15,
+    "max_words": 120
+  },
+  {
+    "id": "youtube-description",
+    "task": "write",
+    "prompt": "Viết tiêu đề và mô tả YouTube cho video 8 phút hướng dẫn chủ shop online tự chụp ảnh sản phẩm bằng điện thoại. Dàn ý: 00:00 mở đầu; 00:40 chọn ánh sáng tự nhiên; 03:10 dựng nền và góc chụp; 06:20 chỉnh ảnh nhanh trên điện thoại. Trình bày thành hai khối có tiêu đề \"## title\" và \"## description\"; mô tả có danh sách chapter.",
+    "keep": [
+      "03:10",
+      "06:20"
+    ],
+    "platform": "youtube",
+    "chapters": true,
+    "must_include": [
+      "## title",
+      "## description"
+    ],
+    "must_not_include": [
+      "Dưới đây là"
+    ],
+    "min_words": 40,
+    "max_words": 320
   },
   {
     "id": "no-change-ho-bieu-chanh",
