@@ -171,8 +171,7 @@ skills/viet-pro/              skill (đây là phần được cài lên máy ng
 │   ├── editorial/            kỹ thuật viết
 │   ├── publishing/           định dạng từng kênh
 │   ├── review/               rà tiếng Việt, dữ kiện, humanize
-│   ├── archive/              mẫu cấu trúc bài
-│   └── development/          nâng cấp chính skill
+│   └── archive/              mẫu cấu trúc bài
 └── scripts/
     ├── lint-vietnamese-content.mjs     kiểm tra lỗi trình bày tiếng Việt
     ├── compare-preserved-content.mjs   so dữ kiện trước/sau khi sửa

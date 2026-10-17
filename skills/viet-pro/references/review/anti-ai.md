@@ -15,6 +15,8 @@ Humanizer là một lớp biên tập giúp văn xuôi rõ, cụ thể và tự 
 3. **Đối chiếu dữ kiện:** so trước/sau với tên, số, ngày, URL, quote (kể cả dấu bao quanh khi phải giữ nguyên), citation, thứ hạng, quan điểm, CTA được yêu cầu và chi tiết xảy ra đồng thời.
 4. **Trả bản cuối:** mặc định chỉ đưa bản đã sửa và cảnh báo dữ kiện cần thiết. Khi người dùng yêu cầu audit, thêm pattern, đoạn liên quan, lý do sửa và nguy cơ mất dữ kiện.
 
+- Khi đoạn văn có nhiều dấu hiệu dịch sát tiếng Anh cùng lúc ("việc/sự", "được… bởi", "thực hiện/tiến hành"…) hoặc người dùng nhờ sửa "văn dịch", đọc [translationese-vi.md](translationese-vi.md). Không áp cho văn bản hành chính.
+
 ## Nguyên tắc chặn sửa quá tay
 
 - Brief và giọng mẫu đứng trên các heuristic phong cách.

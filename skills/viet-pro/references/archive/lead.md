@@ -42,7 +42,7 @@ Khi được gọi:
 ## Khi nào cập nhật
 
 - Chỉ lưu bài mẫu khi người dùng yêu cầu hoặc chấp thuận rõ ràng việc đưa nội dung đó vào skill. Một bài qua review không tự động cấp quyền lưu.
-- development/ phân tích bài viết bên ngoài → lưu pattern mới vào pattern-catalog.md
+- docs/development/ (repo nguồn) phân tích bài viết bên ngoài → lưu pattern mới vào pattern-catalog.md
 
 ## Cam kết hoàn thành
 
