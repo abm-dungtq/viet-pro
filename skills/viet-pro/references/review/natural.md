@@ -36,7 +36,7 @@ Không dùng cùng một kiểu nối quá 2-3 lần liên tiếp. Luân phiên:
 
 ## 3. Độ dài đoạn văn tự nhiên
 
-Mỗi đoạn từ 1 đến 6 câu, xen kẽ ngẫu nhiên. Tuyệt đối tránh tất cả đoạn cùng độ dài.
+Mỗi đoạn từ 1 đến 6 câu, xen kẽ ngẫu nhiên. Độ dài đoạn đều nhau không phải dấu hiệu AI đáng tin; chỉ sửa khi nhịp đọc thật sự đơn điệu.
 
 ---
 
