@@ -1,3 +1,7 @@
+---
+last_verified: 2026-10-16
+review_by: 2027-01-16
+---
 # Instagram — Format Hiển Thị
 
 **Nhân viên:** instagram.md — Ban Xuất bản (publishing/)
@@ -26,7 +30,7 @@
 
 [CTA — comment/share/save; "save lại để đọc sau" hợp kênh này]
 
-[Hashtag khối cuối: 5-15 tag — trộn tag lớn + tag ngách tiếng Việt]
+[Hashtag cuối caption: tối đa 5 tag, ưu tiên tag đúng chủ đề để tìm kiếm; hashtag không tự tăng tiếp cận]
 ```
 
 ## 2. Carousel (khi user chỉ định)
@@ -57,5 +61,5 @@ Kèm caption ngắn 300-500 ký tự tóm hook + CTA (dùng mục 1 rút gọn).
 - [ ] Caption ≤2.200 ký tự; slide ≤30 từ
 - [ ] Insight chốt tách riêng
 - [ ] CTA phù hợp kênh (save/share/comment)
-- [ ] 5-15 hashtag khối cuối (caption)
+- [ ] Tối đa 5 hashtag (giới hạn của Instagram từ 12/2025)
 - [ ] Copy-paste đăng được ngay

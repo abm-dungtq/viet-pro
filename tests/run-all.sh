@@ -38,6 +38,11 @@ node "$SCRIPTS/compare-preserved-content.mjs" tests/humanizer/facebook-before.md
 step "Tham chiếu trong skill"
 node tests/check-skill-refs.mjs
 
+step "Hạn rà soát dữ kiện nền tảng"
+node tests/check-freshness.mjs
+if node tests/check-freshness.mjs --today 2099-01-01 >/dev/null 2>&1; then echo "FAIL: check-freshness không báo hết hạn" >&2; exit 1; fi
+node "$SCRIPTS/check-x-length.mjs" --self-test
+
 step "Manifest checksum của skill"
 sha256_check SKILL_SHA256SUMS
 listed="$(awk '{print $2}' SKILL_SHA256SUMS | LC_ALL=C sort)"
@@ -50,6 +55,18 @@ skill_version="$(sed -n 's/^  version: "\(.*\)"$/\1/p' skills/viet-pro/SKILL.md)
 installer_ref="$(sed -n 's/^DEFAULT_REF="\(.*\)"$/\1/p' install.sh)"
 if [ "v$skill_version" != "$installer_ref" ]; then echo "FAIL: SKILL.md $skill_version khác DEFAULT_REF $installer_ref" >&2; exit 1; fi
 echo "OK: v$skill_version"
+
+step "Phiên bản plugin đồng bộ với SKILL.md"
+# shellcheck disable=SC2016
+if ! node -e 'const [p, m, v] = process.argv.slice(1); process.exit(require(p).version === v && require(m).plugins[0].version === v ? 0 : 1)' "$ROOT/.claude-plugin/plugin.json" "$ROOT/.claude-plugin/marketplace.json" "$skill_version"; then
+  echo "FAIL: .claude-plugin/plugin.json hoặc marketplace.json không ghi version $skill_version" >&2; exit 1
+fi
+if command -v claude >/dev/null 2>&1; then
+  if ! claude plugin validate --strict .claude-plugin/plugin.json >/dev/null || ! claude plugin validate --strict . >/dev/null; then echo "FAIL: manifest plugin không hợp lệ" >&2; exit 1; fi
+  echo "OK: manifest plugin hợp lệ"
+else
+  echo "SKIP: không có claude CLI để validate manifest"
+fi
 
 step "Kiểm thử installer"
 bash tests/install/test-install.sh .

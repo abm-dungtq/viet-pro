@@ -1,6 +1,6 @@
 # Third-party notices
 
-Viết Pro 5.2.0 includes an adapted Vietnamese reference based on Humanizer 3.0.0.
+Viết Pro 5.4.0 includes an adapted Vietnamese reference based on Humanizer 3.1.0.
 
 ## Humanizer
 

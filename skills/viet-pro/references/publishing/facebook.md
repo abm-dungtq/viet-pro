@@ -1,3 +1,7 @@
+---
+last_verified: 2026-10-16
+review_by: 2027-01-16
+---
 # Facebook — Format Hiển Thị
 
 **Nhân viên:** facebook.md — Ban Xuất bản (publishing/)
@@ -70,14 +74,14 @@ Không có phần "Tham khảo" cuối bài. Nếu có nguồn, ghi trong commen
 
 ## 2. FB Page / Group
 
-Dùng khi user chỉ định rõ đăng page hoặc group. Bài cho page/group giữ nguyên format markdown gốc:
+Dùng khi user chỉ định rõ đăng page hoặc group. Bài đăng Facebook, kể cả page và group, không hiển thị cú pháp markdown: `#`, `**`, `*` sẽ hiện nguyên ký tự.
 
-- Giữ nguyên heading `#`, `##`
-- Giữ nguyên bold `**`, italic `*`
-- Giữ nguyên cấu trúc sections
+- Không dùng `#` hay `**`; tạo tiêu đề phụ bằng một dòng ngắn đứng riêng, có thể IN HOA vừa phải
+- Tách ý bằng dòng trống; danh sách dùng xuống dòng và ký hiệu đơn giản như `•` hoặc số `1.`
+- Bài dài cho group: giữ cấu trúc sections bằng dòng tiêu đề phụ và dòng trống
 - Thêm phần tham khảo cuối bài nếu có nguồn
 
-Page/group hỗ trợ rich text nên không cần chuyển đổi format.
+Quy tắc này dựa trên hành vi hiển thị chung của Facebook và chưa được thử bằng bài nháp thật. Nếu người dùng xác nhận trình soạn thảo của họ hỗ trợ định dạng, làm theo người dùng.
 
 **Lưu ý:** Tất cả file output đều lưu đuôi `.md` (kể cả FB cá nhân). Không dùng `.txt`.
 
@@ -97,7 +101,7 @@ Page/group hỗ trợ rich text nên không cần chuyển đổi format.
 
 ## Checklist — FB Page/Group
 
-- [ ] Giữ nguyên markdown gốc
+- [ ] Không còn ký tự markdown (#, **, *)
 - [ ] Có phần tham khảo cuối bài
 
 ---

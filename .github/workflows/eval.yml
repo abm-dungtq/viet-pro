@@ -33,7 +33,7 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.key.outputs.present == 'true'
         with:
-          node-version: 20
+          node-version: 22
       - name: Install Claude Code
         if: steps.key.outputs.present == 'true'
         run: npm install -g @anthropic-ai/claude-code

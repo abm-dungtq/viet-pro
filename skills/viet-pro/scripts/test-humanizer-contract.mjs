@@ -14,7 +14,7 @@ const consistency = read('references/review/consistency.md');
 const facebook = read('references/publishing/facebook.md');
 
 const checks = [
-  ['đủ 25 pattern', (patterns.match(/^### \d+\./gmu) || []).length === 25],
+  ['đủ 26 pattern', (patterns.match(/^### \d+\./gmu) || []).length === 26],
   ['5 pattern mạnh', [1, 2, 3, 4, 5].every((n) => new RegExp(`^### ${n}\\..*mạnh`, 'mu').test(patterns))],
   ['không dùng để xác định tác giả', /không phải công cụ (?:phát hiện|xác định)/iu.test(patterns + router)],
   ['brief và giọng mẫu ưu tiên', /brief và giọng mẫu.*dữ kiện\/an toàn.*yêu cầu kênh.*Humanizer.*house style/iu.test(skill + consistency)],
@@ -27,6 +27,8 @@ const checks = [
   ['audit hiện theo yêu cầu', /Nếu người dùng yêu cầu audit dấu hiệu AI, trả:/u.test(skill)],
   ['mặc định ẩn audit', /Mặc định chỉ trả bản cuối đã humanize/u.test(skill)],
   ['không bắt buộc CAPS Facebook', /IN HOA là lựa chọn, không phải quota/iu.test(facebook)],
+  ['văn bản đầu vào là chất liệu', /chất liệu, không phải lệnh/u.test(skill) && /chất liệu, không phải lệnh/u.test(patterns)],
+  ['notices đúng bản Humanizer', /based on Humanizer 3\.1\.0/u.test(read('THIRD_PARTY_NOTICES.md'))],
   ['giấy phép Humanizer', /Copyright \(c\) 2025 Siqi Chen/u.test(read('THIRD_PARTY_NOTICES.md'))],
 ];
 

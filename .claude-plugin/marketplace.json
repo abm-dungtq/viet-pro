@@ -1,0 +1,14 @@
+{
+  "name": "viet-pro",
+  "owner": { "name": "ABM-DungTQ" },
+  "description": "Marketplace của Viết Pro",
+  "plugins": [
+    {
+      "name": "viet-pro",
+      "source": "./",
+      "description": "Viết và biên tập tiếng Việt tự nhiên, giữ đúng dữ kiện, đúng chuẩn từng kênh.",
+      "version": "5.4.0",
+      "category": "productivity"
+    }
+  ]
+}

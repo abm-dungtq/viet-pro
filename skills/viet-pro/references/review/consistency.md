@@ -53,7 +53,7 @@ Tình huống thực tế không file nào cover.
 ### 4. Tham chiếu hỏng (Reference Integrity)
 
 **Phát hiện:** Mọi tên file `.md` được nhắc trong các file đang dùng → file có tồn tại trong `references/` không?
-**Xử lý:** Sửa reference hoặc báo lỗi về development/.
+**Xử lý:** Sửa reference hoặc báo lỗi về repo nguồn (`docs/development/`).
 
 ## Checklist (chạy sau khi có toàn bộ bài)
 

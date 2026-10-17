@@ -1,3 +1,7 @@
+---
+last_verified: 2026-10-16
+review_by: 2027-01-16
+---
 # Video Script — TikTok/Reels/Shorts + YouTube
 
 **Nhân viên:** video-script.md — Ban Xuất bản (publishing/)

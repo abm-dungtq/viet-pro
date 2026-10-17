@@ -20,7 +20,7 @@
 | blog-seo | 100% draft + SEO | H1 chứa keyword, mở bài trả lời search intent | tôi/chúng ta, chững chạc | Không cắt — thêm meta, heading, TL;DR | Toàn bộ chiều sâu |
 | newsletter | 50-70% draft | Subject ≤50 ký tự + câu mở cá nhân | thân mật, như thư riêng | Nhánh phụ, ví dụ thứ 2+ | 1 insight + 1 CTA duy nhất |
 | linkedin | 1.300-3.000 ký tự | Dòng 1 đứng riêng, gây tò mò trước "see more" | mình/tôi professional | Chi tiết nền, giữ 2-3 luận điểm mạnh nhất | Insight + 1 ví dụ đắt nhất + số liệu chủ lực |
-| x-thread | 5-12 tweet | Tweet 1 tự đứng được (≤280 ký tự) | gọn, trực diện | Mọi câu chuyển tiếp; 1 ý = 1 tweet | Insight, số liệu, kết luận hoặc CTA được yêu cầu |
+| x-thread | 5-12 tweet | Tweet 1 tự đứng được (≤280, đếm có trọng số) | gọn, trực diện | Mọi câu chuyển tiếp; 1 ý = 1 tweet | Insight, số liệu, kết luận hoặc CTA được yêu cầu |
 | instagram | Caption ≤2.200 ký tự / carousel 6-10 slide | 125 ký tự đầu trước fold | gần gũi, cảm xúc | Lập luận dài — chỉ giữ kết luận từng bước | Insight dạng khẳng định ngắn + số liệu sốc |
 | zalo | 300-800 ký tự | Tiêu đề ≤100 ký tự, lợi ích trực tiếp | gần gũi, tôn trọng (theo tệp khách) | Gần hết — chỉ thông điệp chính | 1 thông điệp + 1 CTA |
 | video-script (ngắn) | 15-90 giây (~40-230 từ nói) | 3 giây đầu — dữ kiện/câu hỏi vào thẳng ý | văn nói, ngôi mình/bạn | Mọi thứ trừ 1 insight + 1-2 dẫn chứng | Insight + số liệu chính + CTA nếu brief yêu cầu |

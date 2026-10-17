@@ -1,3 +1,7 @@
+---
+last_verified: 2026-10-16
+review_by: 2027-01-16
+---
 # Blog SEO — Format Hiển Thị
 
 **Nhân viên:** blog-seo.md — Ban Xuất bản (publishing/)
