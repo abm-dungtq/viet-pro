@@ -11,7 +11,7 @@ limits:
   - { surface: post, field: max_chars, value: 500, confidence: O, source: threads-api-posts }
   - { surface: post, field: max_topic_tags, value: 1, confidence: O, source: threads-api-posts }
   - { surface: post, field: max_links, value: 5, confidence: O, source: threads-api-posts }
-  - { surface: attachment, field: max_chars, value: 10000, confidence: O, source: meta-text-attachment }
+  - { surface: attachment, field: max_chars, value: 10000, scope: whole, confidence: E, source: meta-text-attachment }
 sources:
   - { id: threads-api-posts, url: "https://developers.facebook.com/documentation/threads/posts", accessed: 2026-10-16 }
   - { id: meta-text-attachment, url: "https://about.fb.com/news/2025/09/attach-text-threads-posts-share-longer-perspectives/", accessed: 2026-10-16 }

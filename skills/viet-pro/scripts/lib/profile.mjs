@@ -15,6 +15,7 @@ export const FIELDS = ['max_chars', 'max_title_chars', 'max_description_chars', 
   'max_hashtags', 'max_topic_tags', 'max_links', 'fold_chars', 'max_duration_s'];
 export const CONFIDENCE = ['O', 'E', 'S', 'F'];
 export const DRAFT_FIELDS = ['title', 'description', 'caption', 'body'];
+const LIMIT_KEYS = ['surface', 'field', 'value', 'confidence', 'source', 'count', 'scope', 'note'];
 const TOP_KEYS = ['schema', 'id', 'name', 'tier', 'counting', 'segments', 'last_verified', 'review_by', 'limits', 'sources'];
 const NOT_PROFILES = new Set(['lead.md', 'repurpose-matrix.md']);
 const DATE = /^\d{4}-\d{2}-\d{2}$/u;
@@ -26,7 +27,7 @@ function scalar(raw, lineNo) {
     return v.slice(1, -1).replace(/\\(.)/gu, '$1');
   }
   if (/^-?\d+$/u.test(v)) return Number(v);
-  if (/^[[{|>&*!#]/u.test(v)) throw new Error(`dòng ${lineNo}: giá trị ngoài tập con YAML được hỗ trợ: ${v}`);
+  if (/^[[{|>&*!#']/u.test(v) || /\s#|:\s/u.test(v)) throw new Error(`dòng ${lineNo}: giá trị ngoài tập con YAML được hỗ trợ: ${v}`);
   return v;
 }
 
@@ -49,7 +50,7 @@ function flowMap(raw, lineNo) {
   for (const part of parts) {
     const m = part.match(/^\s*([a-z_]+):\s*(.+?)\s*$/u);
     if (!m) throw new Error(`dòng ${lineNo}: cặp khóa-giá trị không hợp lệ: ${part.trim()}`);
-    if (m[1] in map) throw new Error(`dòng ${lineNo}: khóa lặp: ${m[1]}`);
+    if (Object.hasOwn(map, m[1])) throw new Error(`dòng ${lineNo}: khóa lặp: ${m[1]}`);
     map[m[1]] = scalar(m[2], lineNo);
   }
   return map;
@@ -65,6 +66,7 @@ export function parseProfile(text) {
   const meta = {};
   const lists = { limits: [], sources: [] };
   let list = null;
+  const seenLists = new Set();
   lines.forEach((line, idx) => {
     const lineNo = idx + 2;
     if (!line.trim()) return;
@@ -77,9 +79,10 @@ export function parseProfile(text) {
     const kv = line.match(/^([a-z_]+):(?:\s+(.*))?$/u);
     if (!kv) throw new Error(`dòng ${lineNo}: dòng ngoài tập con YAML được hỗ trợ: ${line}`);
     const [, key, value = ''] = kv;
-    if (key in meta || (key in lists && list === key)) throw new Error(`dòng ${lineNo}: khóa lặp: ${key}`);
-    if (key in lists) {
+    if (Object.hasOwn(meta, key) || seenLists.has(key)) throw new Error(`dòng ${lineNo}: khóa lặp: ${key}`);
+    if (Object.hasOwn(lists, key)) {
       if (value && value.trim() !== '[]') throw new Error(`dòng ${lineNo}: ${key} phải là danh sách`);
+      seenLists.add(key);
       list = key;
       return;
     }
@@ -117,13 +120,15 @@ export function validateProfile(p, fileId) {
     if (!CONFIDENCE.includes(l.confidence)) errors.push(`${at}: confidence phải thuộc O/E/S/F`);
     if (!ids.has(l.source)) errors.push(`${at}: source "${l.source}" chưa khai báo trong sources`);
     if (l.count !== undefined && !METHODS.includes(l.count)) errors.push(`${at}: count "${l.count}" không hợp lệ`);
+    if (l.scope !== undefined && l.scope !== 'whole') errors.push(`${at}: scope chỉ nhận "whole"`);
+    for (const k of Object.keys(l)) if (!LIMIT_KEYS.includes(k)) errors.push(`${at}: khóa lạ: ${k}`);
   });
   return errors;
 }
 
 const segmenter = new Intl.Segmenter('vi', { granularity: 'grapheme' });
 const graphemes = (s) => [...segmenter.segment(s)].map((g) => g.segment);
-const isEmoji = (g) => /\p{Extended_Pictographic}/u.test(g) || g.includes('⃣');
+const isEmoji = (g) => /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(g) || g.includes('\u20E3');
 
 export function countText(text, method) {
   const s = text.normalize('NFC');
@@ -143,17 +148,22 @@ const LINK = /https?:\/\/[^\s)>\]]+/gu;
 
 // Draft fields come from `## title`, `## description`, `## caption`, `## body` headings;
 // a draft without those headings is a single `body` field.
-// A leading `---` block is dropped only when every line in it is a YAML key, since an X thread may
-// itself start with a `---` separator.
+// A leading `---` block is dropped only when every line in it is a common frontmatter key: a thread
+// may itself start with a `---` separator, and its first post may look like `Lưu ý: ...`.
+// Headings inside ``` fences are ignored.
+const FRONTMATTER_KEYS = new Set(['title', 'description', 'platform', 'surface', 'channel', 'slug', 'date',
+  'tags', 'author', 'lang', 'language', 'keywords', 'canonical', 'summary', 'draft', 'layout', 'category', 'categories', 'image']);
 export function splitDraft(text) {
   let src = text.replace(/\r\n/gu, '\n').normalize('NFC');
   const lines = src.split('\n');
   if (lines[0]?.trim() === '---') {
     const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
-    if (end > 1 && lines.slice(1, end).every((l) => !l.trim() || /^[\w-]+:(?:\s|$)/u.test(l))) src = lines.slice(end + 1).join('\n');
+    const isKey = (l) => FRONTMATTER_KEYS.has(l.match(/^([a-z_]+):(?:\s|$)/u)?.[1]);
+    if (end > 1 && lines.slice(1, end).every((l) => !l.trim() || isKey(l))) src = lines.slice(end + 1).join('\n');
   }
+  const fences = [...src.matchAll(/^```[^\n]*\n[\s\S]*?^```[ \t]*$/gmu)].map((m) => [m.index, m.index + m[0].length]);
   const heading = new RegExp(`^##[ \\t]+(${DRAFT_FIELDS.join('|')})[ \\t]*$`, 'gimu');
-  const marks = [...src.matchAll(heading)];
+  const marks = [...src.matchAll(heading)].filter((m) => !fences.some(([a, b]) => m.index > a && m.index < b));
   if (!marks.length) return { body: src.trim() };
   const fields = {};
   marks.forEach((m, i) => {
@@ -169,13 +179,16 @@ export function surfacesOf(profile) {
 }
 
 // Returns { surface, findings: [{ level, field, detail }], measured: [{ field, value, limit }] }.
-// Limits with confidence F only ever produce WARN. fold_chars only warns; max_duration_s is skipped.
+// Limits with confidence F only ever produce WARN, and so do fold_chars and max_topic_tags (Threads
+// keeps the first topic tag rather than rejecting the post). max_duration_s is skipped.
+// A limit with `scope: whole` measures the whole text even when the profile splits posts by `---`.
 export function checkDraft(profile, fields, { surface } = {}) {
   const surfaces = surfacesOf(profile);
   const chosen = surface || surfaces[0];
   if (surface && !surfaces.includes(surface)) throw new Error(`surface "${surface}" không có; chọn: ${surfaces.join(', ') || '(không có)'}`);
   const findings = [];
   const measured = [];
+  const missing = new Set();
   const all = Object.values(fields).join('\n');
   const mainText = fields.body ?? fields.caption ?? '';
   const segments = profile.meta.segments === '---'
@@ -189,7 +202,8 @@ export function checkDraft(profile, fields, { surface } = {}) {
     fold_chars: mainText,
   };
   for (const l of profile.limits.filter((x) => x.surface === chosen)) {
-    const level = l.confidence === 'F' || l.field === 'fold_chars' ? 'WARN' : 'ERROR';
+    const level = l.confidence === 'F' || l.field === 'fold_chars' || l.field === 'max_topic_tags' ? 'WARN' : 'ERROR';
+    const segs = l.scope === 'whole' ? null : segments;
     const method = l.count || profile.meta.counting;
     const report = (value, label = l.field) => {
       measured.push({ field: label, value, limit: l.value });
@@ -204,17 +218,32 @@ export function checkDraft(profile, fields, { surface } = {}) {
     const counter = { max_hashtags: HASHTAG, max_topic_tags: HASHTAG, max_links: LINK }[l.field];
     if (counter) {
       // In a series of posts, tag and link limits apply to each post.
-      if (segments) segments.forEach((seg, i) => report((seg.match(counter) || []).length, `${l.field} đoạn ${i + 1}`));
+      if (segs) segs.forEach((seg, i) => report((seg.match(counter) || []).length, `${l.field} đoạn ${i + 1}`));
       else report((all.match(counter) || []).length);
       continue;
     }
     const text = target[l.field];
-    if (text === undefined) continue;
-    if (l.field === 'max_chars' && segments) {
-      segments.forEach((seg, i) => report(countText(seg, method), `max_chars đoạn ${i + 1}`));
+    if (text === undefined || (text === '' && l.field === 'max_chars')) {
+      const want = { max_title_chars: 'title', max_description_chars: 'description' }[l.field] || 'body';
+      if (!missing.has(want)) findings.push({ level: 'WARN', field: l.field, detail: `bản thảo thiếu khối "## ${want}", chưa đo được` });
+      missing.add(want);
+      continue;
+    }
+    // A title is one line; several lines under `## title` are alternatives (e.g. 3 subject lines).
+    const titles = l.field === 'max_title_chars' ? text.split('\n').map((t) => t.trim()).filter(Boolean) : [];
+    if (titles.length > 1) {
+      titles.forEach((t, i) => report(countText(t, method), `max_title_chars phương án ${i + 1}`));
+      continue;
+    }
+    if (l.field === 'max_chars' && segs) {
+      segs.forEach((seg, i) => report(countText(seg, method), `max_chars đoạn ${i + 1}`));
       continue;
     }
     report(countText(text, method));
+  }
+  const titleLines = (fields.title || '').split('\n').filter((t) => t.trim());
+  if (fields.body === undefined && fields.description === undefined && (titleLines.length > 3 || titleLines.some((t) => t.length > 150))) {
+    findings.push({ level: 'WARN', field: 'title', detail: 'khối "## title" có đoạn dài; có thể thiếu "## body" hoặc "## description" ở sau tiêu đề' });
   }
   return { surface: chosen, findings, measured };
 }

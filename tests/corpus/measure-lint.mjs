@@ -5,7 +5,7 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { lintText } from '../../skills/viet-pro/scripts/lib/lint.mjs';
+import { lintText, stripFrontmatter } from '../../skills/viet-pro/scripts/lib/lint.mjs';
 
 // Source lists and notes kept next to the texts are not part of the corpus.
 const META = new Set(['SOURCES.md', 'README.md']);
@@ -25,8 +25,7 @@ function measure(path) {
   let words = 0;
   for (const f of files) {
     const text = readFileSync(f, 'utf8');
-    const body = text.startsWith('---\n') && text.indexOf('\n---', 4) > 0 ? text.slice(text.indexOf('\n---', 4) + 4) : text;
-    words += (body.match(/[\p{L}\p{N}]+/gu) || []).length;
+    words += (stripFrontmatter(text).match(/[\p{L}\p{N}]+/gu) || []).length;
     for (const { id } of lintText(text)) hits[id] = (hits[id] || 0) + 1;
   }
   return { files: files.length, words, hits };

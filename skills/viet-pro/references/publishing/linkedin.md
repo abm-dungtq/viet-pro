@@ -9,7 +9,6 @@ review_by: 2027-01-16
 limits:
   - { surface: post, field: max_chars, value: 3000, confidence: F, source: authoredup-li, note: "trang help chính thức a528176 ghi 3.000 nhưng chưa tải được để kiểm" }
   - { surface: post, field: fold_chars, value: 140, confidence: F, source: authoredup-li, note: "điện thoại; máy tính khoảng 210" }
-  - { surface: article, field: max_title_chars, value: 100, confidence: F, source: authoredup-li }
 sources:
   - { id: authoredup-li, url: "https://authoredup.com/blog/linkedin-character-limit", accessed: 2026-10-17 }
   - { id: ppc-land-li-feed, url: "https://ppc.land/linkedin-rebuilds-its-feed-from-scratch-with-llms-and-gpu-powered-ranking/", accessed: 2026-10-16 }

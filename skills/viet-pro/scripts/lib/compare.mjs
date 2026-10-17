@@ -18,10 +18,21 @@ const normalizeQuotes = (s) => s.replace(/[“”„]/gu, '"').replace(/[‘’]
 
 // Occurrences of a --keep string not glued to a letter or digit, so "An" does not match inside "Anh".
 // A bare number such as "3" still matches inside "3.000", because "." is neither.
+// An item may not continue a word or number of the same kind: "An" does not match inside "Anh",
+// "45.000" does not match inside "45.0001" or "145.000", but does match "45.000đ".
+function edgeGuard(ch, side) {
+  if (/\p{N}/u.test(ch)) return side === 'before' ? '(?<!\\p{N}[.,]?)' : '(?![.,]?\\p{N})';
+  if (/\p{L}/u.test(ch)) return side === 'before' ? '(?<![\\p{L}\\p{M}\\p{N}])' : '(?![\\p{L}\\p{M}\\p{N}])';
+  return '';
+}
+
 function countWhole(text, item) {
-  if (!item) return 0;
-  const escaped = item.normalize('NFC').replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
-  return [...text.normalize('NFC').matchAll(new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'gu'))].length;
+  const norm = item.normalize('NFC');
+  if (!norm) return 0;
+  const escaped = norm.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const chars = [...norm];
+  const re = new RegExp(`${edgeGuard(chars[0], 'before')}${escaped}${edgeGuard(chars.at(-1), 'after')}`, 'gu');
+  return [...text.normalize('NFC').matchAll(re)].length;
 }
 
 function collect(text, keep = [], { strictQuotes = false } = {}) {

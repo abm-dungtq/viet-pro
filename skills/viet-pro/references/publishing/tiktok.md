@@ -7,14 +7,15 @@ counting: graphemes
 last_verified: 2026-10-16
 review_by: 2027-01-16
 limits:
-  - { surface: video, field: max_hashtags, value: 5, confidence: S, source: mediapost-hashtag-limit }
+  - { surface: video, field: max_hashtags, value: 5, confidence: F, source: mediapost-hashtag-limit }
   - { surface: api, field: max_caption_chars, value: 2200, count: utf16, confidence: O, source: tiktok-api-direct-post }
-  - { surface: api, field: max_hashtags, value: 5, confidence: S, source: mediapost-hashtag-limit }
-  - { surface: photo, field: max_title_chars, value: 90, confidence: S, source: tiktok-api-direct-post }
-  - { surface: photo, field: max_description_chars, value: 4000, confidence: S, source: tiktok-api-direct-post }
-  - { surface: photo, field: max_hashtags, value: 5, confidence: S, source: mediapost-hashtag-limit }
+  - { surface: api, field: max_hashtags, value: 5, confidence: F, source: mediapost-hashtag-limit }
+  - { surface: photo, field: max_title_chars, value: 90, count: utf16, confidence: O, source: tiktok-api-photo-post }
+  - { surface: photo, field: max_description_chars, value: 4000, count: utf16, confidence: O, source: tiktok-api-photo-post }
+  - { surface: photo, field: max_hashtags, value: 5, confidence: F, source: mediapost-hashtag-limit }
 sources:
   - { id: tiktok-api-direct-post, url: "https://developers.tiktok.com/doc/content-posting-api-reference-direct-post", accessed: 2026-10-16 }
+  - { id: tiktok-api-photo-post, url: "https://developers.tiktok.com/doc/content-posting-api-reference-photo-post", accessed: 2026-10-17 }
   - { id: mediapost-hashtag-limit, url: "https://www.mediapost.com/publications/article/408371/tiktok-limits-hashtags-as-algorithms-become-more-s.html", accessed: 2026-10-16 }
   - { id: tiktok-fyf-standards, url: "https://www.tiktok.com/community-guidelines/en/fyf-standards", accessed: 2026-10-16 }
   - { id: tiktok-recommends, url: "https://newsroom.tiktok.com/en-us/how-tiktok-recommends-videos-for-you", accessed: 2026-10-16 }
@@ -27,8 +28,8 @@ sources:
 ## Giới hạn
 
 - Caption đăng qua API tối đa 2.200 đơn vị UTF-16. Các tool nói caption trong app được tới 4.000 ký tự, nhưng chưa có nguồn kiểm chứng được, nên công cụ chỉ kiểm hashtag khi đăng trong app. Giữ caption ngắn: người xem đọc 1-2 dòng đầu. Kiểm bằng `node <thư-mục-skill>/scripts/check-platform.mjs tiktok <file>`, thêm `--surface api` khi đăng qua công cụ lên lịch.
-- Tối đa 5 hashtag mỗi bài. App có cảnh báo "Maximum 5 hashtags", nhưng TikTok chưa ra thông báo chính thức.
-- Bài ảnh (photo post): tiêu đề 90 ký tự, mô tả 4.000 ký tự (`--surface photo`).
+- Tối đa 5 hashtag mỗi bài. App có cảnh báo "Maximum 5 hashtags", nhưng TikTok chưa ra thông báo chính thức, nên công cụ chỉ cảnh báo (WARN) khi vượt.
+- Bài ảnh (photo post) đăng qua API: tiêu đề 90, mô tả 4.000 đơn vị UTF-16 (`--surface photo`).
 
 ## Tìm kiếm trên TikTok
 

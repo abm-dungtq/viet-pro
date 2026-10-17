@@ -64,15 +64,18 @@ Mỗi phần tử trong `limits` có các khóa sau:
 - `confidence`: độ tin cậy, xem mục riêng bên dưới.
 - `source`: id của một nguồn trong `sources`.
 - `count` (không bắt buộc): ghi đè `counting` cho riêng giới hạn này.
+- `scope` (không bắt buộc): chỉ nhận `whole`, nghĩa là đo cả bài dù hồ sơ có `segments`. Ví dụ text attachment của Threads là một khối liền.
 - `note` (không bắt buộc): ghi chú cho người đọc.
+
+Giá trị chuỗi trần không được chứa ` #` hay `: `, và không mở đầu bằng `'`; khi cần thì đặt trong ngoặc kép.
 
 | `field` | Đo trên | Ghi chú |
 |---|---|---|
 | `max_chars` | `body`, hoặc `caption` nếu không có body | Tách theo đoạn khi có `segments` |
 | `max_caption_chars` | `caption`, hoặc `body` | |
-| `max_title_chars` | `title` | |
+| `max_title_chars` | `title` | Nhiều dòng dưới `## title` là các phương án, đo từng dòng |
 | `max_description_chars` | `description` | |
-| `max_hashtags`, `max_topic_tags` | toàn bài, hoặc từng đoạn khi có `segments` | Hashtag phải có ít nhất một chữ cái, nên `#1` không bị tính |
+| `max_hashtags`, `max_topic_tags` | toàn bài, hoặc từng đoạn khi có `segments` | Hashtag phải có ít nhất một chữ cái, nên `#1` không bị tính. `max_topic_tags` luôn chỉ WARN, vì Threads giữ tag đầu chứ không từ chối bài |
 | `max_links` | toàn bài, hoặc từng đoạn khi có `segments` | Chỉ đếm URL có `http://` hoặc `https://` |
 | `fold_chars` | `body` hoặc `caption` | Luôn chỉ WARN: nhắc đặt ý chính trước điểm "Xem thêm" |
 | `max_duration_s` | không đo | Chỉ kiểm ở `--validate`, vì không đo được thời lượng từ văn bản |
@@ -86,9 +89,13 @@ Mọi cách đếm đều chuẩn hóa NFC trước.
 | `graphemes` | Ký tự người đọc thấy (`Intl.Segmenter`) |
 | `utf16` | Đơn vị UTF-16 |
 | `utf8_bytes` | Byte UTF-8 |
-| `utf8_bytes_emoji` | Grapheme thường tính 1; grapheme emoji (`\p{Extended_Pictographic}` hoặc keycap) tính bằng số byte UTF-8 của nó. Đây là cách Threads đếm |
+| `utf8_bytes_emoji` | Grapheme thường tính 1; grapheme emoji (`\p{Extended_Pictographic}`, cờ quốc gia hoặc keycap) tính bằng số byte UTF-8 của nó. Đây là cách Threads đếm |
 | `x_weighted` | Cách đếm có trọng số của X (`lib/x-weighted.mjs`) |
 | `words` | Từ, tức các cụm chữ và số liền nhau |
+
+## Bản thảo
+
+Bản thảo chia trường bằng heading `## title`, `## description`, `## caption`, `## body`; không có heading nào thì cả bài là `body`. Heading trong khối ``` bị bỏ qua. Khối `---` ở đầu chỉ bị coi là frontmatter khi mọi dòng là khóa quen thuộc (`title:`, `description:`, `tags:`...), để bài đầu của một thread dạng `Lưu ý: ...` không bị mất. Khi hồ sơ có giới hạn cho một trường mà bản thảo thiếu khối đó, công cụ báo WARN thay vì bỏ qua im lặng.
 
 ## Độ tin cậy
 

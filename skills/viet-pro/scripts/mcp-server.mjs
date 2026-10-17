@@ -24,6 +24,8 @@ const SUPPORTED_VERSIONS = [...MODERN_VERSIONS, ...LEGACY_VERSIONS].sort().rever
 const LEGACY_DEFAULT = '2025-11-25';
 const VERSION_KEY = 'io.modelcontextprotocol/protocolVersion';
 const MAX_TEXT_BYTES = 1024 * 1024;
+const MAX_KEEP_ITEMS = 200;
+const MAX_KEEP_CHARS = 200;
 // Modern clients require caching hints on server/discover and tools/list; the tool list is fixed per release.
 const CACHE_HINTS = { ttlMs: 3600000, cacheScope: 'public' };
 const PLATFORM_ID = /^[a-z0-9-]+$/u;
@@ -45,7 +47,8 @@ const SERVER_INFO = { name: 'viet-pro', version: readVersion() };
 
 const KEEP_SCHEMA = {
   type: 'array',
-  items: { type: 'string' },
+  items: { type: 'string', maxLength: 200 },
+  maxItems: 200,
   description: 'Tên riêng, thương hiệu, thuật ngữ phải giữ nguyên (khớp nguyên từ).',
 };
 const TOOLS = [
@@ -112,7 +115,8 @@ function text(args, key, { optional = false } = {}) {
 function keepList(args) {
   if (args.keep === undefined) return [];
   if (!Array.isArray(args.keep) || !args.keep.every((k) => typeof k === 'string')) throw new InputError('"keep" phải là mảng chuỗi');
-  if (Buffer.byteLength(args.keep.join(''), 'utf8') > MAX_TEXT_BYTES) throw new InputError('"keep" vượt 1 MB');
+  if (args.keep.length > MAX_KEEP_ITEMS) throw new InputError(`"keep" tối đa ${MAX_KEEP_ITEMS} mục`);
+  if (args.keep.some((k) => k.length > MAX_KEEP_CHARS)) throw new InputError(`mỗi mục "keep" tối đa ${MAX_KEEP_CHARS} ký tự`);
   return args.keep;
 }
 
@@ -275,6 +279,7 @@ async function selfTest() {
     { jsonrpc: '2.0', id: 'compare', method: 'tools/call', params: { ...meta, name: 'compare_preserved', arguments: { before: 'Doanh thu tăng 20% năm 2025.', after: 'Doanh thu giảm 20% năm 2025.' } } },
     { jsonrpc: '2.0', id: 'platform', method: 'tools/call', params: { name: 'check_platform', arguments: { platform: 'facebook', text: 'Bài đăng ngắn.' } } },
     { jsonrpc: '2.0', id: 'traversal', method: 'tools/call', params: { name: 'check_platform', arguments: { platform: '../SKILL', text: 'x' } } },
+    { jsonrpc: '2.0', id: 'keep-many', method: 'tools/call', params: { name: 'lint_vietnamese', arguments: { text: 'Chào.', keep: Array(MAX_KEEP_ITEMS + 1).fill('a') } } },
     { jsonrpc: '2.0', id: 'too-big', method: 'tools/call', params: { name: 'lint_vietnamese', arguments: { text: 'a'.repeat(MAX_TEXT_BYTES + 1) } } },
     { jsonrpc: '2.0', id: 'no-tool', method: 'tools/call', params: { name: 'read_file', arguments: {} } },
     { jsonrpc: '2.0', id: 'unknown', method: 'resources/list' },
@@ -323,20 +328,18 @@ async function selfTest() {
   if (lint.isError !== false || !JSON.parse(lint.content[0].text).findings.some((f) => f.id === 'chatbot-residue')) fail('lint_vietnamese không bắt được chatbot-residue');
   const cmp = toolText('compare');
   if (cmp.isError !== false || cmp.resultType !== 'complete' || JSON.parse(cmp.content[0].text).preserved !== false) fail('compare_preserved không bắt được tăng→giảm');
-  // facebook.md may or may not be converted to the profile schema yet; accept both, but never a protocol error.
   const plat = toolText('platform');
-  if (plat.isError === false) {
-    const body = JSON.parse(plat.content[0].text);
-    if (body.platform !== 'facebook' || !Array.isArray(body.findings) || !Array.isArray(body.measured)) fail('check_platform sai shape');
-  } else if (!/hồ sơ kênh "facebook"/u.test(plat.content[0].text)) fail(`check_platform lỗi không rõ: ${plat.content[0].text}`);
+  if (plat.isError !== false) fail(`check_platform lỗi: ${plat.content[0].text}`);
+  const platBody = JSON.parse(plat.content[0].text);
+  if (platBody.platform !== 'facebook' || !Array.isArray(platBody.findings) || !Array.isArray(platBody.measured)) fail('check_platform sai shape');
   const trav = toolText('traversal');
   if (trav.isError !== true || !trav.content[0].text.includes('không có hồ sơ kênh')) fail('platform "../SKILL" không bị từ chối');
+  if (toolText('keep-many').isError !== true) fail(`"keep" trên ${MAX_KEEP_ITEMS} mục không bị từ chối`);
   if (toolText('too-big').isError !== true) fail('văn bản trên 1 MB không bị từ chối');
   if (get('no-tool').error?.code !== -32602) fail('tool lạ phải trả -32602');
   if (get('unknown').error?.code !== -32601) fail('method lạ phải trả -32601');
   if (get(null)?.error?.code !== -32700) fail('JSON hỏng phải trả -32700');
-  const platState = plat.isError ? 'hồ sơ facebook chưa đúng schema, bị từ chối rõ ràng' : 'check_platform facebook đo được';
-  console.log(`SELF-TEST PASS — server/discover, initialize, tools/list trước initialize, 3 tool, chặn "../SKILL", -32022/-32601/-32602/-32700 (${platState})`);
+  console.log('SELF-TEST PASS — server/discover, initialize, tools/list trước initialize, 3 tool, check_platform facebook, chặn "../SKILL" và keep quá lớn, -32022/-32601/-32602/-32700');
 }
 
 if (process.argv[2] === '--self-test') selfTest();

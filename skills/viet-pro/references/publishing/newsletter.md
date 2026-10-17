@@ -56,7 +56,7 @@ Preview text: ≤90 ký tự — nối tiếp subject, KHÔNG lặp lại subjec
 
 ## Checklist
 
-- [ ] 3 phương án subject ≤50 ký tự, preview ≤90
+- [ ] 3 phương án subject ≤50 ký tự, preview ≤90 (kiểm bằng `check-platform.mjs newsletter`: đặt 3 phương án dưới `## title`, mỗi dòng một phương án)
 - [ ] Mở bằng 1-2 câu cá nhân, vào thẳng chủ đề
 - [ ] 1 chủ đề duy nhất, 50-70% độ dài draft
 - [ ] 1 CTA duy nhất, dòng riêng

@@ -61,6 +61,9 @@ function selfTest() {
   const nine = 'Cửa hàng mở bán thêm món bánh mì nướng muối ớt';
   const spanFindings = lintText(`${nine}. Hôm nay ${nine}. Cuối tuần ${nine}.`).filter((f) => f.id === 'phrase-reuse');
   if (spanFindings.length !== 1) { console.error(`SELF-TEST FAIL — cụm lặp 9 âm tiết sinh ${spanFindings.length} cảnh báo, cần 1`); process.exit(1); }
+  const twoSpans = ['Khách hàng nhận quà tặng sáng nay.', 'Cửa hàng nhận quà tặng đặc biệt.'].join(' ').repeat(3);
+  const twoFound = lintText(twoSpans).filter((f) => f.id === 'phrase-reuse').map((f) => f.excerpt);
+  if (twoFound.length !== 2 || !twoFound.some((e) => e.includes('"khách hàng nhận quà tặng sáng nay"'))) { console.error(`SELF-TEST FAIL — gộp nhầm hai cụm lặp không liền nhau: ${JSON.stringify(twoFound)}`); process.exit(1); }
   if (lintText(reuseText, { keep: ['đặt khách hàng làm trung tâm'] }).some((f) => f.id === 'phrase-reuse')) { console.error('SELF-TEST FAIL — --keep không chặn phrase-reuse'); process.exit(1); }
   const uniform = Array.from({ length: 6 }, (_, i) => `Đoạn ${i + 1} có một câu. Đoạn này có câu thứ hai.`).join('\n\n');
   if (lintText(uniform).some((f) => f.id === 'paragraph-uniformity')) { console.error('SELF-TEST FAIL — paragraph-uniformity vẫn còn'); process.exit(1); }

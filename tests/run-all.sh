@@ -47,16 +47,18 @@ node "$SCRIPTS/check-x-length.mjs" --self-test
 node "$SCRIPTS/check-platform.mjs" --validate
 
 step "Kiểm bản thảo theo hồ sơ nền tảng"
-expect_exit() { # <exit-code> <kênh> <file>
+expect_exit() { # <exit-code> <kênh> <file> [dòng-phải-có]
   set +e; out="$(node "$SCRIPTS/check-platform.mjs" "$2" "$3")"; code=$?; set -e
   echo "$out"
   if [ "$code" != "$1" ]; then echo "FAIL: check-platform $2 $3 thoát $code, cần $1" >&2; exit 1; fi
+  if [ -n "${4:-}" ]; then case "$out" in *"$4"*) ;; *) echo "FAIL: $3 phải có \"$4\"" >&2; exit 1 ;; esac; fi
 }
-expect_exit 1 threads tests/platform/threads-over.md
-expect_exit 0 youtube tests/platform/youtube-ok.md
-expect_exit 1 instagram tests/platform/instagram-6-hashtags.md
-expect_exit 0 linkedin tests/platform/linkedin-long-fold.md
-case "$out" in *"WARN [linkedin/post] fold_chars"*) ;; *) echo "FAIL: linkedin-long-fold.md phải có WARN fold_chars" >&2; exit 1 ;; esac
+expect_exit 1 threads tests/platform/threads-over.md "ERROR [threads/post] max_chars đoạn 2"
+expect_exit 1 threads tests/platform/threads-6-links.md "ERROR [threads/post] max_links đoạn 1"
+expect_exit 1 x-thread tests/platform/x-thread-weighted-over.md "ERROR [x-thread/post] max_chars đoạn 1"
+expect_exit 0 youtube tests/platform/youtube-ok.md "PASS"
+expect_exit 1 instagram tests/platform/instagram-6-hashtags.md "ERROR [instagram/post] max_hashtags"
+expect_exit 0 linkedin tests/platform/linkedin-long-fold.md "WARN [linkedin/post] fold_chars"
 
 step "Manifest checksum của skill"
 sha256_check SKILL_SHA256SUMS

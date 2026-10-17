@@ -22,6 +22,7 @@ function selfTest() {
     ['👍🏽', 'utf8_bytes_emoji', 8],
     ['👨‍👩‍👧', 'utf8_bytes_emoji', 18],
     ['1', 'utf8_bytes_emoji', 1],
+    ['🇻🇳', 'utf8_bytes_emoji', 8],
     ['ế', 'x_weighted', 2],
     ['Một hai, ba.', 'words', 3],
   ];
@@ -45,6 +46,7 @@ limits:
   - { surface: post, field: max_hashtags, value: 1, confidence: F, source: doc }
   - { surface: post, field: max_links, value: 1, confidence: S, source: doc }
   - { surface: video, field: max_title_chars, value: 10, confidence: O, source: doc }
+  - { surface: long, field: max_chars, value: 30, scope: whole, confidence: O, source: doc }
 sources:
   - { id: doc, url: "https://example.com/help, page 2", accessed: 2026-10-16 }
 ---
@@ -55,7 +57,10 @@ sources:
   if (errs.length) fail(`hồ sơ mẫu không hợp lệ: ${errs.join('; ')}`);
   if (p.sources[0].url !== 'https://example.com/help, page 2') fail('flow map tách sai dấu phẩy trong ngoặc kép');
   if (!validateProfile(p, 'other').some((e) => e.includes('không khớp'))) fail('không bắt id lệch tên file');
-  try { parseProfile('---\nlimits:\n    nested: 1\n---\n'); fail('parser nhận dòng lồng sâu'); } catch (e) { if (e.message.startsWith('SELF-TEST')) throw e; }
+  for (const bad of ['---\nlimits:\n    nested: 1\n---\n', '---\nname: A # chú thích\n---\n', '---\nname: a: b\n---\n',
+    '---\nlimits:\n  - { field: x }\nname: A\nlimits:\n---\n']) {
+    try { parseProfile(bad); fail(`parser nhận frontmatter sai: ${JSON.stringify(bad)}`); } catch (e) { if (e.message.startsWith('SELF-TEST')) throw e; }
+  }
 
   const thread = splitDraft('Đoạn một ngắn.\n---\nĐoạn hai dài hơn hai mươi ký tự.\n---\nBa #a #b');
   const r = checkDraft(p, thread);
@@ -66,7 +71,17 @@ sources:
   const video = checkDraft(p, splitDraft('## title\nTiêu đề quá dài\n\n## description\nMô tả'), { surface: 'video' });
   if (!video.findings.some((f) => f.field === 'max_title_chars')) fail('không đọc được trường ## title');
   if (checkDraft(p, splitDraft('Xem #1 nhé')).findings.length) fail('"#1" bị đếm là hashtag');
-  console.log('SELF-TEST PASS — cách đếm, parser hồ sơ, tách trường, tách đoạn, mức ERROR/WARN theo độ tin cậy');
+  const firstPost = splitDraft('---\nLưu ý: mai nghỉ.\n---\nBài hai.').body;
+  if (!firstPost?.includes('Lưu ý')) fail('bài đầu dạng "khóa: giá trị" bị coi là frontmatter và bị bỏ');
+  if (splitDraft('---\ntitle: Bài\n---\nThân').body !== 'Thân') fail('frontmatter thật không được bỏ');
+  if (splitDraft('```\n## title\nmẫu\n```\nThân').title !== undefined) fail('heading trong code fence bị đọc là trường');
+  const whole = checkDraft(p, splitDraft('Mười lăm ký tự.\n---\nMười lăm ký tự nữa.'), { surface: 'long' });
+  if (!whole.findings.some((f) => f.field === 'max_chars')) fail('scope: whole phải đo cả bài, không tách đoạn');
+  const options = checkDraft(p, splitDraft('## title\nNgắn\nPhương án hai quá dài\nBa'), { surface: 'video' });
+  if (options.findings.length !== 1 || options.findings[0].field !== 'max_title_chars phương án 2') fail(`nhiều dòng trong ## title phải đo từng phương án: ${JSON.stringify(options.findings)}`);
+  const noBody = checkDraft(p, splitDraft(`## title\nTiêu đề\n\n${'Thân lẽ ra ở body. '.repeat(10)}`));
+  if (!noBody.findings.some((f) => f.level === 'WARN' && f.detail.includes('## body'))) fail('thiếu khối body phải được cảnh báo');
+  console.log('SELF-TEST PASS — cách đếm, parser hồ sơ, tách trường, tách đoạn, mức ERROR/WARN theo độ tin cậy, khối thiếu');
 }
 
 function validateAll() {

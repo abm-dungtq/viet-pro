@@ -32,6 +32,9 @@ function selfTest() {
   const keepDiff = (a, b, keep) => compare(a, b, keep).differences.some((d) => d.kind === 'keep');
   if (!keepDiff('Anh An đến.', 'Anh Bình đến.', ['An'])) fail('--keep không bắt được tên riêng bị đổi');
   if (keepDiff('Anh An đến.', 'An đến.', ['An'])) fail('--keep khớp "An" bên trong "Anh"');
+  if (keepDiff('Giá 45.000đ.', 'Giá 45.000đ một suất.', ['45.000'])) fail('--keep không khớp "45.000" trong "45.000đ"');
+  if (!keepDiff('Giá 45.000đ.', 'Giá 45.0001.', ['45.000'])) fail('--keep khớp "45.000" bên trong "45.0001"');
+  if (!keepDiff('Giá 45.000đ.', 'Giá 145.000đ.', ['45.000'])) fail('--keep khớp "45.000" bên trong "145.000"');
   for (const k of ['https://example.com/api?v=2', '18%', '```yaml', 'title: "Giá mới"']) {
     if (keepDiff(`Xem ${k} nhé.`, `Nhé, xem ${k}.`, [k])) fail(`--keep không khớp chuỗi có ký tự đặc biệt: ${k}`);
     if (!keepDiff(`Xem ${k} nhé.`, 'Xem nhé.', [k])) fail(`--keep không bắt được khi mất chuỗi: ${k}`);
