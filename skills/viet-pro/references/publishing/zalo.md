@@ -1,6 +1,18 @@
 ---
+schema: viet-pro/platform-profile@1
+id: zalo
+name: Zalo OA
+tier: 1
+counting: graphemes
 last_verified: 2026-10-16
 review_by: 2027-01-16
+limits:
+  - { surface: oa-broadcast, field: max_title_chars, value: 100, confidence: F, source: caresoft-zalo }
+  - { surface: oa-broadcast, field: max_chars, value: 250, confidence: F, source: caresoft-zalo, note: "mỗi thẻ text" }
+  - { surface: oa-message, field: max_chars, value: 2000, confidence: F, source: esms-zalo }
+sources:
+  - { id: caresoft-zalo, url: "https://doc.caresoft.vn/danh-sach-tinh-nang/zalo/tin-nhan-truyen-thong-va-tin-nhan-giao-dich", accessed: 2026-10-17 }
+  - { id: esms-zalo, url: "https://helpcenter.esms.vn/cau-hoi-thuong-gap/zalo-oa", accessed: 2026-10-17 }
 ---
 # Zalo OA — Format Hiển Thị
 

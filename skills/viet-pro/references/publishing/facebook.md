@@ -1,6 +1,18 @@
 ---
+schema: viet-pro/platform-profile@1
+id: facebook
+name: Facebook
+tier: 1
+counting: graphemes
 last_verified: 2026-10-16
 review_by: 2027-01-16
+limits:
+  - { surface: post, field: max_chars, value: 63206, confidence: F, source: typecount-fb }
+  - { surface: post, field: fold_chars, value: 125, confidence: F, source: typecount-fb, note: "điện thoại; máy tính khoảng 477" }
+sources:
+  - { id: typecount-fb, url: "https://typecount.com/blog/facebook-post-character-limit-2026", accessed: 2026-10-17 }
+  - { id: meta-engagement-bait, url: "https://transparency.meta.com/features/approach-to-ranking/content-distribution-guidelines/engagement-bait/", accessed: 2026-10-16 }
+  - { id: techcrunch-link-limit, url: "https://techcrunch.com/2025/12/17/facebook-is-testing-a-link-posting-limit-for-professional-accounts-and-pages", accessed: 2026-10-16 }
 ---
 # Facebook — Format Hiển Thị
 

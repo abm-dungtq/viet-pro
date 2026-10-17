@@ -61,7 +61,8 @@ sources:
   const r = checkDraft(p, thread);
   const errors = r.findings.filter((f) => f.level === 'ERROR');
   if (errors.length !== 1 || errors[0].field !== 'max_chars đoạn 2') fail(`segments: cần đúng 1 ERROR ở đoạn 2, nhận ${JSON.stringify(r.findings)}`);
-  if (!r.findings.some((f) => f.level === 'WARN' && f.field === 'max_hashtags')) fail('giới hạn F bị vượt phải là WARN');
+  if (!r.findings.some((f) => f.level === 'WARN' && f.field === 'max_hashtags đoạn 3')) fail('giới hạn F bị vượt phải là WARN, tính theo từng đoạn');
+  if (r.findings.some((f) => f.field.startsWith('max_hashtags đoạn 1'))) fail('hashtag của đoạn 3 bị tính cho đoạn 1');
   const video = checkDraft(p, splitDraft('## title\nTiêu đề quá dài\n\n## description\nMô tả'), { surface: 'video' });
   if (!video.findings.some((f) => f.field === 'max_title_chars')) fail('không đọc được trường ## title');
   if (checkDraft(p, splitDraft('Xem #1 nhé')).findings.length) fail('"#1" bị đếm là hashtag');

@@ -1,6 +1,13 @@
 ---
+schema: viet-pro/platform-profile@1
+id: video-script
+name: Kịch bản video
+tier: 1
+counting: words
 last_verified: 2026-10-16
 review_by: 2027-01-16
+limits: []
+sources: []
 ---
 # Video Script — TikTok/Reels/Shorts + YouTube
 
@@ -11,9 +18,11 @@ review_by: 2027-01-16
 
 **Mặc định:** video ngắn (TikTok/Reels/Shorts). YouTube dài khi user chỉ định.
 
+Giới hạn và quy tắc riêng của từng nền tảng (caption, hashtag, tiêu đề, mô tả, chapter, thời lượng tối đa) nằm ở `tiktok.md`, `youtube.md` và `instagram.md`. File này chỉ lo lời thoại và hình.
+
 ---
 
-## 1. Video ngắn 15-90 giây (MẶC ĐỊNH)
+## 1. Video ngắn 15-90 giây (MẶC ĐỊNH; nền tảng cho phép tới 3 phút)
 
 ### Nguyên tắc cốt lõi
 
@@ -55,7 +64,7 @@ Mốc thời gian điều chỉnh theo tổng thời lượng; tỷ lệ giữ n
 ```
 
 - Giữ toàn bộ chiều sâu draft — chỉ chuyển văn viết → văn nói
-- Xuất kèm danh sách chapter (timestamp + tên) cho description
+- Xuất kèm danh sách chapter (timestamp + tên) cho description, theo điều kiện chapter trong `youtube.md` (mốc đầu `00:00`, ít nhất 3 mốc, mỗi phần từ 10 giây)
 
 ---
 

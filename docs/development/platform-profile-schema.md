@@ -72,8 +72,8 @@ Mỗi phần tử trong `limits` có các khóa sau:
 | `max_caption_chars` | `caption`, hoặc `body` | |
 | `max_title_chars` | `title` | |
 | `max_description_chars` | `description` | |
-| `max_hashtags`, `max_topic_tags` | toàn bài | Hashtag phải có ít nhất một chữ cái, nên `#1` không bị tính |
-| `max_links` | toàn bài | Chỉ đếm URL có `http://` hoặc `https://` |
+| `max_hashtags`, `max_topic_tags` | toàn bài, hoặc từng đoạn khi có `segments` | Hashtag phải có ít nhất một chữ cái, nên `#1` không bị tính |
+| `max_links` | toàn bài, hoặc từng đoạn khi có `segments` | Chỉ đếm URL có `http://` hoặc `https://` |
 | `fold_chars` | `body` hoặc `caption` | Luôn chỉ WARN: nhắc đặt ý chính trước điểm "Xem thêm" |
 | `max_duration_s` | không đo | Chỉ kiểm ở `--validate`, vì không đo được thời lượng từ văn bản |
 

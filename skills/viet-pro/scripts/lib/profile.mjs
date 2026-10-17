@@ -178,6 +178,9 @@ export function checkDraft(profile, fields, { surface } = {}) {
   const measured = [];
   const all = Object.values(fields).join('\n');
   const mainText = fields.body ?? fields.caption ?? '';
+  const segments = profile.meta.segments === '---'
+    ? mainText.split(/^[ \t]*---[ \t]*$/mu).map((seg) => seg.trim()).filter(Boolean)
+    : null;
   const target = {
     max_chars: mainText,
     max_caption_chars: fields.caption ?? fields.body,
@@ -198,13 +201,17 @@ export function checkDraft(profile, fields, { surface } = {}) {
       }
     };
     if (l.field === 'max_duration_s') continue;
-    if (l.field === 'max_hashtags' || l.field === 'max_topic_tags') { report((all.match(HASHTAG) || []).length); continue; }
-    if (l.field === 'max_links') { report((all.match(LINK) || []).length); continue; }
+    const counter = { max_hashtags: HASHTAG, max_topic_tags: HASHTAG, max_links: LINK }[l.field];
+    if (counter) {
+      // In a series of posts, tag and link limits apply to each post.
+      if (segments) segments.forEach((seg, i) => report((seg.match(counter) || []).length, `${l.field} đoạn ${i + 1}`));
+      else report((all.match(counter) || []).length);
+      continue;
+    }
     const text = target[l.field];
     if (text === undefined) continue;
-    if (l.field === 'max_chars' && profile.meta.segments === '---') {
-      text.split(/^[ \t]*---[ \t]*$/mu).map((s) => s.trim()).filter(Boolean)
-        .forEach((seg, i) => report(countText(seg, method), `max_chars đoạn ${i + 1}`));
+    if (l.field === 'max_chars' && segments) {
+      segments.forEach((seg, i) => report(countText(seg, method), `max_chars đoạn ${i + 1}`));
       continue;
     }
     report(countText(text, method));

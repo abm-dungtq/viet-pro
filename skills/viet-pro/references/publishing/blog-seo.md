@@ -1,6 +1,13 @@
 ---
+schema: viet-pro/platform-profile@1
+id: blog-seo
+name: Blog SEO
+tier: 1
+counting: words
 last_verified: 2026-10-16
 review_by: 2027-01-16
+limits: []
+sources: []
 ---
 # Blog SEO — Format Hiển Thị
 

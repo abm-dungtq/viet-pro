@@ -43,6 +43,19 @@ step "Hạn rà soát dữ kiện nền tảng"
 node tests/check-freshness.mjs
 if node tests/check-freshness.mjs --today 2099-01-01 >/dev/null 2>&1; then echo "FAIL: check-freshness không báo hết hạn" >&2; exit 1; fi
 node "$SCRIPTS/check-x-length.mjs" --self-test
+node "$SCRIPTS/check-platform.mjs" --validate
+
+step "Kiểm bản thảo theo hồ sơ nền tảng"
+expect_exit() { # <exit-code> <kênh> <file>
+  set +e; out="$(node "$SCRIPTS/check-platform.mjs" "$2" "$3")"; code=$?; set -e
+  echo "$out"
+  if [ "$code" != "$1" ]; then echo "FAIL: check-platform $2 $3 thoát $code, cần $1" >&2; exit 1; fi
+}
+expect_exit 1 threads tests/platform/threads-over.md
+expect_exit 0 youtube tests/platform/youtube-ok.md
+expect_exit 1 instagram tests/platform/instagram-6-hashtags.md
+expect_exit 0 linkedin tests/platform/linkedin-long-fold.md
+case "$out" in *"WARN [linkedin/post] fold_chars"*) ;; *) echo "FAIL: linkedin-long-fold.md phải có WARN fold_chars" >&2; exit 1 ;; esac
 
 step "Manifest checksum của skill"
 sha256_check SKILL_SHA256SUMS
