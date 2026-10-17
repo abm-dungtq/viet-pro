@@ -14,7 +14,7 @@
 // Deterministic checks gate pass/fail; judge scores are advisory and tracked over time.
 
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, copyFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, copyFileSync, existsSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -95,20 +95,30 @@ function claudeArgs(prompt, model, tools) {
 
 async function generateCodex(c, opts, ws, home) {
   const lastFile = join(mkdtempSync(join(tmpdir(), 'viet-pro-eval-codex-')), 'last.md');
-  const args = ['exec', '--skip-git-repo-check', '--ephemeral', '--ignore-user-config', '-s', 'workspace-write', '-C', ws, '-o', lastFile];
+  const args = ['exec', '--json', '--skip-git-repo-check', '--ephemeral', '--ignore-user-config', '-s', 'workspace-write', '-C', ws, '-o', lastFile];
   if (opts.model) args.push('-m', opts.model);
   args.push('-');
   // Isolated CODEX_HOME: only auth.json is copied, so skills under the real ~/.codex/skills are not loaded.
+  // The copy holds login tokens, so it is deleted after the run. If codex refreshes the token inside the
+  // copy, the real login may need `codex login` again; setting CODEX_API_KEY avoids copying auth at all.
+  // The workspace-write sandbox limits writes, not reads, so keep secrets out of the temp directory.
   const codexHome = mkdtempSync(join(tmpdir(), 'viet-pro-eval-codexhome-'));
   const realAuth = join(process.env.CODEX_HOME || join(homedir(), '.codex'), 'auth.json');
-  if (existsSync(realAuth)) copyFileSync(realAuth, join(codexHome, 'auth.json'));
+  if (!process.env.CODEX_API_KEY && existsSync(realAuth)) copyFileSync(realAuth, join(codexHome, 'auth.json'));
   const env = { ...process.env, HOME: home, CODEX_HOME: codexHome };
   const started = Date.now();
-  const res = await run('codex', args, { cwd: ws, env, input: `$viet-pro ${c.prompt}${FORMAT_NOTE}` });
+  let res;
+  try {
+    res = await run('codex', args, { cwd: ws, env, input: `$viet-pro ${c.prompt}${FORMAT_NOTE}` });
+  } finally {
+    rmSync(codexHome, { recursive: true, force: true });
+  }
   const duration_ms = Date.now() - started;
   const raw = existsSync(lastFile) ? readFileSync(lastFile, 'utf8') : '';
   if (!raw.trim()) return { error: `codex không ghi last message (exit ${res.code}): ${(res.stderr || '').slice(0, 300)}`, duration_ms };
-  return { raw, cost_usd: null, num_turns: null, model: opts.model || 'codex-default', duration_ms, is_error: false };
+  // --json streams events to stdout; a viet-pro/SKILL.md path there shows the skill was actually read.
+  const skill_read = /viet-pro\/SKILL\.md/u.test(res.stdout);
+  return { raw, cost_usd: null, num_turns: null, model: opts.model || 'codex-default', duration_ms, is_error: false, skill_read };
 }
 
 async function generate(c, opts) {
@@ -138,8 +148,8 @@ const countOf = (text, needle) => text.split(needle).length - 1;
 
 // Share of syllable tokens changed (Levenshtein distance / longer length). 0 = identical.
 function editRatio(a, b) {
-  const ta = a.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
-  const tb = b.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  const ta = a.normalize('NFC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  const tb = b.normalize('NFC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
   let prev = Array.from({ length: tb.length + 1 }, (_, j) => j);
   for (let i = 1; i <= ta.length; i++) {
     const cur = [i];
@@ -294,7 +304,7 @@ async function main() {
       const gen = await generate(c, opts);
       if (gen.error) { console.error(`ERROR ${c.id}: ${gen.error}`); return { id: c.id, pass: false, error: gen.error, duration_ms: gen.duration_ms }; }
       const g = grade(c, gen.raw);
-      const row = { id: c.id, pass: g.pass, checks: g.checks, words: g.words, model: gen.model, cost_usd: gen.cost_usd, num_turns: gen.num_turns, duration_ms: gen.duration_ms, output: g.output, raw: gen.raw };
+      const row = { id: c.id, pass: g.pass, checks: g.checks, words: g.words, model: gen.model, skill_read: gen.skill_read, cost_usd: gen.cost_usd, num_turns: gen.num_turns, duration_ms: gen.duration_ms, output: g.output, raw: gen.raw };
       if (opts.judge && g.output) row.judge = await judge(c, g.output, opts);
       console.error(`${g.pass ? 'pass' : 'fail'} ${c.id} (${Math.round(gen.duration_ms / 1000)}s)`);
       return row;

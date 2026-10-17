@@ -43,7 +43,7 @@ export const LINE_RULES = [
   },
   {
     id: 'placeholder', level: 'WARN', desc: 'Nghi chỗ trống chưa điền ([Tên công ty], [chèn link], XX%, Lorem ipsum)',
-    check: (l) => [...l.matchAll(/\[(?:Tên (?:công ty|doanh nghiệp|thương hiệu|sản phẩm|khách hàng|bạn)|chèn link|điền|insert|placeholder)[^\]\n]*\]|\bLorem ipsum\b|\bXX(?=%|\s?(?:triệu|tỷ|nghìn|đồng|USD)\b)/giu)].map((m) => m[0]),
+    check: (l) => [...l.matchAll(/\[(?:Tên (?:công ty|doanh nghiệp|thương hiệu|sản phẩm|khách hàng|bạn)|chèn link|điền|placeholder)[^\]\n]*\]|\bLorem ipsum\b|\bXX(?=%|\s?(?:triệu|tỷ|nghìn|đồng|USD)(?![\p{L}\p{N}]))/giu)].map((m) => m[0]),
   },
 ];
 
@@ -81,7 +81,7 @@ function phraseReuse(text, keep = []) {
     for (const [phrase, c] of counts) {
       if (c < 3) continue;
       if (found.some((f) => f.phrase.includes(phrase))) continue;
-      if (keepLower.some((k) => k.includes(phrase) || phrase.includes(k))) continue;
+      if (keepLower.some((k) => ` ${k} `.includes(` ${phrase} `) || ` ${phrase} `.includes(` ${k} `))) continue;
       found.push({ phrase, c });
     }
   }

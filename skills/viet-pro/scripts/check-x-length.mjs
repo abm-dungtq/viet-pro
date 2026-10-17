@@ -9,9 +9,12 @@ import { xWeightedLength, X_MAX } from './lib/x-weighted.mjs';
 
 function splitTweets(text) {
   let lines = text.split('\n');
+  // Frontmatter only when every line before the closing --- is a YAML key; a thread may also start with ---.
   if (lines[0]?.trim() === '---') {
     const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
-    lines = end === -1 ? [] : lines.slice(end + 1);
+    const yaml = end > 1 && lines.slice(1, end).every((l) => !l.trim() || /^[\w-]+:(?:\s|$)/u.test(l));
+    if (yaml) lines = lines.slice(end + 1);
+    else if (end === -1) lines = [];
   }
   const body = lines.join('\n');
   const blocks = /^[ \t]*---[ \t]*$/mu.test(body) ? body.split(/^[ \t]*---[ \t]*$/mu) : body.split(/\n\s*\n/u);

@@ -1,4 +1,4 @@
-77c96e7624c8bb41346a35132c62f56c94ff42426d783a4d96ef6665e17c951b  skills/viet-pro/SKILL.md
+fcafff354996afce4a2ab216b927da90711b7fefa5a9313d101ee94e8c1b9480  skills/viet-pro/SKILL.md
 349b9bed64f4dfb506c6dc0992fffd07978d60663f59ec0204fa6948abb9b803  skills/viet-pro/THIRD_PARTY_NOTICES.md
 5f63464adac1241d4205e85980f467bc77c5426b57dfb1efef4e49e3787443f2  skills/viet-pro/agents/openai.yaml
 a11483a95122eb73c519ca45359d6adb168a021767bdaefda4d576848ac610d2  skills/viet-pro/references/archive/lead.md
@@ -34,10 +34,10 @@ eb4cd829c12fcca079d72662a425e1872c0d840ce950c3a1724db816935b4cf9  skills/viet-pr
 f2d63ad78d9dbf0d9f980e2cafb115dd23ffaaecabe3d8e97002d782a5cc0f81  skills/viet-pro/references/review/natural.md
 853643beb8b9a97be10c73f204dc128f9614d633bd125aa12730e4b56cb57c50  skills/viet-pro/references/review/punctuation.md
 b989130c5d1982186489e70acf0c20f7b599dc6712303a4b7f5ca6f60249963a  skills/viet-pro/references/review/translationese-vi.md
-60c4e55de6ce3474927b1f2c865e4d0753049954bafc64afe52d71dba97c65f8  skills/viet-pro/scripts/check-x-length.mjs
+b7c85bbb2264f59f4d14dee539818ac473f626573b9cd78b4f7ce2338a5e2246  skills/viet-pro/scripts/check-x-length.mjs
 c9304f6d46ac1cbf4e2c5d8a07bd5e9402ddc950c219185d013371291a60348a  skills/viet-pro/scripts/compare-preserved-content.mjs
 1d3b582a269ce50eb2bfeec8cbfb78a2049f0852757c7eb52de169ea8fdcc3c9  skills/viet-pro/scripts/lib/compare.mjs
-ff08685403fd8bb9900061d8c8746e4b0c11ec20ba1b2b71f1848a5d2e3a75c4  skills/viet-pro/scripts/lib/lint.mjs
-1a964d01d96ed694369f74c3559d7b737786bf6b992df6898c35853f25421981  skills/viet-pro/scripts/lib/x-weighted.mjs
+84a7ef6f7c005365a34e3140597f25fb9b6bd4ebeb623bfa9304d34cb21aa23a  skills/viet-pro/scripts/lib/lint.mjs
+63189a6c5e95c9f01b92929b71146927d85766b042ef25f02e42814c1e820387  skills/viet-pro/scripts/lib/x-weighted.mjs
 a9a3d498656ac18a80c11810a9fc9db53b301b2ffd6982aba16a2991f668a3a5  skills/viet-pro/scripts/lint-vietnamese-content.mjs
 67b90107f9d39d48d9dbda86e39acd7a1538dc582cdc5b00a0d18733731dced4  skills/viet-pro/scripts/test-humanizer-contract.mjs

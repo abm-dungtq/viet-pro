@@ -57,9 +57,10 @@ if [ "v$skill_version" != "$installer_ref" ]; then echo "FAIL: SKILL.md $skill_v
 echo "OK: v$skill_version"
 
 step "Phiên bản plugin đồng bộ với SKILL.md"
-for f in .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
-  if ! grep -q "\"version\": \"$skill_version\"" "$f"; then echo "FAIL: $f không ghi version $skill_version" >&2; exit 1; fi
-done
+# shellcheck disable=SC2016
+if ! node -e 'const [p, m, v] = process.argv.slice(1); process.exit(require(p).version === v && require(m).plugins[0].version === v ? 0 : 1)' "$ROOT/.claude-plugin/plugin.json" "$ROOT/.claude-plugin/marketplace.json" "$skill_version"; then
+  echo "FAIL: .claude-plugin/plugin.json hoặc marketplace.json không ghi version $skill_version" >&2; exit 1
+fi
 if command -v claude >/dev/null 2>&1; then
   if ! claude plugin validate --strict .claude-plugin/plugin.json >/dev/null || ! claude plugin validate --strict . >/dev/null; then echo "FAIL: manifest plugin không hợp lệ" >&2; exit 1; fi
   echo "OK: manifest plugin hợp lệ"

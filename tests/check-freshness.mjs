@@ -12,7 +12,7 @@ const SKIP = new Set(['lead.md', 'repurpose-matrix.md']);
 const args = process.argv.slice(2);
 const i = args.indexOf('--today');
 const today = i >= 0 ? args[i + 1] : new Date().toISOString().slice(0, 10);
-if (!/^\d{4}-\d{2}-\d{2}$/.test(today || '')) { console.error('Usage: node tests/check-freshness.mjs [--today YYYY-MM-DD]'); process.exit(2); }
+if (!/^\d{4}-\d{2}-\d{2}$/.test(today || '') || Number.isNaN(Date.parse(`${today}T00:00:00Z`))) { console.error('Usage: node tests/check-freshness.mjs [--today YYYY-MM-DD]'); process.exit(2); }
 const soon = new Date(Date.parse(`${today}T00:00:00Z`) + 14 * 86400000).toISOString().slice(0, 10);
 
 const files = readdirSync(dir).filter((f) => f.endsWith('.md') && !SKIP.has(f)).sort();

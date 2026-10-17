@@ -2,7 +2,7 @@
 
 **Viết Pro** là một skill giúp trợ lý AI viết và biên tập tiếng Việt tự nhiên, đúng dữ kiện, đúng từng kênh đăng bài.
 
-Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.3.0**.
+Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.4.0**.
 
 ---
 
@@ -22,7 +22,7 @@ Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antig
 Mở **Terminal** và dán lệnh sau:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/v5.3.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/v5.4.0/install.sh | bash
 ```
 
 Lệnh này tự làm ba việc:
@@ -46,7 +46,7 @@ claude plugin marketplace add abm-dungtq/viet-pro-codex
 claude plugin install viet-pro@viet-pro
 ```
 
-Khi cài dạng plugin, skill vẫn tên `viet-pro`: gọi bằng `/viet-pro` hoặc nhắc tên Viết Pro trong yêu cầu. Chọn một trong hai cách cài cho Claude Code, đừng cài cả hai, để không có hai bản skill cùng tên.
+Khi cài dạng plugin, lệnh đầy đủ là `/viet-pro:viet-pro` (Claude Code thêm tiền tố tên plugin). Gõ tắt `/viet-pro` cũng được nếu chưa có lệnh nào khác dùng tên đó, hoặc chỉ cần nhắc tên Viết Pro trong yêu cầu. Chọn một trong hai cách cài cho Claude Code, đừng cài cả hai: hai bản không ghi đè nhau mà cùng được nạp, dễ lệch phiên bản và tốn ngữ cảnh gấp đôi.
 
 ---
 
@@ -158,7 +158,7 @@ rm -rf ~/.claude/skills/viet-pro ~/.agents/skills/viet-pro ~/.gemini/config/skil
 Mở Terminal tại thư mục dự án, rồi chạy:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/v5.3.0/install.sh | bash -s -- --workspace
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro-codex/v5.4.0/install.sh | bash -s -- --workspace
 ```
 
 **Skill có tự tra cứu web không?**
@@ -201,7 +201,7 @@ bash tests/run-all.sh
 
 ### Eval chất lượng bài viết
 
-Eval đưa 12 yêu cầu mẫu trong `tests/eval/cases.json` cho Claude Code chạy với Viết Pro, rồi chấm kết quả. Các kiểm tra tự động quyết định đạt hay không (giữ dữ kiện, không lỗi lint, đúng độ dài...); điểm do LLM chấm chỉ để tham khảo.
+Eval đưa 18 yêu cầu mẫu trong `tests/eval/cases.json` cho Claude Code chạy với Viết Pro, rồi chấm kết quả. Các kiểm tra tự động quyết định đạt hay không (giữ dữ kiện, không lỗi lint, đúng độ dài...); điểm do LLM chấm chỉ để tham khảo.
 
 ```bash
 node tests/eval/run-eval.mjs --judge --compare tests/eval/baseline.json
@@ -209,6 +209,7 @@ node tests/eval/run-eval.mjs --judge --compare tests/eval/baseline.json
 
 - Bản 5.2.1 (baseline): 11/12 ca đạt.
 - Bản 5.3.0: 12/12 ca đạt, không ca nào tụt hạng.
+- Bản 5.4.0: 17/18 ca đạt trên Claude (ca `ai-audit` vượt giới hạn độ dài, đạt khi chạy lại), 18/18 trên Codex.
 
 Mỗi bản chỉ chạy một lần, nên con số này là tín hiệu để theo dõi, chưa phải bằng chứng thống kê. Mỗi lần chạy eval tốn khoảng 0,3-0,5 USD cho mỗi ca khi bật judge. Workflow `eval` trên GitHub chỉ chạy khi repository có secret `ANTHROPIC_API_KEY`.
 
@@ -219,6 +220,17 @@ Khi sửa nội dung skill, hãy sinh lại `SKILL_SHA256SUMS` theo [INSTALL.md]
 ---
 
 ## Lịch sử phiên bản
+
+<details>
+<summary>5.4.0: Sửa đúng và đo được</summary>
+
+- Cài được như plugin Claude Code; repo có giấy phép MIT.
+- Đếm ký tự X đúng với chữ có dấu, Instagram tối đa 5 hashtag, Facebook không dùng markdown, có nhắc công bố quảng cáo theo Luật Quảng cáo sửa đổi.
+- Linter bắt mã trích dẫn chatbot còn sót, chỗ trống chưa điền và cụm từ lặp; bỏ luật độ dài đoạn đều nhau.
+- Đồng bộ Humanizer 3.1.0 và thêm hướng dẫn sửa lối văn dịch.
+- Eval có 6 ca văn người viết để đo việc sửa thừa, và chạy được trên Codex.
+
+</details>
 
 <details>
 <summary>5.3.0: Đo được chất lượng bài viết</summary>
