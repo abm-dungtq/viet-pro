@@ -1,3 +1,7 @@
+---
+last_verified: 2026-10-16
+review_by: 2027-01-16
+---
 # Newsletter / Email — Format Hiển Thị
 
 **Nhân viên:** newsletter.md — Ban Xuất bản (publishing/)

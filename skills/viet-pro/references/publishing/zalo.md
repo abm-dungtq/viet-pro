@@ -1,3 +1,7 @@
+---
+last_verified: 2026-10-16
+review_by: 2027-01-16
+---
 # Zalo OA — Format Hiển Thị
 
 **Nhân viên:** zalo.md — Ban Xuất bản (publishing/)

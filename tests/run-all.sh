@@ -38,6 +38,11 @@ node "$SCRIPTS/compare-preserved-content.mjs" tests/humanizer/facebook-before.md
 step "Tham chiếu trong skill"
 node tests/check-skill-refs.mjs
 
+step "Hạn rà soát dữ kiện nền tảng"
+node tests/check-freshness.mjs
+if node tests/check-freshness.mjs --today 2099-01-01 >/dev/null 2>&1; then echo "FAIL: check-freshness không báo hết hạn" >&2; exit 1; fi
+node "$SCRIPTS/check-x-length.mjs" --self-test
+
 step "Manifest checksum của skill"
 sha256_check SKILL_SHA256SUMS
 listed="$(awk '{print $2}' SKILL_SHA256SUMS | LC_ALL=C sort)"
