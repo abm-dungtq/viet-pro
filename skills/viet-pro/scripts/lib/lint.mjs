@@ -82,6 +82,14 @@ function phraseReuse(text, keep = []) {
       if (c < 3) continue;
       if (found.some((f) => f.phrase.includes(phrase))) continue;
       if (keepLower.some((k) => ` ${k} `.includes(` ${phrase} `) || ` ${phrase} `.includes(` ${k} `))) continue;
+      // A longer repeated span yields n-grams shifted by one word; extend the earlier finding instead.
+      const words = phrase.split(' ');
+      const head = words.slice(0, -1).join(' ');
+      const tail = words.slice(1).join(' ');
+      const after = found.find((f) => f.c === c && ` ${f.phrase}`.endsWith(` ${head}`));
+      if (after) { after.phrase += ` ${words.at(-1)}`; continue; }
+      const before = found.find((f) => f.c === c && `${f.phrase} `.startsWith(`${tail} `));
+      if (before) { before.phrase = `${words[0]} ${before.phrase}`; continue; }
       found.push({ phrase, c });
     }
   }

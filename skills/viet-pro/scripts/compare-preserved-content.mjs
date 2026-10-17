@@ -29,6 +29,14 @@ function selfTest() {
 
   if (compare('Xem https://x.com/a.', 'Xem https://x.com/a').differences.length) fail('dấu chấm cuối câu làm URL bị coi là khác');
 
+  const keepDiff = (a, b, keep) => compare(a, b, keep).differences.some((d) => d.kind === 'keep');
+  if (!keepDiff('Anh An đến.', 'Anh Bình đến.', ['An'])) fail('--keep không bắt được tên riêng bị đổi');
+  if (keepDiff('Anh An đến.', 'An đến.', ['An'])) fail('--keep khớp "An" bên trong "Anh"');
+  for (const k of ['https://example.com/api?v=2', '18%', '```yaml', 'title: "Giá mới"']) {
+    if (keepDiff(`Xem ${k} nhé.`, `Nhé, xem ${k}.`, [k])) fail(`--keep không khớp chuỗi có ký tự đặc biệt: ${k}`);
+    if (!keepDiff(`Xem ${k} nhé.`, 'Xem nhé.', [k])) fail(`--keep không bắt được khi mất chuỗi: ${k}`);
+  }
+
   console.log('SELF-TEST PASS — bảo toàn URL, số/ngày, quote, citation, ranking, chuỗi --keep và chiều tăng/giảm quanh số liệu');
 }
 

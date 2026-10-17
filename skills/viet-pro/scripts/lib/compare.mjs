@@ -16,6 +16,14 @@ function multiset(items) {
 
 const normalizeQuotes = (s) => s.replace(/[“”„]/gu, '"').replace(/[‘’]/gu, "'");
 
+// Occurrences of a --keep string not glued to a letter or digit, so "An" does not match inside "Anh".
+// A bare number such as "3" still matches inside "3.000", because "." is neither.
+function countWhole(text, item) {
+  if (!item) return 0;
+  const escaped = item.normalize('NFC').replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  return [...text.normalize('NFC').matchAll(new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'gu'))].length;
+}
+
 function collect(text, keep = [], { strictQuotes = false } = {}) {
   const patterns = {
     url: /https?:\/\/[^\s)>\]]+/gu,
@@ -34,7 +42,7 @@ function collect(text, keep = [], { strictQuotes = false } = {}) {
       return m[0];
     });
   }
-  found.keep = keep.flatMap((item) => Array(text.split(item).length - 1).fill(item));
+  found.keep = keep.flatMap((item) => Array(countWhole(text, item)).fill(item));
   return found;
 }
 

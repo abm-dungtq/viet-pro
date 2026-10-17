@@ -25,7 +25,8 @@ function measure(path) {
   let words = 0;
   for (const f of files) {
     const text = readFileSync(f, 'utf8');
-    words += (text.match(/[\p{L}\p{N}]+/gu) || []).length;
+    const body = text.startsWith('---\n') && text.indexOf('\n---', 4) > 0 ? text.slice(text.indexOf('\n---', 4) + 4) : text;
+    words += (body.match(/[\p{L}\p{N}]+/gu) || []).length;
     for (const { id } of lintText(text)) hits[id] = (hits[id] || 0) + 1;
   }
   return { files: files.length, words, hits };
