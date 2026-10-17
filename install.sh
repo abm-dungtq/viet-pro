@@ -8,7 +8,7 @@ set -euo pipefail
 
 REPO_URL="https://github.com/abm-dungtq/viet-pro-codex.git"
 SKILL_NAME="viet-pro"
-DEFAULT_REF="v5.4.0"
+DEFAULT_REF="v5.5.0"
 REF="${VIET_PRO_REF:-$DEFAULT_REF}"
 REF_EXPLICIT=false
 INSTALL_MODE="copy" # copy | symlink
