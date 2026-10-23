@@ -29,6 +29,8 @@ const PERCUSSIVE_GENRE = wordsRe('rap|hip-hop|hip\\s+hop|drill|trap|rock|metal|p
 const VOCAL_CUE = wordsRe('vocals?|voices?|singer|sung|baritone|tenor|soprano|alto|crooner|rap\\s+flow');
 const PRONUNCIATION_CUE = wordsRe('pronunciation|articulation|diction|enunciation|clear\\s+(?:vietnamese\\s+)?lyrics');
 const EXCLUDE_NEGATION = wordsRe("no|not|without|don't|dont|never|không|đừng|chớ|tránh");
+// Common English loanwords dropped into a Vietnamese line pull Suno's pronunciation toward English stress.
+const ENGLISH_IN_LYRICS = wordsRe('wifi|wi-fi|crush|lag|bluetooth|internet|router|modem|password|online|offline|video|game|chill|vibe|deadline|idol|story|status|alo|baby|sorry');
 
 const AI_CLICHE_FAMILIES = [
   ['mưa rơi', 'chơi vơi', 'bên đời', 'xa vời', 'rã rời'],
@@ -217,6 +219,15 @@ export function checkSunoDraft(fields, { countText } = {}) {
     pendingHighCue = false;
     activeSection.stanzas[activeSection.stanzas.length - 1].push(lineObj);
 
+    const engMatch = lead.match(ENGLISH_IN_LYRICS);
+    if (engMatch) {
+      findings.push({
+        level: 'WARN',
+        field: 'english-in-viet-lyrics',
+        detail: `dòng ${lineNo}: từ tiếng Anh "${engMatch[0]}" xen giữa câu hát tiếng Việt dễ làm Suno đổi sang cách phát âm tiếng Anh, giật nhịp và méo dấu các chữ kế bên (kinh nghiệm, chưa đo); nếu cố ý dùng thì nghe lại bản render`,
+      });
+    }
+
     // 3a. Check breath phrases on this line for broken-tone-cluster & long-unpaused-line
     if (!lineObj.isRapOrSpoken) {
       const phrases = lead.split(/[,.;!?:…/]|--|\.{2,}|\s-\s/u).map((p) => p.trim()).filter(Boolean);
@@ -253,7 +264,7 @@ export function checkSunoDraft(fields, { countText } = {}) {
         findings.push({
           level: 'WARN',
           field: 'long-unpaused-line',
-          detail: `dòng ${lineNo}: dòng hát quá dài (${syls.length} âm tiết > 16), nên tách thành 2 dòng để Suno chia khuôn nhịp ổn định`,
+          detail: `dòng ${lineNo}: dòng hát quá dài (${syls.length} âm tiết > 16), nên tách thành 2 dòng ngắn (6-8 chữ mỗi dòng thường dễ hát hơn, kinh nghiệm chưa đo) để Suno chia khuôn nhịp ổn định`,
         });
       }
     }

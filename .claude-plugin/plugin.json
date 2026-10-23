@@ -1,6 +1,6 @@
 {
   "name": "viet-pro",
-  "version": "5.6.0",
+  "version": "5.6.1",
   "description": "Viết và biên tập tiếng Việt tự nhiên, giữ đúng dữ kiện, đúng chuẩn từng kênh: blog, SEO, mạng xã hội, newsletter, kịch bản video, lời bài hát/prompt nhạc Suno.",
   "author": { "name": "ABM-DungTQ" },
   "homepage": "https://github.com/abm-dungtq/viet-pro",

@@ -92,8 +92,10 @@ sources:
     'no autotune, đừng hét',
     '## body',
     '[Đoạn 1 - Mở đầu]',
+    '[Verse 1]',
     'Mưa rơi chơi vơi trên phố vắng anh bước đi một mình trong đêm tối mịt mùng lạnh giá không có ai bên cạnh',
-    'Em đi xa thật rồi',
+    'Mất sóng wifi rồi, nhớ crush quá',
+    'Mẹ rút trong cặp, quyển vở Toán',
     '[Chorus]',
     'Giữa đêm thâu u sầu trái tim anh vụn vỡ (hát nhẹ nhàng thôi)',
     'Ký ức xưa đã khép lại trong chiều vắng lạnh',
@@ -108,6 +110,7 @@ sources:
     'exclude-styles-negation',
     'vietnamese-in-brackets',
     'directive-in-parens',
+    'english-in-viet-lyrics',
     'chorus-closed-stop-ending',
     'stanza-all-trac-endings',
     'broken-tone-cluster',
@@ -126,16 +129,23 @@ sources:
     'muffled vocals, heavy distortion, autotune',
     '## body',
     '[Verse 1]',
-    'Nắng chiều buông nhẹ trên vai áo, gió đưa hương mùa cũ quay về',
-    'Quán quen góc phố còn vương khói, tách trà thơm ấm cả chiều quê',
+    'Nắng chiều buông nhẹ trên vai áo',
+    'Gió đưa hương mùa cũ quay về',
+    'Quán xưa đầu phố còn vương khói',
+    'Tách trà thơm ấm cả chiều quê',
     '[Verse 2]',
-    'Ánh đèn lên chậm nơi cuối ngõ, tiếng rao đêm chạm khẽ hiên nhà',
-    'Giữ giùm nhau một miền ký ức, dẫu ngày mai cách mấy trùng xa',
+    'Đèn vàng lên chậm nơi đầu ngõ',
+    'Tiếng rao đêm chạm khẽ hiên nhà',
+    'Giữ giùm nhau một miền thương nhớ',
+    'Dẫu ngày mai cách mấy trùng xa',
     '[Chorus]',
-    'Gọi tên nhau giữa chiều gió lộng, để lời ca bay mãi ngàn khơi (ngàn khơi)',
-    'Bàn tay đan giữ mùa nắng ấm, mặc thời gian trôi giữa dòng đời',
+    'Gọi tên nhau chiều thu gió mới',
+    'Để lời ca bay khắp ngàn khơi (ngàn khơi)',
+    'Bàn tay đan giữ mùa nắng ấm',
+    'Mặc thời gian trôi giữa dòng đời',
     '[Rap]',
-    'Chẳng thể giữ nổi kỷ niệm cũ kỹ đã ngã đổ khi nhịp trống dồn dập từng bước thật gắt',
+    'Chẳng thể giữ nổi kỷ niệm cũ kỹ đã ngã',
+    'Nhịp trống dồn dập từng bước thật gắt đêm nay',
   ].join('\n'));
   const sunoCleanRes = checkDraft(sunoProfile, cleanSuno);
   if (sunoCleanRes.findings.length) fail(`suno self-test báo sai trên bản sạch: ${JSON.stringify(sunoCleanRes.findings)}`);
@@ -150,6 +160,8 @@ sources:
   if (!has(sunoCase({ description: style, body: '[Chorus]\nTa cùng nhau hát vang (fade out)' }), 'directive-in-parens', 'ERROR')) fail('"(fade out)" trong lời hát phải là ERROR');
   if (!has(sunoCase({ description: style, body: '[Verse 1]\n(hát nhẹ thôi)\nEm về' }), 'directive-in-parens', 'ERROR')) fail('cả dòng "(hát nhẹ thôi)" phải là ERROR');
   if (!has(sunoCase({ description: 'Indie pop, 80 BPM, female vocals', body: '[Verse]\nEm về' }), 'style-missing-vocal-clarity')) fail('Style chỉ có "vocals" mà thiếu cue phát âm phải bị cảnh báo');
+  // Everyday words with two heavy tones ("hiện tại", "điện thoại", "liễu rủ") are normal Vietnamese, not broken-tone clusters.
+  if (sunoCase({ description: style, body: '[Verse 1]\nHiện tại em vẫn ở đây\nĐiện thoại im lặng cả ngày\nGọi hồn liễu rủ lê thê bên quê\nLòng ta còn mãi những chiều mưa bay' }).some((f) => f.field === 'broken-tone-cluster')) fail('lời tự nhiên có cặp thanh nặng/hỏi/ngã không được bị cảnh báo');
   console.log('SELF-TEST PASS — cách đếm, parser hồ sơ, tách trường, tách đoạn, mức ERROR/WARN theo độ tin cậy, khối thiếu, kiểm tra Suno prosody');
 }
 

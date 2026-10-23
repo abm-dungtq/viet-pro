@@ -68,7 +68,8 @@ sources:
 3. **Đan xen kết câu Bằng – Trắc & Vần lưng / Vần thông:**
    - Trong khổ 4 câu giai điệu, **không để cả 4 câu đều kết bằng thanh Trắc** (giai điệu bị treo). Hãy đan xen **Trắc – Bằng – Trắc – Bằng** để câu 2 và câu 4 hạ cánh êm trên thanh Bằng (`ngang/huyền`).
    - Phối hợp **vần chân** với **vần lưng** (chữ cuối câu trên ăn vần với chữ thứ 2/3/4 câu dưới) và **vần thông** (`-ang/-an`, `-ơi/-ôi`, `-im/-in`).
-4. **Nhịp & Hơi:** Dòng chuẩn **6–12 chữ**; >12 chữ phải có `,` lấy hơi. Dòng đối ứng giữa `[Verse 1]`, `[Verse 2]`, `[Verse 3]` nên lệch **≤2 chữ**; `check-platform` cảnh báo khi lệch quá 4 chữ.
+4. **Nhịp & Hơi:** Dòng chuẩn **6–12 chữ**; >12 chữ phải có `,` lấy hơi. Dòng đối ứng giữa `[Verse 1]`, `[Verse 2]`, `[Verse 3]` nên lệch **≤2 chữ**; `check-platform` cảnh báo khi lệch quá 4 chữ. Dòng giai điệu ngắn khoảng **6–8 chữ** thường dễ hát và chắc nhịp hơn; khi một dòng gộp hai vế dài, cân nhắc tách thành hai dòng (kinh nghiệm, chưa đo).
+5. **Hạn chế chêm từ tiếng Anh vào câu hát tiếng Việt** (`wifi, crush, lag, video, chill, deadline...`): Suno có thể đổi sang cách phát âm tiếng Anh giữa câu, làm giật nhịp và méo dấu các chữ kế bên (kinh nghiệm, chưa đo). Nếu cố ý dùng, nghe lại bản render; `check-platform` chỉ cảnh báo ở mức WARN.
 
 ---
 
@@ -86,7 +87,7 @@ sources:
 ## 6. Checklist bàn giao
 
 - [ ] Đủ `## title`, `## description` (EN, có mô tả giọng hát và cue phát âm), `## body`?
-- [ ] Mọi `[...]` bằng tiếng Anh; mọi `(...)` là lời bè hát thật (≤4 từ)?
+- [ ] Mọi `[...]` bằng tiếng Anh; mọi `(...)` là lời bè hát thật (≤4 từ); từ tiếng Anh trong câu hát (nếu có) là cố ý?
 - [ ] Cuối `[Chorus]`/`[Outro]` dùng âm mở hoặc âm mũi (`-m, -n, -ng, -nh`), không dùng `-p/-t/-c/-ch` hay thanh Nặng?
 - [ ] Khổ 4 câu có điểm hạ cánh thanh Bằng (`ngang/huyền`), không kết 100% bằng thanh Trắc?
 - [ ] Chạy `check-platform.mjs suno <file>` và `lint-vietnamese-content.mjs <file>` đạt 0 lỗi? Script chỉ kiểm bản thảo; cưỡng âm thật chỉ lộ ra khi nghe bản render.
