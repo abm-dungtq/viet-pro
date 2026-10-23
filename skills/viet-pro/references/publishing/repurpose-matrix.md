@@ -28,6 +28,7 @@
 | zalo | 300-800 ký tự | Tiêu đề ≤100 ký tự, lợi ích trực tiếp | gần gũi, tôn trọng (theo tệp khách) | Gần hết — chỉ thông điệp chính | 1 thông điệp + 1 CTA |
 | video-script (ngắn) | 15-90 giây (~40-230 từ nói) | 3 giây đầu — dữ kiện/câu hỏi vào thẳng ý | văn nói, ngôi mình/bạn | Mọi thứ trừ 1 insight + 1-2 dẫn chứng | Insight + số liệu chính + CTA nếu brief yêu cầu |
 | video-script (YouTube dài) | 5-15 phút | Cold-open 15-30s từ đoạn đắt nhất | văn nói, giữ chiều sâu | Ít — chuyển cấu trúc sang chapter | Toàn bộ lập luận, thêm re-hook mỗi 2-3 phút |
+| suno | Lyrics ≤3.000, Style ≤1.000 | Verse 1 mở cảnh, Chorus âm mở | nhạc tính, thuận thanh | Văn xuôi nghị luận | Cảm xúc, hình ảnh đắt |
 
 ## Thứ tự sản xuất khuyến nghị (trọn bộ)
 

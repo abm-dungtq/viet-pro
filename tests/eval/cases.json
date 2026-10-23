@@ -332,5 +332,43 @@
     "max_edit_ratio": 0.1,
     "min_words": 70,
     "max_words": 230
+  },
+  {
+    "id": "suno-song",
+    "task": "write",
+    "prompt": "Viết lời bài hát tiếng Việt và Style Prompt cho Suno, thể loại indie acoustic ballad, giọng nữ, về một người con đi làm xa nhớ bữa cơm chiều ở quê. Bài gồm [Verse 1], [Verse 2], [Chorus] và [Outro]. Trình bày thành các khối \"## title\", \"## description\" (Style of Music, tiếng Anh), \"## caption\" (Exclude Styles) và \"## body\" (lời có metatag).",
+    "keep": [],
+    "platform": "suno",
+    "must_include": [
+      "## title",
+      "## description",
+      "## body",
+      "[Verse 1",
+      "[Chorus"
+    ],
+    "must_not_include": [
+      "Dưới đây là",
+      "[Điệp khúc",
+      "[Đoạn"
+    ],
+    "min_words": 60,
+    "max_words": 420
+  },
+  {
+    "id": "no-change-suno",
+    "task": "edit",
+    "source_file": "tests/platform/suno-ok.md",
+    "prompt": "Rà bản thảo bài hát Suno trong file input.md. Bản này đã đạt; chỉ sửa lỗi thật sự, giữ nguyên lời hát, metatag và các khối ## title, ## description, ## caption, ## body. Trả lại toàn bộ bản thảo sau khi rà.",
+    "keep": [
+      "## description",
+      "## body",
+      "[Verse 1 - Soft Intimate Vocal]",
+      "ngàn khơi"
+    ],
+    "platform": "suno",
+    "compare_source": true,
+    "max_edit_ratio": 0.1,
+    "min_words": 60,
+    "max_words": 260
   }
 ]

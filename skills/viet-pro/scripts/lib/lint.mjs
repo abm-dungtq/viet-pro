@@ -34,8 +34,8 @@ export const LINE_RULES = [
   },
   {
     id: 'title-case', level: 'WARN', desc: 'Nghi Title Case kiểu Anh — tiếng Việt chỉ viết hoa chữ đầu (capitalization.md)',
-    // 3+ consecutive Capitalized words; heuristic, proper nouns cause noise → WARN only
-    check: (l) => [...l.matchAll(/(?:\p{Lu}\p{Ll}+ ){3,}\p{Lu}\p{Ll}+/gu)].map((m) => m[0].slice(0, 50)),
+    // 3+ consecutive Capitalized words; heuristic, proper nouns cause noise → WARN only; ignore [Metatag] blocks
+    check: (l) => [...l.replace(/\[[^\]]*\]/gu, '').matchAll(/(?:\p{Lu}\p{Ll}+ ){3,}\p{Lu}\p{Ll}+/gu)].map((m) => m[0].slice(0, 50)),
   },
   {
     id: 'chatbot-citation', level: 'ERROR', desc: 'Markup trích dẫn của chatbot còn sót (oaicite, turn0search, 【…†…】, [cite], utm_source=chatgpt.com)',
@@ -136,15 +136,48 @@ function textRules(text, opts = {}) {
 
   const dramaticClosers = proseLines.filter((l) => l.length <= 100 && /^(Và đó mới là|Đó mới là điều|Không ai (?:còn )?có thể làm ngơ|Hãy để điều đó)/iu.test(l));
   if (dramaticClosers.length > 1) findings.push({ level: 'WARN', id: 'dramatic-closer-repeat', line: 0, excerpt: `${dramaticClosers.length} câu kết/fragment kịch tính` });
-  findings.push(...phraseReuse(text, opts.keep));
+  const reuseTarget = /^\s*\[(?:Intro|Verse|Pre-Chorus|Chorus|Final Chorus|Bridge|Outro|Hook|Refrain)\b/imu.test(text)
+    ? dedupeSongLyrics(text)
+    : text;
+  findings.push(...phraseReuse(reuseTarget, opts.keep));
   return findings;
 }
+
+function dedupeSongLyrics(text) {
+  const seenLines = new Set();
+  let seenChorus = false;
+  let skipBlock = false;
+  const out = [];
+  for (const rawLine of text.split('\n')) {
+    const trimmed = rawLine.trim();
+    if (/^\[[^\]]+\]$/u.test(trimmed)) {
+      if (/^\[(?:Chorus|Final Chorus|Hook|Refrain)\b/iu.test(trimmed)) {
+        skipBlock = seenChorus;
+        seenChorus = true;
+      } else {
+        skipBlock = false;
+      }
+      continue;
+    }
+    if (skipBlock) continue;
+    const cleaned = trimmed.replace(/\[[^\]]*\]/gu, '').trim();
+    const norm = cleaned.toLowerCase().replace(/\s+/gu, ' ');
+    if (norm && seenLines.has(norm)) continue;
+    if (norm) seenLines.add(norm);
+    out.push(cleaned);
+  }
+  return out.join('\n');
+}
+
+const SONG_TAG_RE = /^\s*\[(?:Intro|Verse|Pre-Chorus|Chorus|Final Chorus|Bridge|Outro|Hook|Refrain)\b/imu;
 
 export function lintText(text, opts = {}) {
   const findings = [];
   const lines = text.split('\n');
+  const isSong = SONG_TAG_RE.test(text);
   let inFence = false;
   let inFrontmatter = hasFrontmatter(lines);
+  let draftSection = '';
   lines.forEach((line, i) => {
     if (i === 0 && inFrontmatter) return;
     if (inFrontmatter) {
@@ -153,7 +186,10 @@ export function lintText(text, opts = {}) {
     }
     if (/^\s*```/.test(line)) { inFence = !inFence; return; }
     if (inFence) return;
+    const secMatch = line.match(/^##[ \t]+(title|description|caption|body)[ \t]*$/iu);
+    if (secMatch) { draftSection = secMatch[1].toLowerCase(); return; }
     for (const rule of LINE_RULES) {
+      if (isSong && rule.id === 'title-case' && (draftSection === 'title' || draftSection === 'description' || draftSection === 'caption')) continue;
       for (const excerpt of rule.check(line)) {
         findings.push({ level: rule.level, id: rule.id, line: i + 1, excerpt, desc: rule.desc });
       }

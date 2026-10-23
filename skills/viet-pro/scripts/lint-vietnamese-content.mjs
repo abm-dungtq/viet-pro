@@ -72,7 +72,28 @@ function selfTest() {
 
   if (cleanFindings.length) { console.error(`SELF-TEST FAIL — false positive ERROR trên văn sạch: ${JSON.stringify(cleanFindings)}`); process.exit(1); }
   if (protectedFindings.length) { console.error(`SELF-TEST FAIL — false positive trên frontmatter/code/câu đối lập hợp lệ: ${JSON.stringify(protectedFindings)}`); process.exit(1); }
-  console.log(`SELF-TEST PASS — bắt đủ ${expect.length + 2} nhóm vi phạm, không báo sai frontmatter/code/câu đối lập đơn lẻ`);
+  const songLyrics = [
+    '## title',
+    'Phố Chiều Còn Nắng Ấm',
+    '## description',
+    'Warm Indie Acoustic Ballad, Fingerpicked Nylon Guitar, Clear Vietnamese Pronunciation',
+    '## caption',
+    'Muffled Vocals, Heavy Distortion, Rushed Phrasing',
+    '## body',
+    '[Verse 1 - Acoustic Guitar Fingerpicking]',
+    'Nắng chiều buông nhẹ trên vai áo, gió đưa hương mùa cũ quay về',
+    '[Chorus - Emotional Climax]',
+    'Gọi tên nhau giữa chiều gió lộng, để lời ca bay mãi ngàn khơi',
+    '[Verse 2 - Soft Piano And Strings]',
+    'Ánh đèn lên chậm nơi cuối ngõ, tiếng rao đêm chạm khẽ hiên nhà',
+    '[Chorus - Emotional Climax]',
+    'Gọi tên nhau giữa chiều gió lộng, để lời ca bay mãi ngàn khơi',
+    '[Final Chorus - Full Band Outro]',
+    'Gọi tên nhau giữa chiều gió lộng, để lời ca bay mãi ngàn khơi',
+  ].join('\n');
+  const songFindings = lintText(songLyrics).filter((f) => ['title-case', 'phrase-reuse'].includes(f.id));
+  if (songFindings.length) { console.error(`SELF-TEST FAIL — false positive trên metatag/Chorus bài hát: ${JSON.stringify(songFindings)}`); process.exit(1); }
+  console.log(`SELF-TEST PASS — bắt đủ ${expect.length + 2} nhóm vi phạm, không báo sai frontmatter/code/câu đối lập đơn lẻ/lời bài hát`);
   process.exit(0);
 }
 

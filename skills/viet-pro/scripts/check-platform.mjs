@@ -81,7 +81,76 @@ sources:
   if (options.findings.length !== 1 || options.findings[0].field !== 'max_title_chars phương án 2') fail(`nhiều dòng trong ## title phải đo từng phương án: ${JSON.stringify(options.findings)}`);
   const noBody = checkDraft(p, splitDraft(`## title\nTiêu đề\n\n${'Thân lẽ ra ở body. '.repeat(10)}`));
   if (!noBody.findings.some((f) => f.level === 'WARN' && f.detail.includes('## body'))) fail('thiếu khối body phải được cảnh báo');
-  console.log('SELF-TEST PASS — cách đếm, parser hồ sơ, tách trường, tách đoạn, mức ERROR/WARN theo độ tin cậy, khối thiếu');
+
+  const sunoProfile = loadProfile(DIR, 'suno');
+  const dirtySuno = splitDraft([
+    '## title',
+    'Chiều Mưa',
+    '## description',
+    'Nhạc ballad buồn, indie pop',
+    '## caption',
+    'no autotune, đừng hét',
+    '## body',
+    '[Đoạn 1 - Mở đầu]',
+    'Mưa rơi chơi vơi trên phố vắng anh bước đi một mình trong đêm tối mịt mùng lạnh giá không có ai bên cạnh',
+    'Em đi xa thật rồi',
+    '[Chorus]',
+    'Giữa đêm thâu u sầu trái tim anh vụn vỡ (hát nhẹ nhàng thôi)',
+    'Ký ức xưa đã khép lại trong chiều vắng lạnh',
+    'Chẳng thể giữ nổi kỷ niệm cũ kỹ đã ngã đổ',
+    'Nỗi đau này thật khốc liệt và bức xúc',
+  ].join('\n'));
+  const sunoDirtyRes = checkDraft(sunoProfile, dirtySuno);
+  const sunoFields = new Set(sunoDirtyRes.findings.map((f) => f.field));
+  for (const wantField of [
+    'style-prompt-lang',
+    'style-missing-vocal-clarity',
+    'exclude-styles-negation',
+    'vietnamese-in-brackets',
+    'directive-in-parens',
+    'chorus-closed-stop-ending',
+    'stanza-all-trac-endings',
+    'broken-tone-cluster',
+    'long-unpaused-line',
+    'ai-cliche-rhyme',
+  ]) {
+    if (!sunoFields.has(wantField)) fail(`suno self-test không bắt được ${wantField}: ${JSON.stringify(sunoDirtyRes.findings)}`);
+  }
+
+  const cleanSuno = splitDraft([
+    '## title',
+    'Phố Chiều Còn Nắng',
+    '## description',
+    'Warm indie acoustic ballad, 76 BPM, fingerpicked guitar, warm breathy female vocals, clear Vietnamese pronunciation, crisp articulation',
+    '## caption',
+    'muffled vocals, heavy distortion, autotune',
+    '## body',
+    '[Verse 1]',
+    'Nắng chiều buông nhẹ trên vai áo, gió đưa hương mùa cũ quay về',
+    'Quán quen góc phố còn vương khói, tách trà thơm ấm cả chiều quê',
+    '[Verse 2]',
+    'Ánh đèn lên chậm nơi cuối ngõ, tiếng rao đêm chạm khẽ hiên nhà',
+    'Giữ giùm nhau một miền ký ức, dẫu ngày mai cách mấy trùng xa',
+    '[Chorus]',
+    'Gọi tên nhau giữa chiều gió lộng, để lời ca bay mãi ngàn khơi (ngàn khơi)',
+    'Bàn tay đan giữ mùa nắng ấm, mặc thời gian trôi giữa dòng đời',
+    '[Rap]',
+    'Chẳng thể giữ nổi kỷ niệm cũ kỹ đã ngã đổ khi nhịp trống dồn dập từng bước thật gắt',
+  ].join('\n'));
+  const sunoCleanRes = checkDraft(sunoProfile, cleanSuno);
+  if (sunoCleanRes.findings.length) fail(`suno self-test báo sai trên bản sạch: ${JSON.stringify(sunoCleanRes.findings)}`);
+
+  const style = 'Pop ballad, 80 BPM, female vocals, clear Vietnamese pronunciation';
+  const sunoCase = (fields) => checkDraft(sunoProfile, fields).findings;
+  const has = (list, field, level) => list.some((f) => f.field === field && (!level || f.level === level));
+  // Words starting with "đ" sit outside JS `\b`; the checks must still see them.
+  if (!has(sunoCase({ caption: 'đừng autotune', description: style }), 'exclude-styles-negation')) fail('suno phải bắt "đừng" trong Exclude Styles');
+  if (!has(sunoCase({ description: style, body: '[Verse 1]\nEm về qua phố cũ (đàn guitar)' }), 'directive-in-parens', 'WARN')) fail('suno phải cảnh báo "(đàn guitar)"');
+  if (has(sunoCase({ description: style, body: '[Chorus]\nTa cùng nhau hát vang (cùng hát lên)' }), 'directive-in-parens')) fail('lời bè "(cùng hát lên)" không được bị coi là chỉ dẫn');
+  if (!has(sunoCase({ description: style, body: '[Chorus]\nTa cùng nhau hát vang (fade out)' }), 'directive-in-parens', 'ERROR')) fail('"(fade out)" trong lời hát phải là ERROR');
+  if (!has(sunoCase({ description: style, body: '[Verse 1]\n(hát nhẹ thôi)\nEm về' }), 'directive-in-parens', 'ERROR')) fail('cả dòng "(hát nhẹ thôi)" phải là ERROR');
+  if (!has(sunoCase({ description: 'Indie pop, 80 BPM, female vocals', body: '[Verse]\nEm về' }), 'style-missing-vocal-clarity')) fail('Style chỉ có "vocals" mà thiếu cue phát âm phải bị cảnh báo');
+  console.log('SELF-TEST PASS — cách đếm, parser hồ sơ, tách trường, tách đoạn, mức ERROR/WARN theo độ tin cậy, khối thiếu, kiểm tra Suno prosody');
 }
 
 function validateAll() {

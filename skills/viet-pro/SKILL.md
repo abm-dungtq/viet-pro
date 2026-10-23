@@ -1,11 +1,11 @@
 ---
 name: viet-pro
-description: "Viết, biên tập, humanize, audit dấu hiệu AI, kiểm chứng và chuyển thể nội dung tiếng Việt chuyên nghiệp cho bài dài, blog, SEO, mạng xã hội, newsletter và kịch bản video. Kích hoạt khi người dùng yêu cầu viết mới, biên tập, rà văn phong tiếng Việt, chống AI slop, kiểm chứng nguồn/claim hoặc định dạng xuất bản theo kênh; không dùng cho dịch ngắn hay chỉnh một câu đơn giản."
+description: "Viết, biên tập, humanize, audit dấu hiệu AI, kiểm chứng và chuyển thể nội dung tiếng Việt chuyên nghiệp cho bài dài, blog, SEO, mạng xã hội, newsletter, kịch bản video và lời bài hát/prompt nhạc Suno. Kích hoạt khi người dùng yêu cầu viết mới, biên tập, rà văn phong tiếng Việt, chống AI slop, kiểm chứng nguồn/claim hoặc định dạng xuất bản theo kênh; không dùng cho dịch ngắn hay chỉnh một câu đơn giản."
 metadata:
   author: ABM-DungTQ
-  version: "5.5.1"
+  version: "5.6.0"
   category: content
-  keywords: [vietnamese, writing, editing, humanize, fact-check, publishing, content-engine]
+  keywords: [vietnamese, writing, editing, humanize, fact-check, publishing, content-engine, suno]
 ---
 
 # Viết Pro — Vietnamese Professional Content Engine

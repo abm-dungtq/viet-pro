@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { xWeightedLength } from './x-weighted.mjs';
+import { checkSunoDraft } from './suno.mjs';
 
 export const SCHEMA = 'viet-pro/platform-profile@1';
 export const METHODS = ['graphemes', 'utf16', 'utf8_bytes', 'utf8_bytes_emoji', 'x_weighted', 'words'];
@@ -245,6 +246,11 @@ export function checkDraft(profile, fields, { surface } = {}) {
   const titleLines = (fields.title || '').split('\n').filter((t) => t.trim());
   if (fields.body === undefined && fields.description === undefined && (titleLines.length > 3 || titleLines.some((t) => t.length > 150))) {
     findings.push({ level: 'WARN', field: 'title', detail: 'khối "## title" có đoạn dài; có thể thiếu "## body" hoặc "## description" ở sau tiêu đề' });
+  }
+  if (profile.meta.id === 'suno') {
+    const sunoRes = checkSunoDraft(fields, { countText });
+    findings.push(...sunoRes.findings);
+    measured.push(...sunoRes.measured);
   }
   return { surface: chosen, findings, measured };
 }

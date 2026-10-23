@@ -76,6 +76,16 @@ Mỗi quy tắc phải có:
 | `[ví dụ sai]` | `[ví dụ đúng]` |
 ```
 
+### Ngưỡng dung lượng
+
+`run-eval.mjs --compare` báo lỗi khi tổng Markdown của skill tăng quá `--max-bytes-growth` (mặc định 2%) so với baseline. Ngưỡng này giữ cho skill không phình dần qua từng bản vá nhỏ. Khi một bản thêm cả một kênh mới, tăng quá 2% là chuyện đã biết trước; khi đó chủ repo quyết định nâng ngưỡng cho đúng bản đó, ghi lý do vào đây, rồi chạy eval thật để lấy baseline mới. Không sửa tay `tests/eval/baseline.json` để lách cổng.
+
+| Phiên bản | Tăng so với bản trước | Ngưỡng dùng | Lý do |
+|---|---|---|---|
+| 5.6.0 | 137 189 → khoảng 146 800 byte (+7%) | `--max-bytes-growth 0.08`, chỉ cho lần so với baseline 5.5.0 | Gần như toàn bộ phần tăng là `publishing/suno.md`, file chỉ được nạp khi người dùng làm bài hát Suno, nên ngữ cảnh của các kênh khác không đổi. Các bản sau quay về mặc định 2%, so với baseline 5.6.0. |
+
+Lượt eval làm baseline 5.6.0 (`tests/eval/runs/2026-10-23-5.6.0.json`) đạt 21/23 ca, kể cả `suno-song` và `no-change-suno`. Hai ca `linkedin-write` (thiếu cặp dấu bao bài) và `facebook-humanize` (lặp "18%") trượt ở lượt này nhưng đạt trong cả hai lần chạy lại riêng, nên được xem là dao động của mô hình; baseline vẫn ghi đúng kết quả 21/23.
+
 ### Giới hạn kích thước module
 
 - Không đặt trần số dòng cứng (xem `development/lead.md`). Tách module khi việc tách giúp giảm context phải nạp hoặc giúp tìm đúng hướng dẫn nhanh hơn
@@ -92,6 +102,7 @@ Mọi thay đổi ghi vào đây:
 
 | Ngày | Module | Thay đổi | Nguồn |
 |------|--------|----------|-------|
+| 2026-10-23 | `publishing/suno.md`, `scripts/lib/suno.mjs`, `scripts/lib/profile.mjs`, `scripts/lib/lint.mjs`, `scripts/check-platform.mjs`, `SKILL.md`, `tests/` | **Nâng cấp v5.6.0**: thêm hồ sơ nền tảng `suno.md` (lời bài hát và Style Prompt Suno v4.5–v6, luật chống cưỡng âm tiếng Việt) và bộ kiểm `scripts/lib/suno.mjs` chạy qua `check-platform.mjs suno` / MCP `check_platform`; `lint.mjs` bỏ qua `title-case` trong metatag `[...]` và các khối `## title`/`## description`/`## caption` của bài hát, không báo `phrase-reuse` cho điệp khúc lặp lại. Trước khi phát hành đã sửa: ranh giới từ Unicode thay cho `\b` (trước đó bỏ sót `đừng`, `đàn`), `directive-in-parens` không còn bắt nhầm lời bè, `style-missing-vocal-clarity` kiểm riêng giọng hát và cue phát âm, sửa ví dụ thanh điệu sai trong `suno.md` và gắn nhãn "kinh nghiệm, chưa đo" cho slider và cue phát âm. Thêm fixture `tests/platform/suno-*.md` và hai ca eval `suno-song`, `no-change-suno`. **Ngưỡng dung lượng:** Markdown của skill tăng khoảng 7% so với 5.5.0, vượt cổng 2% mặc định; chủ repo chấp nhận có chủ đích cho riêng bản này (xem mục Ngưỡng dung lượng) | `suno.com/release-notes`, `suno.com/blog/introducing-v6`, đánh giá độc lập 2026-10-23 |
 | 2026-10-17 | README, INSTALL, install.sh, .claude-plugin/ | **v5.5.1**: repo đổi tên thành abm-dungtq/viet-pro; cập nhật mọi link và lệnh cài | – |
 | 2026-10-17 | `publishing/`, `scripts/`, `.claude-plugin/`, `tests/`, `docs/development/` | **Nâng cấp v5.5.0**: hồ sơ nền tảng (giới hạn trong frontmatter, có nguồn, độ tin cậy và hạn rà soát) cho 11 kênh, thêm Threads, TikTok, YouTube; `check-platform.mjs` kiểm bản thảo theo hồ sơ; MCP server stdio cho lint, đối chiếu dữ kiện và kiểm kênh; `--keep` khớp nguyên từ, cụm lặp được gộp, measure-lint bỏ frontmatter; eval thêm 3 ca theo kênh và cổng tăng dung lượng skill | Tài liệu chính thức của Meta, TikTok, YouTube, X (twitter-text); spec MCP 2026-07-28 |
 | 2026-10-17 | `SKILL.md`, `scripts/`, `review/`, `publishing/`, `tests/`, `.claude-plugin/` | **Nâng cấp v5.4.0**: cài được như plugin Claude Code, thêm giấy phép MIT; linter bắt mã trích dẫn chatbot, chỗ trống chưa điền và cụm từ lặp, bỏ luật độ dài đoạn đều; đồng bộ Humanizer 3.1.0 (26 pattern) và thêm `translationese-vi.md`; đếm ký tự X có trọng số, Instagram tối đa 5 hashtag, Facebook không dùng markdown, cổng công bố quảng cáo, hạn rà soát cho file kênh; eval thêm 6 ca văn người viết đo tỷ lệ sửa và runner Codex; tài liệu bảo trì dời ra `docs/development/` | Nghiên cứu repo AI slop/humanizer, tài liệu nền tảng 2025-2026, Luật 75/2025/QH15 |
