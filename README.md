@@ -1,20 +1,101 @@
 # Viết Pro
 
-Viết Pro là skill giúp trợ lý AI viết và biên tập tiếng Việt cho tự nhiên, giữ đúng dữ kiện và hợp với từng kênh đăng bài. Từ bản 5.6.0, skill viết được cả lời bài hát và Style Prompt cho Suno, có kiểm tra để lời tiếng Việt khi hát ít bị cưỡng âm.
+Nhờ AI viết một bài tiếng Việt thì chỉ mất vài giây. Mất công là ở khâu sau: bài đọc lên vẫn ra giọng AI, con số "tăng 20%" thành "giảm 20%" sau một lượt sửa, bài Threads lố 40 ký tự mà không ai báo, còn lời bài hát đưa vào Suno thì bị hát méo dấu.
+
+Viết Pro là skill cho trợ lý AI để xử lý đúng những chỗ đó. Skill hướng dẫn trợ lý viết và biên tập tiếng Việt tự nhiên, rồi kèm theo bộ công cụ kiểm tra chạy được trên máy bạn, nên lỗi lộ ra trước khi bài được đăng.
 
 Skill chạy trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.6.0**.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.6.0/install.sh | bash
+```
+
+---
+
+## Xem Viết Pro làm việc
+
+Mọi kết quả trong phần này là đầu ra thật của công cụ đi kèm skill, chạy trên file mẫu trong thư mục `tests/`.
+
+### 1. Bắt giọng AI trước khi bạn đọc tới
+
+Bản nháp kiểu chatbot hay gặp:
+
+```text
+Dưới đây là bài viết bạn yêu cầu.
+
+Trong bối cảnh thị trường thay đổi chưa từng có, Minh Châu không chỉ đạt tỷ lệ quay lại 18%
+mà còn tạo nên một bước ngoặt lịch sử vào ngày 10/09/2026.
+
+**Điểm nhấn:** Đây không phải là câu chuyện về công cụ mà là câu chuyện về tư duy.
+...
+Và đó mới là điều đáng suy ngẫm.
+```
+
+Linter của Viết Pro chỉ ra năm nhóm dấu hiệu:
+
+```text
+WARN [chatbot-residue] "Dưới đây là"
+WARN [staged-opener] "Trong bối cảnh thị trường thay đổi chưa từng có, ..."
+WARN [contrast-formula-repeat] "Công thức đối lập xuất hiện 3 lần"
+WARN [decorative-bold-labels] "3 đoạn mở bằng nhãn bold"
+WARN [dramatic-closer-repeat] "2 câu kết/fragment kịch tính"
+```
+
+Sau khi skill viết lại, bài giữ nguyên tên, tỷ lệ, ngày và link, chỉ bỏ phần trang trí:
+
+```text
+Ngày 10/09/2026, Minh Châu ghi nhận tỷ lệ khách quay lại 18%.
+Chi tiết được công bố tại https://example.com/minh-chau.
+```
+
+### 2. Không để con số bị đảo nghĩa
+
+Một lượt sửa câu có thể vô tình đổi nghĩa của số liệu. Bộ so dữ kiện đọc cả từ đứng trước con số:
+
+```text
+Trước: Doanh thu quý 3 tăng 20% so với cùng kỳ.
+Sau:   Doanh thu quý 3 giảm 20% so với cùng kỳ.
+
+MISMATCH [polarity] "20%": "tăng" -> "giảm"
+```
+
+Ngoài số và chiều tăng giảm, công cụ còn so tên riêng, ngày, link, trích dẫn và các cụm bạn yêu cầu giữ nguyên.
+
+### 3. Đúng giới hạn của từng kênh
+
+Mỗi kênh có một hồ sơ ghi giới hạn ký tự, hashtag và link, kèm nguồn chính thức và độ tin cậy. Mỗi kênh cũng đếm theo cách riêng: Threads tính emoji theo byte, X tính chữ có dấu theo trọng số.
+
+```text
+ERROR [threads/post] max_chars đoạn 2: 540/500 (O, nguồn threads-api-posts)
+ERROR [x-thread/post] max_chars đoạn 1: 298/280 (O, nguồn twitter-text-v3)
+```
+
+### 4. Lời bài hát Suno không bị cưỡng âm
+
+Viết Pro tách từng âm tiết của lời bài hát ra thanh điệu và âm cuối, rồi cảnh báo những chỗ Suno dễ hát méo:
+
+```text
+WARN broken-tone-cluster: dòng 2: cụm "Chẳng thể giữ" có nhiều thanh gãy/trầm (hỏi/ngã/nặng)
+     liên tiếp không ngắt nhịp, dễ làm Suno hát đớt hoặc trượt dấu
+WARN chorus-closed-stop-ending: dòng 7: câu kết [Chorus - Soaring] đóng bằng "xúc"
+     (thanh sắc, âm tắc -c) làm nốt ngân cuối đoạn bị cụt hơi
+WARN ai-cliche-rhyme: phát hiện bộ vần sáo mòn kiểu AI (mưa rơi - chơi vơi; đêm thâu - u sầu)
+```
 
 ---
 
 ## Viết Pro làm được gì?
 
-- Viết bài mới cho blog, SEO, LinkedIn, Facebook, Instagram, Zalo, Threads, TikTok, YouTube, newsletter, thread X và kịch bản video.
-- Viết lời bài hát tiếng Việt kèm Style Prompt cho Suno, rồi kiểm lời theo thanh điệu và âm cuối để giảm cưỡng âm.
-- Biên tập bản nháp cho mượt, bớt lủng củng và bớt "giọng dịch".
-- Bớt giọng AI (humanize): bỏ những mẫu câu sáo mà AI hay dùng, như "Trong bối cảnh...", "Không phải X, mà là Y" hay "Và đó mới là điều đáng suy ngẫm".
-- Chuyển một bài gốc sang nhiều kênh mà vẫn giữ cùng thông điệp và số liệu.
+| Việc | Viết Pro làm gì |
+| :--- | :--- |
+| Viết bài mới | Blog, SEO, LinkedIn, Facebook, Instagram, Zalo, Threads, TikTok, YouTube, newsletter, thread X, kịch bản video |
+| Viết lời bài hát | Lời tiếng Việt kèm Style Prompt cho Suno, kiểm theo thanh điệu và âm cuối |
+| Biên tập | Câu chữ mượt hơn, bớt lủng củng, bớt "giọng dịch" |
+| Bớt giọng AI | Rà theo 26 dấu hiệu chuyển thể từ Humanizer 3.1.0; muốn xem chi tiết thì yêu cầu "audit dấu hiệu AI" |
+| Chuyển thể nhiều kênh | Một bài gốc thành nhiều bản theo kênh, cùng thông điệp và số liệu |
+| Kiểm chứng | Tra nguồn khi cần, không bịa số liệu hay trích dẫn, đánh dấu claim chưa có nguồn |
 
-Trong lúc làm, skill giữ nguyên tên, số liệu, ngày, link và trích dẫn. Nó không tự thêm số liệu hay nguồn; claim nào chưa có nguồn sẽ được đánh dấu rõ. Mỗi kênh có một hồ sơ ghi giới hạn ký tự, hashtag và link, kèm nguồn và độ tin cậy; `check-platform.mjs` dựa vào hồ sơ đó để kiểm bản thảo. Cách viết hồ sơ nằm trong [platform-profile-schema.md](docs/development/platform-profile-schema.md).
+Hiện có 12 hồ sơ kênh: Blog SEO, Facebook, Instagram, LinkedIn, Newsletter, Threads, TikTok, X, YouTube, Zalo OA, kịch bản video và Suno. Cách viết hồ sơ mới nằm trong [platform-profile-schema.md](docs/development/platform-profile-schema.md).
 
 ---
 
@@ -26,15 +107,15 @@ Mở **Terminal** và dán lệnh sau:
 curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.6.0/install.sh | bash
 ```
 
-Lệnh này tìm xem máy bạn có Claude Code, Codex hay Antigravity, rồi cài Viết Pro cho từng công cụ tìm thấy. Nếu máy đã có bản cũ, bản cũ được chuyển sang `~/.viet-pro-backups/` chứ không bị xoá. Cài xong, mở một phiên làm việc mới trong công cụ của bạn là dùng được.
+Installer tìm xem máy bạn có Claude Code, Codex hay Antigravity, rồi cài Viết Pro cho từng công cụ tìm thấy. Trước khi cài, nó kiểm checksum từng file. Nếu máy đã có bản cũ, bản cũ được chuyển sang `~/.viet-pro-backups/` chứ không bị xoá. Cài xong, mở một phiên làm việc mới là dùng được.
 
 > Cần có `git` và `bash`, đã có sẵn trên macOS và Linux. Installer chưa được kiểm thử trên Windows; trên Windows hãy cài thủ công theo [INSTALL.md](INSTALL.md).
 
-[INSTALL.md](INSTALL.md) hướng dẫn thêm cách cài cho riêng một công cụ, cài cho một dự án và tự kiểm tra checksum. Nếu muốn gọi lint, đối chiếu dữ kiện và kiểm kênh như tool MCP trong Claude Code, Codex hay client khác, xem [INSTALL.md mục 6](INSTALL.md#6-công-cụ-kiểm-tra-qua-mcp).
+[INSTALL.md](INSTALL.md) hướng dẫn thêm cách cài cho riêng một công cụ, cài cho một dự án và tự kiểm tra checksum.
 
 ### Cài dạng plugin Claude Code
 
-Người dùng Claude Code có thể cài Viết Pro như một plugin, không cần lệnh curl:
+Người dùng Claude Code có thể cài Viết Pro như một plugin, không cần lệnh curl. Cách này khai báo sẵn cả MCP server ở mục [Công cụ kiểm tra](#công-cụ-kiểm-tra).
 
 ```bash
 claude plugin marketplace add abm-dungtq/viet-pro
@@ -56,9 +137,9 @@ Với Claude Code, chỉ chọn một trong hai cách cài. Nếu cài cả hai,
 
 | Công cụ | Cách gọi |
 | :--- | :--- |
-| Claude Code | Gõ `/viet-pro` rồi viết yêu cầu |
-| OpenAI Codex | Gõ `$viet-pro` rồi viết yêu cầu |
-| Google Antigravity | Gõ `/viet-pro` rồi viết yêu cầu |
+| Claude Code | `/viet-pro` + yêu cầu |
+| OpenAI Codex | `$viet-pro` + yêu cầu |
+| Google Antigravity | `/viet-pro` + yêu cầu |
 
 Bạn cũng không nhất thiết phải gõ tên skill. Khi yêu cầu rõ ràng là viết hoặc sửa nội dung tiếng Việt, trợ lý sẽ tự dùng Viết Pro.
 
@@ -80,14 +161,14 @@ Giữ nguyên tên, số liệu, ngày và link.
 [dán bản nháp vào đây]
 ```
 
-**Bớt giọng AI**
+**Bớt giọng AI và xem đã sửa gì**
 
 ```text
-/viet-pro Humanize bài Facebook này, bớt dấu hiệu AI nhưng giữ giọng thân thiện.
+/viet-pro Humanize và audit dấu hiệu AI cho bài Facebook này, giữ giọng thân thiện.
 [dán bài vào đây]
 ```
 
-Nếu muốn biết skill đã sửa những gì, thêm cụm *"audit dấu hiệu AI"* vào yêu cầu. Khi đó skill liệt kê từng lỗi, chỉ ra đoạn có lỗi và lý do sửa, rồi mới đưa bản cuối.
+Khi có cụm "audit dấu hiệu AI", skill liệt kê từng lỗi, chỉ ra đoạn có lỗi và lý do sửa, rồi mới đưa bản cuối.
 
 **Một bài, nhiều kênh**
 
@@ -104,49 +185,66 @@ Hai bản phải dùng cùng số liệu.
 về một người con đi làm xa nhớ bữa cơm chiều ở quê. Gồm Verse 1, Verse 2, Chorus và Outro.
 ```
 
-### Lời bài hát Suno
+### Mẹo để có bài tốt hơn
+
+Một yêu cầu tốt thường nói rõ năm điều: viết cho ai, đăng ở đâu, dài khoảng bao nhiêu, giọng văn ra sao, dữ kiện nào phải giữ nguyên. Thiếu vài chi tiết nhỏ cũng không sao. Skill sẽ tự giả định hợp lý và nói rõ đã giả định gì; nó chỉ hỏi lại khi thiếu thông tin quan trọng.
+
+---
+
+## Lời bài hát Suno
 
 Bản thảo cho Suno gồm bốn khối, mỗi khối dán vào một ô của Suno:
 
 | Khối | Ô trong Suno | Ghi chú |
 | :--- | :--- | :--- |
 | `## title` | Tên bài | Tối đa 100 ký tự |
-| `## description` | Style of Music | Viết bằng tiếng Anh: thể loại, tempo, nhạc cụ, giọng hát |
+| `## description` | Style of Music | Tiếng Anh: thể loại, tempo, nhạc cụ, giọng hát |
 | `## caption` | Exclude Styles | Không bắt buộc; chỉ liệt kê thứ cần loại, không dùng "no" hay "không" |
 | `## body` | Lyrics | Lời tiếng Việt, thẻ cấu trúc tiếng Anh như `[Verse 1]`, `[Chorus]` |
 
-Thẻ trong ngoặc vuông phải viết bằng tiếng Anh. Ngoặc đơn chỉ dành cho lời bè thật sự được hát, như `(ngàn khơi)`; nếu đặt chỉ dẫn như `(hát nhẹ)` vào ngoặc đơn, Suno sẽ hát luôn chỉ dẫn đó. Ở cuối điệp khúc và những nốt ngân dài, skill ưu tiên chữ có âm mở hoặc âm mũi, tránh chữ tận cùng bằng -p, -t, -c, -ch hay mang thanh nặng.
+Thẻ trong ngoặc vuông phải viết bằng tiếng Anh. Ngoặc đơn chỉ dành cho lời bè thật sự được hát, như `(ngàn khơi)`; nếu đặt chỉ dẫn như `(hát nhẹ)` vào ngoặc đơn, Suno sẽ hát luôn chỉ dẫn đó. Ở cuối điệp khúc và những nốt ngân dài, skill ưu tiên chữ có âm mở hoặc âm mũi, tránh chữ tận cùng bằng -p, -t, -c, -ch hay mang thanh nặng. Hướng dẫn còn có năm mẫu Style Prompt cho các dòng nhạc Việt: V-Pop ballad, indie acoustic, bolero, R&B lo-fi và rap.
 
-Sau khi viết, bạn có thể tự kiểm bản thảo:
+Bộ kiểm báo lỗi cú pháp, như thẻ tiếng Việt trong ngoặc vuông hay chỉ dẫn nằm trong ngoặc đơn, ở mức ERROR. Các vấn đề về nhịp chỉ được báo ở mức WARN: cụm thanh gãy, câu kết điệp khúc cụt hơi, khổ bốn câu đều kết bằng thanh trắc, các verse lệch số âm tiết, vần sáo kiểu AI.
+
+Bộ kiểm chỉ đọc bản thảo. Chữ có bị hát méo dấu hay không thì chỉ nghe bản render mới biết. Thông số slider và cụm `clear Vietnamese pronunciation` trong hướng dẫn là kinh nghiệm cộng đồng, chưa được đo.
+
+---
+
+## Công cụ kiểm tra
+
+Các công cụ đi kèm skill chỉ cần Node.js, không có phụ thuộc npm và không gọi mạng. Bạn có thể tự chạy chúng, hoặc để trợ lý gọi trong lúc viết.
+
+| Lệnh | Tác dụng |
+| :--- | :--- |
+| `lint-vietnamese-content.mjs <file>` | Tìm dấu hiệu văn AI, mã trích dẫn chatbot còn sót, chỗ trống chưa điền, cụm từ lặp |
+| `compare-preserved-content.mjs <trước> <sau>` | So tên, số, chiều tăng giảm, ngày, link, trích dẫn trước và sau khi sửa |
+| `check-platform.mjs <kênh> <file>` | Đo bản thảo theo hồ sơ kênh, kể cả bộ kiểm lời bài hát Suno |
+| `check-x-length.mjs <file>` | Đếm ký tự thread X có trọng số |
+
+Ví dụ, với bản cài cho Claude Code:
 
 ```bash
 node ~/.claude/skills/viet-pro/scripts/check-platform.mjs suno bai-hat.md
 ```
 
-Lệnh trên báo lỗi cú pháp (thẻ tiếng Việt trong ngoặc vuông, chỉ dẫn nằm trong ngoặc đơn) ở mức ERROR. Các vấn đề về nhịp, chẳng hạn cụm nhiều thanh hỏi, ngã, nặng liền nhau, câu kết điệp khúc bị cụt hơi, khổ bốn câu đều kết bằng thanh trắc hay vần sáo kiểu AI, chỉ được báo ở mức WARN. Script chỉ đọc bản thảo, còn chữ có bị hát méo dấu hay không thì chỉ nghe bản render mới biết. Các thông số slider và cụm `clear Vietnamese pronunciation` trong hướng dẫn là kinh nghiệm cộng đồng, chưa được đo.
-
-### Mẹo để có bài tốt hơn
-
-Yêu cầu càng rõ, bài càng sát ý bạn. Một yêu cầu tốt thường nói được năm điều:
-
-1. Viết cho ai.
-2. Đăng ở đâu (LinkedIn, Facebook, blog, Suno...).
-3. Dài khoảng bao nhiêu.
-4. Giọng văn (trang trọng, thân thiện, hài hước...).
-5. Dữ kiện nào phải giữ nguyên (số liệu, tên, link).
-
-Thiếu vài chi tiết nhỏ cũng không sao. Skill sẽ tự giả định hợp lý và nói rõ đã giả định gì. Nó chỉ hỏi lại khi thiếu thông tin quan trọng.
+Ba công cụ đầu cũng có dạng tool MCP (`lint_vietnamese`, `compare_preserved`, `check_platform`) qua `mcp-server.mjs`. Server chạy qua stdio, chỉ nhận văn bản, không đọc hay ghi file. Bản cài dạng plugin Claude Code đã khai báo sẵn server này; với `install.sh`, Codex và các client khác, xem [INSTALL.md mục 6](INSTALL.md#6-công-cụ-kiểm-tra-qua-mcp).
 
 ---
 
-## Viết Pro xử lý yêu cầu thế nào?
+## Chất lượng được đo, không chỉ được hứa
 
-```text
-Đọc yêu cầu  →  Xác định dữ kiện phải giữ  →  Viết hoặc sửa
-      →  Rà lại tiếng Việt và dữ kiện  →  Bớt giọng AI  →  Trả bản cuối
-```
+Mỗi bản phát hành đều chạy eval: 23 yêu cầu mẫu được giao cho Claude Code dùng Viết Pro, rồi chấm kết quả. Đạt hay không do kiểm tra tự động quyết định: giữ đúng dữ kiện, không lỗi lint, đúng độ dài, đúng giới hạn kênh. Sáu ca trong số đó đưa vào văn người thật viết, như Nam Cao, Thạch Lam, Hồ Biểu Chánh và văn bản hành chính, để bắt lỗi sửa thừa những đoạn vốn đã tốt.
 
-Với việc đơn giản như sửa một đoạn ngắn, skill làm và tự rà ngay trong một lượt. Với một bài mới, nó viết, kiểm dữ kiện, chỉnh giọng rồi mới trả bài. Việc lớn hơn, như nhiều kênh hoặc cần tra cứu, được chia nhỏ và kiểm kỹ từng phần trước khi giao. Bạn không cần chọn mức nào, skill tự quyết theo yêu cầu.
+Ở bản 5.6.0, 21/23 ca đạt, kể cả hai ca Suno mới. Hai ca `linkedin-write` và `facebook-humanize` trượt ở lượt này nhưng đạt trong cả hai lần chạy lại riêng. Điểm trung bình do LLM chấm, thang 5, chỉ để tham khảo:
+
+| Tiêu chí | 5.5.0 | 5.6.0 |
+| :--- | :--- | :--- |
+| Đúng brief | 4,86 | 4,91 |
+| Tiếng Việt tự nhiên | 4,76 | 4,86 |
+| Giữ đúng dữ kiện | 4,67 | 4,77 |
+| Hợp kênh | 4,71 | 4,95 |
+
+Mỗi bản chỉ chạy eval một lần, nên đây là tín hiệu để theo dõi, chưa phải bằng chứng thống kê.
 
 ---
 
@@ -168,11 +266,11 @@ Không. Viết Pro chỉ giúp bài viết tự nhiên hơn. Những dấu hiệ
 **Lời bài hát qua kiểm tra rồi thì Suno có hát đúng dấu không?**
 Không chắc. Kiểm tra giúp tránh những lỗi hay gặp trong bản thảo, nhưng giai điệu do Suno tự sinh, nên vẫn cần nghe lại và sửa những câu bị méo dấu.
 
-**Làm sao cập nhật lên bản mới?**
-Chạy lại lệnh cài đặt ở trên với số phiên bản mới. Bản cũ sẽ được chuyển vào `~/.viet-pro-backups/`.
+**Skill có tự tra cứu web không?**
+Có, khi bài cần số liệu mới, thông tin chuyên ngành hoặc khi bạn yêu cầu dẫn nguồn. Nếu không muốn, hãy ghi "không tra cứu web" trong yêu cầu.
 
-**Bản cũ của tôi nằm ở đâu?**
-Trong `~/.viet-pro-backups/<thời-gian-cài>/`. Bạn có thể xoá thư mục này khi không cần nữa.
+**Làm sao cập nhật lên bản mới?**
+Chạy lại lệnh cài đặt ở trên với số phiên bản mới. Bản cũ sẽ được chuyển vào `~/.viet-pro-backups/<thời-gian-cài>/`, bạn có thể xoá thư mục này khi không cần nữa.
 
 **Làm sao gỡ cài đặt?**
 Xoá thư mục `viet-pro` trong thư mục skill của công cụ bạn dùng:
@@ -187,9 +285,6 @@ Mở Terminal tại thư mục dự án, rồi chạy:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.6.0/install.sh | bash -s -- --workspace
 ```
-
-**Skill có tự tra cứu web không?**
-Có, khi bài cần số liệu mới, thông tin chuyên ngành hoặc khi bạn yêu cầu dẫn nguồn. Nếu không muốn, hãy ghi "không tra cứu web" trong yêu cầu.
 
 ---
 
@@ -231,9 +326,7 @@ Các kiểm tra này không cần mạng hay LLM. Chúng tự chạy ở mỗi P
 bash tests/run-all.sh
 ```
 
-### Eval chất lượng bài viết
-
-Eval đưa 23 yêu cầu mẫu trong `tests/eval/cases.json` cho Claude Code chạy với Viết Pro, rồi chấm kết quả. Đạt hay không do các kiểm tra tự động quyết định: giữ dữ kiện, không lỗi lint, đúng độ dài, đúng giới hạn kênh. Điểm do LLM chấm chỉ để tham khảo.
+### Chạy eval
 
 ```bash
 node tests/eval/run-eval.mjs --judge --compare tests/eval/baseline.json
@@ -245,9 +338,9 @@ node tests/eval/run-eval.mjs --judge --compare tests/eval/baseline.json
 | 5.3.0 | 12/12 ca đạt, không ca nào tụt hạng |
 | 5.4.0 | 17/18 trên Claude (`ai-audit` vượt độ dài, chạy lại thì đạt), 18/18 trên Codex |
 | 5.5.0 | 21/21 trên cả Claude và Codex, thêm 3 ca kiểm giới hạn Threads, TikTok, YouTube |
-| 5.6.0 | 21/23 trên Claude, gồm 2 ca Suno mới đều đạt; `linkedin-write` và `facebook-humanize` trượt nhưng đạt cả hai lần chạy lại riêng |
+| 5.6.0 | 21/23 trên Claude, gồm 2 ca Suno mới đều đạt |
 
-Mỗi bản chỉ chạy một lần, nên các con số này là tín hiệu để theo dõi, chưa phải bằng chứng thống kê. Mỗi ca tốn khoảng 0,3-0,5 USD khi bật judge. Workflow `eval` trên GitHub chỉ chạy khi repository có secret `ANTHROPIC_API_KEY`.
+Mỗi ca tốn khoảng 0,3-0,5 USD khi bật judge. Workflow `eval` trên GitHub chỉ chạy khi repository có secret `ANTHROPIC_API_KEY`.
 
 Eval còn chặn việc skill phình to: tổng Markdown không được tăng quá 2% so với baseline. Khi một bản buộc phải vượt ngưỡng, như 5.6.0 tăng 7% vì thêm kênh Suno, lý do được ghi trong [upgrade.md](docs/development/upgrade.md) chứ không sửa tay baseline.
 
