@@ -4,11 +4,11 @@ Ban này tạo bản thảo sẵn sàng cho kênh; tên gọi không cấp quy�
 
 ## Chọn reference
 
-Đọc đúng file kênh: `facebook.md`, `instagram.md`, `threads.md`, `tiktok.md`, `youtube.md`, `linkedin.md`, `x-thread.md`, `zalo.md`, `blog-seo.md`, `newsletter.md` hoặc `video-script.md`. Video TikTok hay YouTube cần cả `video-script.md` (lời thoại) lẫn file nền tảng (caption, tiêu đề, mô tả). Khi chuyển một draft ra nhiều kênh, đọc thêm `repurpose-matrix.md`.
+Đọc đúng file kênh: `facebook.md`, `instagram.md`, `threads.md`, `tiktok.md`, `youtube.md`, `linkedin.md`, `x-thread.md`, `zalo.md`, `blog-seo.md`, `newsletter.md`, `video-script.md` hoặc `suno.md`. Video TikTok hay YouTube cần cả `video-script.md` (lời thoại) lẫn file nền tảng (caption, tiêu đề, mô tả). Khi chuyển một draft ra nhiều kênh, đọc thêm `repurpose-matrix.md`.
 
 Mỗi file kênh có frontmatter ghi giới hạn đo được, nguồn và độ tin cậy. Sau khi format xong, chạy `node <thư-mục-skill>/scripts/check-platform.mjs <kênh> <file>`: dòng ERROR phải sửa; dòng WARN là giới hạn chưa có nguồn chính thức hoặc điểm cắt "Xem thêm", cân nhắc theo brief.
 
-Mỗi phiên bản phải giữ thông điệp, logic và số liệu. Được thay hook, nhịp, độ dài, cách xưng hô và CTA theo brief. `video-script.md` là chuyển thể sang văn nói. Kênh không có reference vẫn có thể xử lý từ brief và quy chuẩn hiện hành; ghi rõ giả định thay vì báo lỗi chỉ vì thiếu file mẫu.
+Mỗi phiên bản phải giữ thông điệp, logic và số liệu. Được thay hook, nhịp, độ dài, cách xưng hô và CTA theo brief. `video-script.md` và `suno.md` là chuyển thể (văn nói / lời bài hát). Kênh không có reference vẫn có thể xử lý từ brief và quy chuẩn hiện hành; ghi rõ giả định thay vì báo lỗi chỉ vì thiếu file mẫu.
 
 ## Cổng bàn giao
 

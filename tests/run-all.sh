@@ -58,6 +58,8 @@ expect_exit 1 threads tests/platform/threads-6-links.md "ERROR [threads/post] ma
 expect_exit 1 x-thread tests/platform/x-thread-weighted-over.md "ERROR [x-thread/post] max_chars đoạn 1"
 expect_exit 0 youtube tests/platform/youtube-ok.md "PASS"
 expect_exit 1 instagram tests/platform/instagram-6-hashtags.md "ERROR [instagram/post] max_hashtags"
+expect_exit 0 suno tests/platform/suno-ok.md "PASS"
+expect_exit 1 suno tests/platform/suno-bad.md "ERROR [suno/custom] vietnamese-in-brackets"
 expect_exit 0 linkedin tests/platform/linkedin-long-fold.md "WARN [linkedin/post] fold_chars"
 
 step "Manifest checksum của skill"

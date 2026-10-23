@@ -27,7 +27,7 @@ publishing/ = YÊU CẦU KÊNH — thắng house style và Humanizer về giới
 
 **Ngoại lệ theo kênh (khai báo hợp lệ, không phải mâu thuẫn):**
 - `publishing/blog-seo.md`: ĐƯỢC dùng heading dù natural.md cấm heading trong storytelling — blog SEO không phải storytelling thuần
-- `publishing/video-script.md`: TRANSFORMATION — văn nói, được viết lại câu; 70-20-10 không phải yêu cầu ở bất kỳ kênh nào
+- `publishing/video-script.md`, `publishing/suno.md`: TRANSFORMATION — văn nói hoặc lời bài hát (được điệp Chorus, ngắt câu theo phách); 70-20-10 không phải yêu cầu ở bất kỳ kênh nào
 - `review/natural.md`: ngoại lệ bio/profile được trộn format
 
 ## 4 Tiêu Chí Kiểm Tra

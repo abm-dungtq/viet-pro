@@ -2,13 +2,13 @@
 
 **Viết Pro** là một skill giúp trợ lý AI viết và biên tập tiếng Việt tự nhiên, đúng dữ kiện, đúng từng kênh đăng bài.
 
-Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.5.1**.
+Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.6.0**.
 
 ---
 
 ## Viết Pro giúp bạn làm gì?
 
-- **Viết bài mới:** blog, bài SEO, LinkedIn, Facebook, Instagram, Zalo, Threads, TikTok, YouTube, newsletter, thread X, kịch bản video.
+- **Viết bài mới:** blog, bài SEO, LinkedIn, Facebook, Instagram, Zalo, Threads, TikTok, YouTube, newsletter, thread X, kịch bản video, lời bài hát & Style Prompt cho Suno AI (chống cưỡng âm tiếng Việt).
 - **Biên tập bản nháp:** câu chữ mượt hơn, bớt lủng củng, bớt "giọng dịch".
 - **Bớt giọng AI (humanize):** bỏ những kiểu câu sáo rỗng mà AI hay viết, như "Trong bối cảnh...", "Không phải X, mà là Y", "Và đó mới là điều đáng suy ngẫm".
 - **Giữ nguyên dữ kiện:** tên, số liệu, ngày, link và trích dẫn không bị đổi khi sửa bài.
@@ -23,7 +23,7 @@ Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antig
 Mở **Terminal** và dán lệnh sau:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.5.1/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.6.0/install.sh | bash
 ```
 
 Lệnh này tự làm ba việc:
