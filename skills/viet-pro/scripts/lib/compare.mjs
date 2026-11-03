@@ -6,6 +6,10 @@ const OPPOSITES = [
   ['lãi', 'lỗ'], ['nhiều', 'ít'], ['thêm', 'bớt'], ['lên', 'xuống'], ['vượt', 'hụt'],
 ];
 const OPPOSITE = new Map(OPPOSITES.flatMap(([a, b]) => [[a, b], [b, a]]));
+const PHRASE_OPPOSITES = [
+  ['tối đa', 'tối thiểu'], ['ít nhất', 'nhiều nhất'],
+  ['chưa tới', 'hơn'], ['chưa đến', 'hơn'], ['xấp xỉ', 'chính xác'],
+];
 const NUMBER = /(?<![\p{L}\p{N}])(?:\d{1,4}[/.:-]){1,2}\d{1,4}(?![\p{L}\p{N}])|(?<![\p{L}\p{N}])\d+(?:[.,]\d+)*(?:\s?[%₫$€£]|\s?(?:USD|VND|GB|MB|KB))?(?![\p{L}\p{N}])/giu;
 
 function multiset(items) {
@@ -55,16 +59,21 @@ function collect(text, keep = [], { strictQuotes = false } = {}) {
   return found;
 }
 
-// For each number, the last three words before it in the same sentence.
+// For each number, up to five words before it in the same sentence.
 function numberContexts(text) {
   const contexts = new Map();
   for (const m of text.matchAll(NUMBER)) {
-    const before = text.slice(Math.max(0, m.index - 60), m.index).split(/[.!?\n]/u).pop();
-    const words = (before.toLowerCase().match(/\p{L}+/gu) || []).slice(-3);
+    const before = text.slice(Math.max(0, m.index - 80), m.index).split(/[.!?\n]/u).pop();
+    const words = (before.toLowerCase().match(/\p{L}+/gu) || []).slice(-5);
     if (!contexts.has(m[0])) contexts.set(m[0], []);
     contexts.get(m[0]).push(words);
   }
   return contexts;
+}
+
+function hasWholePhrase(haystack, phrase) {
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  return new RegExp(`(?<![\\p{L}\\p{M}\\p{N}])${escaped}(?![\\p{L}\\p{M}\\p{N}])`, 'iu').test(haystack);
 }
 
 function compareContexts(before, after) {
@@ -75,19 +84,28 @@ function compareContexts(before, after) {
   for (const [num, beforeWindows] of left) {
     const afterWindows = right.get(num);
     if (!afterWindows) continue; // a missing number is already reported as numberOrDate
-    const beforeWords = new Set(beforeWindows.flat());
-    const afterWords = new Set(afterWindows.flat());
+    const beforeWords = new Set(beforeWindows.map((w) => w.slice(-3)).flat());
+    const afterWords = new Set(afterWindows.map((w) => w.slice(-3)).flat());
     for (const word of beforeWords) {
       const opposite = OPPOSITE.get(word);
       if (opposite && !afterWords.has(word) && afterWords.has(opposite) && !beforeWords.has(opposite)) {
         differences.push({ kind: 'polarity', token: num, before: word, after: opposite });
       }
     }
+    const beforeJoined = beforeWindows.map((w) => w.join(' ')).join(' | ');
+    const afterJoined = afterWindows.map((w) => w.join(' ')).join(' | ');
+    for (const [pA, pB] of PHRASE_OPPOSITES) {
+      if (hasWholePhrase(beforeJoined, pA) && !hasWholePhrase(afterJoined, pA) && hasWholePhrase(afterJoined, pB) && !hasWholePhrase(beforeJoined, pB)) {
+        differences.push({ kind: 'polarity', token: num, before: pA, after: pB });
+      } else if (hasWholePhrase(beforeJoined, pB) && !hasWholePhrase(afterJoined, pB) && hasWholePhrase(afterJoined, pA) && !hasWholePhrase(beforeJoined, pA)) {
+        differences.push({ kind: 'polarity', token: num, before: pB, after: pA });
+      }
+    }
     const lastBefore = multiset(beforeWindows.map((w) => w.at(-1) || ''));
     const lastAfter = multiset(afterWindows.map((w) => w.at(-1) || ''));
     const changed = [...new Set([...lastBefore.keys(), ...lastAfter.keys()])].some((k) => (lastBefore.get(k) || 0) !== (lastAfter.get(k) || 0));
     if (changed && !differences.some((d) => d.token === num)) {
-      reviews.push({ token: num, before: beforeWindows.map((w) => w.join(' ')), after: afterWindows.map((w) => w.join(' ')) });
+      reviews.push({ token: num, before: beforeWindows.map((w) => w.slice(-3).join(' ')), after: afterWindows.map((w) => w.slice(-3).join(' ')) });
     }
   }
   return { differences, reviews };

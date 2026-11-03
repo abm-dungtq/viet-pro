@@ -3,7 +3,7 @@ name: viet-pro
 description: "Viết, biên tập, humanize, audit dấu hiệu AI, kiểm chứng và chuyển thể nội dung tiếng Việt chuyên nghiệp cho bài dài, blog, SEO, mạng xã hội, newsletter, kịch bản video và lời bài hát/prompt nhạc Suno. Kích hoạt khi người dùng yêu cầu viết mới, biên tập, rà văn phong tiếng Việt, chống AI slop, kiểm chứng nguồn/claim hoặc định dạng xuất bản theo kênh; không dùng cho dịch ngắn hay chỉnh một câu đơn giản."
 metadata:
   author: ABM-DungTQ
-  version: "5.6.1"
+  version: "5.7.0"
   category: content
   keywords: [vietnamese, writing, editing, humanize, fact-check, publishing, content-engine, suno]
 ---
@@ -70,6 +70,7 @@ Chỉ đọc những phần cần cho yêu cầu hiện tại:
 
 ## Soạn và chuyển thể
 
+- **Kỷ luật suy luận & lập dàn ý (Thinking-to-Prose Guardrail):** Khi suy luận ngầm (`<thought>`) hoặc lên dàn ý, phải chốt ý trực tiếp bằng **Chủ thể thật + Động từ hành động tiếng Việt + Hệ quả/con số cụ thể**. Tuyệt đối không lập dàn ý bằng cấu trúc danh từ hóa/tiếng Anh rồi dịch ngược sang tiếng Việt, và không bê nguyên danh sách gạch đầu dòng hay nhãn `**Từ khóa:**` từ bước suy luận ra bài viết văn xuôi/mạng xã hội.
 - Giữ nguyên chuỗi cố định, tên riêng, số liệu, URL và thông điệp mà người dùng yêu cầu bảo toàn. Không đổi mốc tương đối ("năm trước", "quý sau") thành ngày hay năm cụ thể nếu nguồn không ghi.
 - Tôn trọng voice mẫu nhưng không sao chép dài hoặc bắt chước danh tính tác giả đang sống. Trích dẫn phải ngắn và có nguồn khi cần.
 - Mỗi phiên bản theo kênh giữ thông điệp, logic và số liệu; được thay hook, nhịp, độ dài và CTA. `video-script` là chuyển thể sang văn nói, không chỉ đổi format.
@@ -89,7 +90,9 @@ Rà theo rủi ro, không dùng checklist như mục tiêu tự thân:
 
 Humanizer là quy trình biên tập, không phải công cụ xác định văn bản do AI hay con người viết. Pattern mạnh 1-5 có thể đáng sửa từ một lần xuất hiện nếu đúng ngữ cảnh; pattern yếu chỉ sửa khi lặp thành cụm hoặc làm giảm độ rõ. Khi sửa tệp, chỉ thay văn xuôi: giữ nguyên frontmatter, code, lệnh, dữ liệu có cấu trúc và đích URL. Nếu brief yêu cầu giữ nguyên quote/trích dẫn, bảo toàn cả nội dung lẫn kiểu dấu ngoặc bao quanh.
 
-Có thể chạy các script trong thư mục `scripts/` của skill. Đường dẫn `scripts/` tính từ thư mục chứa file SKILL.md này; trong Claude Code, thư mục đó là `${CLAUDE_SKILL_DIR}`.
+**Cổng kiểm chứng bắt buộc trước khi trả bài (áp dụng cho cả Nhanh, Chuẩn và Tòa soạn):**
+- Nếu môi trường đã kết nối MCP server `viet-pro`, **bắt buộc** gọi công cụ `lint_vietnamese` ngay trên chuỗi bản thảo trong bộ nhớ (kèm `compare_preserved` khi biên tập/humanize và `check_platform` khi viết theo kênh).
+- Nếu làm việc trên tệp hoặc không có MCP, chạy trực tiếp các script trong thư mục `scripts/` của skill (đường dẫn tính từ thư mục chứa file SKILL.md này; trong Claude Code là `${CLAUDE_SKILL_DIR}`):
 
 ```bash
 node <thư-mục-skill>/scripts/lint-vietnamese-content.mjs <file.md> [--keep "Tên riêng"]
@@ -98,7 +101,7 @@ node <thư-mục-skill>/scripts/check-x-length.mjs <thread.md>
 node <thư-mục-skill>/scripts/check-platform.mjs <kênh> <bản-thảo.md> [--surface <bề-mặt>]
 ```
 
-Lint chỉ là tín hiệu hỗ trợ. WARN không tự động làm bài thất bại; ERROR phải được xem trong ngữ cảnh. Yêu cầu phong cách rõ ràng của người dùng có thể override house style, nhưng không override lỗi sự thật hoặc an toàn.
+Lint cung cấp tín hiệu tất định (bao gồm cả cảnh báo cụm văn dịch `translationese-cluster` và cụm sáo ngữ `ai-buzzword-cluster` khi một đoạn tụ từ 3 dấu hiệu trở lên). WARN không tự động làm bài thất bại nhưng các cụm cảnh báo văn dịch/sáo ngữ phải được viết lại trừ khi thuộc văn bản hành chính/pháp lý; ERROR bắt buộc phải xử lý. Yêu cầu phong cách rõ ràng của người dùng có thể override house style, nhưng không override lỗi sự thật hoặc an toàn.
 
 Sửa tối đa hai vòng có mục tiêu. Sau mỗi vòng Humanizer, đối chiếu tên, số, ngày, URL, trích dẫn, citation, thứ hạng, quan điểm và các chi tiết xảy ra đồng thời. Nếu chất lượng không cải thiện hoặc hai yêu cầu xung đột, dừng và nêu trade-off thay vì viết lại vô hạn.
 

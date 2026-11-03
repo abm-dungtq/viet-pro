@@ -74,6 +74,76 @@ function stripProtectedBlocks(text) {
 
 const FUNCTION_WORDS = new Set('và của là có được cho các những một trong với không này đó thì mà để khi đã sẽ đang cũng như từ ra vào lên theo về tại bằng hay hoặc nhưng nên vì do nếu rằng thể việc sự người cái những rất hơn nhất'.split(' '));
 
+const TRANSLATIONESE_PATTERNS = [
+  /\b(?:việc|sự)\s+(?:triển khai|áp dụng|thực hiện|sử dụng|tối ưu|phát triển|xây dựng|đầu tư|thay đổi|kết hợp|chuyển đổi|phối hợp|kiểm tra|điều chỉnh|mở rộng|nâng cao|cải thiện|tăng cường|đảm bảo|duy trì)\b/giu,
+  /\bmột cách\s+(?:nhanh chóng|chính xác|hiệu quả|toàn diện|liền mạch|rõ ràng|cụ thể|tự nhiên|chủ động|linh hoạt|triệt để|đồng bộ|bền vững|tối ưu|hợp lý|dễ dàng|hệ thống)\b/giu,
+  /\bthông qua việc\b/giu,
+  /\bđược\s+(?:\p{L}+\s+){1,5}bởi\b/giu,
+  /\b(?:tiến hành|thực hiện việc|đưa ra sự)\s+\p{L}+/giu,
+  /\bđóng vai trò\s+(?:quan trọng|then chốt|thiết yếu|quyết định|chủ chốt|trọng tâm)\b/giu,
+  /(?:^|[.!?]\s+)(?:Đối với\s+[^,\n.!?;]{2,40}\s+thì|Điều này có nghĩa là)\b/giu,
+  /,\s*(?:qua đó|từ đó)\s+(?:giúp|góp phần|thúc đẩy|tạo điều kiện|mang lại|nâng cao|tăng cường|mở ra)\b/giu,
+  /\bcủa\s+(?:\p{L}+\s+){1,4}của\s+(?:\p{L}+\s+){1,4}của\b/giu,
+];
+
+const AI_BUZZWORD_RE = /\b(?:tối ưu hóa toàn diện|giải pháp toàn diện|hệ sinh thái liền mạch|trải nghiệm liền mạch|bức tranh toàn cảnh|chìa khóa then chốt|nền tảng vững chắc|khai mở tiềm năng|mở khóa tiềm năng|nâng tầm trải nghiệm|hành trình chuyển đổi(?:\s+số)?|bước ngoặt lịch sử|thay đổi cuộc chơi|định hình tương lai|giải pháp đột phá|công nghệ đột phá|tiêu chuẩn vàng|kim chỉ nam)\b/giu;
+
+function stripQuotedAndKept(text, keep = []) {
+  let out = text.replace(/["“][^"”\n]{1,200}["”]/gu, ' ');
+  for (const k of keep) {
+    if (!k) continue;
+    const escaped = k.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+    out = out.replace(new RegExp(escaped, 'giu'), ' ');
+  }
+  return out;
+}
+
+function paragraphClusters(text, keep = []) {
+  const findings = [];
+  const lines = text.split('\n');
+  const paragraphs = [];
+  let current = null;
+  lines.forEach((raw, idx) => {
+    const t = raw.trim();
+    const isProse = t && !t.startsWith('#') && !t.startsWith('|') && !t.startsWith('>') && !/^\[[^\]]+\]$/u.test(t);
+    if (!isProse) {
+      if (current) { paragraphs.push(current); current = null; }
+      return;
+    }
+    if (!current) current = { startLine: idx + 1, text: t };
+    else current.text += ` ${t}`;
+  });
+  if (current) paragraphs.push(current);
+
+  for (const p of paragraphs) {
+    const cleaned = stripQuotedAndKept(p.text, keep);
+    const transHits = [];
+    for (const re of TRANSLATIONESE_PATTERNS) {
+      for (const m of cleaned.matchAll(re)) transHits.push(m[0].replace(/^[.,!?\s]+/u, '').trim());
+    }
+    if (transHits.length >= 3) {
+      findings.push({
+        level: 'WARN',
+        id: 'translationese-cluster',
+        line: p.startLine,
+        excerpt: `Cụm văn dịch (${transHits.length} dấu hiệu): ${transHits.slice(0, 4).map((x) => `"${x}"`).join(', ')}`,
+        desc: 'Nhiều cấu trúc dịch sát tiếng Anh tụ trong cùng đoạn (translationese-vi.md)',
+      });
+    }
+    const buzzHits = [...cleaned.matchAll(AI_BUZZWORD_RE)].map((m) => m[0].trim());
+    if (buzzHits.length >= 3) {
+      findings.push({
+        level: 'WARN',
+        id: 'ai-buzzword-cluster',
+        line: p.startLine,
+        excerpt: `Cụm sáo ngữ AI (${buzzHits.length} cụm): ${buzzHits.slice(0, 4).map((x) => `"${x}"`).join(', ')}`,
+        desc: 'Tụ nhiều cụm từ AI/marketing sáo rỗng trong cùng đoạn (humanizer pattern 12, 16)',
+      });
+    }
+  }
+  return findings;
+}
+
 // Repeated 5-8 syllable phrases (3+ times), longest first; phrases made only of function words or
 // contained in a --keep string are ignored.
 function phraseReuse(text, keep = []) {
@@ -140,6 +210,7 @@ function textRules(text, opts = {}) {
     ? dedupeSongLyrics(text)
     : text;
   findings.push(...phraseReuse(reuseTarget, opts.keep));
+  findings.push(...paragraphClusters(reuseTarget, opts.keep));
   return findings;
 }
 

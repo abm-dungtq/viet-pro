@@ -16,6 +16,7 @@ Reference là kỹ thuật, không phải quota. Không nhồi đủ mọi thủ
 - Dưới khoảng 1.500 ký tự: viết liền nếu logic đơn giản.
 - Khoảng 1.500-5.000 ký tự: chốt xương sống trước khi viết.
 - Trên khoảng 5.000 ký tự hoặc nhiều phần phụ thuộc nhau: outline trước, đối chiếu outline với brief rồi mới viết.
+- Khi lập dàn ý ngầm (thinking) hoặc outline: diễn đạt từng ý bằng câu tiếng Việt có chủ thể và động từ thật (Ai làm gì, ra kết quả gì); không lập dàn ý bằng tiếng Anh hay danh từ hóa ("Việc tối ưu hóa...") rồi dịch sang bài viết, và không giữ nguyên cấu trúc gạch đầu dòng của dàn ý khi chuyển sang bài storytelling.
 
 ## Cổng bàn giao
 

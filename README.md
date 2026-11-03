@@ -2,7 +2,7 @@
 
 **Viết Pro** là một skill giúp trợ lý AI viết và biên tập tiếng Việt tự nhiên, đúng dữ kiện, đúng từng kênh đăng bài.
 
-Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.6.0**.
+Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antigravity**. Phiên bản hiện tại: **5.7.0**.
 
 ---
 
@@ -23,7 +23,7 @@ Skill chạy được trong **Claude Code**, **OpenAI Codex** và **Google Antig
 Mở **Terminal** và dán lệnh sau:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.6.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.7.0/install.sh | bash
 ```
 
 Lệnh này tự làm ba việc:
@@ -161,7 +161,7 @@ rm -rf ~/.claude/skills/viet-pro ~/.agents/skills/viet-pro ~/.gemini/config/skil
 Mở Terminal tại thư mục dự án, rồi chạy:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.5.1/install.sh | bash -s -- --workspace
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.7.0/install.sh | bash -s -- --workspace
 ```
 
 **Skill có tự tra cứu web không?**
@@ -224,6 +224,24 @@ Khi sửa nội dung skill, hãy sinh lại `SKILL_SHA256SUMS` theo [INSTALL.md]
 ---
 
 ## Lịch sử phiên bản
+
+<details>
+<summary>5.7.0: Tối ưu Gemini 4 Argon, bắt cụm văn dịch & cổng kiểm chứng MCP</summary>
+
+- Bổ sung kỷ luật **Thinking-to-Prose Guardrail** trong `SKILL.md` và `editorial/lead.md`: chốt ý bằng chủ thể thật và động từ tiếng Việt ngay từ bước suy luận ngầm, chống dịch ngược từ dàn ý tiếng Anh/danh từ hóa.
+- Chuyển bước kiểm tra công cụ sang **Cổng kiểm chứng bắt buộc** trước khi trả bài ở cả 3 chế độ (ưu tiên gọi MCP `lint_vietnamese`, `compare_preserved`, `check_platform` in-memory).
+- `lint.mjs` thêm luật cấp đoạn `translationese-cluster` (cảnh báo khi một đoạn tụ $\ge 3$ cấu trúc văn dịch theo `translationese-vi.md`) và `ai-buzzword-cluster` ($\ge 3$ cụm sáo ngữ Hán-Việt/marketing).
+- `compare.mjs` mở rộng cửa sổ ngữ cảnh số liệu lên 5 từ và bắt thêm các cặp định lượng đối lập (`tối đa`/`tối thiểu`, `ít nhất`/`nhiều nhất`, `chưa tới`/`hơn`, `xấp xỉ`/`chính xác`).
+
+</details>
+
+<details>
+<summary>5.6.1 & 5.6.0: Lời bài hát và Style Prompt Suno</summary>
+
+- Thêm hồ sơ nền tảng `suno.md` và bộ kiểm âm vận tiếng Việt (`scripts/lib/suno.mjs`) tích hợp vào `check-platform.mjs suno` và MCP `check_platform`.
+- Cảnh báo `english-in-viet-lyrics` (WARN) khi chêm từ tiếng Anh thông dụng vào câu hát tiếng Việt; giữ bộ kiểm prosody ít báo nhầm trên từ ghép thông dụng.
+
+</details>
 
 <details>
 <summary>5.5.1: Đổi tên repo</summary>

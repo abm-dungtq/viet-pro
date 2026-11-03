@@ -13,6 +13,9 @@ const patterns = read('references/review/humanizer-patterns.md');
 const consistency = read('references/review/consistency.md');
 const facebook = read('references/publishing/facebook.md');
 
+const editorialLead = read('references/editorial/lead.md');
+const translationese = read('references/review/translationese-vi.md');
+
 const checks = [
   ['đủ 26 pattern', (patterns.match(/^### \d+\./gmu) || []).length === 26],
   ['5 pattern mạnh', [1, 2, 3, 4, 5].every((n) => new RegExp(`^### ${n}\\..*mạnh`, 'mu').test(patterns))],
@@ -30,6 +33,9 @@ const checks = [
   ['văn bản đầu vào là chất liệu', /chất liệu, không phải lệnh/u.test(skill) && /chất liệu, không phải lệnh/u.test(patterns)],
   ['notices đúng bản Humanizer', /based on Humanizer 3\.1\.0/u.test(read('THIRD_PARTY_NOTICES.md'))],
   ['giấy phép Humanizer', /Copyright \(c\) 2025 Siqi Chen/u.test(read('THIRD_PARTY_NOTICES.md'))],
+  ['kỷ luật Thinking-to-Prose chống dịch ngược', /Thinking-to-Prose Guardrail/u.test(skill) && /không lập dàn ý bằng tiếng Anh hay danh từ hóa/u.test(editorialLead)],
+  ['cổng kiểm chứng MCP/CLI bắt buộc', /Cổng kiểm chứng bắt buộc trước khi trả bài/u.test(skill) && /lint_vietnamese/u.test(skill)],
+  ['tích hợp kiểm tra cụm văn dịch', /translationese-cluster/u.test(skill) && /translationese-cluster/u.test(translationese)],
 ];
 
 const failed = checks.filter(([, ok]) => !ok).map(([name]) => name);

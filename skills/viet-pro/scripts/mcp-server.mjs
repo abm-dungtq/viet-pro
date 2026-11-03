@@ -275,8 +275,8 @@ async function selfTest() {
     { jsonrpc: '2.0', id: 'init-new', method: 'initialize', params: { protocolVersion: '2030-01-01', capabilities: {}, clientInfo: { name: 'self-test', version: '0' } } },
     { jsonrpc: '2.0', method: 'notifications/initialized' },
     { jsonrpc: '2.0', id: 'ping', method: 'ping', params: meta },
-    { jsonrpc: '2.0', id: 'lint', method: 'tools/call', params: { name: 'lint_vietnamese', arguments: { text: 'Chắc chắn rồi! Dưới đây là bài viết.\n' } } },
-    { jsonrpc: '2.0', id: 'compare', method: 'tools/call', params: { ...meta, name: 'compare_preserved', arguments: { before: 'Doanh thu tăng 20% năm 2025.', after: 'Doanh thu giảm 20% năm 2025.' } } },
+    { jsonrpc: '2.0', id: 'lint', method: 'tools/call', params: { name: 'lint_vietnamese', arguments: { text: 'Chắc chắn rồi! Dưới đây là bài viết.\n\nViệc triển khai hệ thống đóng vai trò quan trọng. Thông qua việc tiến hành kiểm tra một cách nhanh chóng, phần mềm được phát triển bởi đội ngũ nội bộ.\n' } } },
+    { jsonrpc: '2.0', id: 'compare', method: 'tools/call', params: { ...meta, name: 'compare_preserved', arguments: { before: 'Doanh thu tăng tối đa 20% năm 2025.', after: 'Doanh thu tăng tối thiểu 20% năm 2025.' } } },
     { jsonrpc: '2.0', id: 'platform', method: 'tools/call', params: { name: 'check_platform', arguments: { platform: 'facebook', text: 'Bài đăng ngắn.' } } },
     { jsonrpc: '2.0', id: 'traversal', method: 'tools/call', params: { name: 'check_platform', arguments: { platform: '../SKILL', text: 'x' } } },
     { jsonrpc: '2.0', id: 'keep-many', method: 'tools/call', params: { name: 'lint_vietnamese', arguments: { text: 'Chào.', keep: Array(MAX_KEEP_ITEMS + 1).fill('a') } } },
@@ -325,9 +325,10 @@ async function selfTest() {
   if (JSON.stringify(get('ping').result) !== '{"resultType":"complete"}') fail('ping sai');
 
   const lint = toolText('lint');
-  if (lint.isError !== false || !JSON.parse(lint.content[0].text).findings.some((f) => f.id === 'chatbot-residue')) fail('lint_vietnamese không bắt được chatbot-residue');
+  const lintBody = JSON.parse(lint.content[0].text);
+  if (lint.isError !== false || !lintBody.findings.some((f) => f.id === 'chatbot-residue') || !lintBody.findings.some((f) => f.id === 'translationese-cluster')) fail('lint_vietnamese không bắt được chatbot-residue hoặc translationese-cluster');
   const cmp = toolText('compare');
-  if (cmp.isError !== false || cmp.resultType !== 'complete' || JSON.parse(cmp.content[0].text).preserved !== false) fail('compare_preserved không bắt được tăng→giảm');
+  if (cmp.isError !== false || cmp.resultType !== 'complete' || JSON.parse(cmp.content[0].text).preserved !== false) fail('compare_preserved không bắt được tối đa→tối thiểu');
   const plat = toolText('platform');
   if (plat.isError !== false) fail(`check_platform lỗi: ${plat.content[0].text}`);
   const platBody = JSON.parse(plat.content[0].text);

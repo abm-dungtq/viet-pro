@@ -8,7 +8,7 @@ set -euo pipefail
 
 REPO_URL="https://github.com/abm-dungtq/viet-pro.git"
 SKILL_NAME="viet-pro"
-DEFAULT_REF="v5.6.1"
+DEFAULT_REF="v5.7.0"
 REF="${VIET_PRO_REF:-$DEFAULT_REF}"
 REF_EXPLICIT=false
 INSTALL_MODE="copy" # copy | symlink
@@ -185,6 +185,7 @@ else
     [ -d "$HOME/.claude" ] && WANT_CLAUDE=true
     { [ -d "$HOME/.agents" ] || [ -d "${CODEX_HOME:-$HOME/.codex}" ]; } && WANT_CODEX=true
     [ -d "$HOME/.gemini" ] && WANT_AGY=true
+    [ -d "$HOME/.gemini/antigravity-cli" ] && WANT_AGY_CLI=true
     if [ "$WANT_CLAUDE$WANT_CODEX$WANT_AGY" = "falsefalsefalse" ]; then
       die "Không phát hiện Claude Code, Codex hay Antigravity. Hãy chỉ định --claude, --codex hoặc --agy."
     fi

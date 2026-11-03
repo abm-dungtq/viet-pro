@@ -21,6 +21,8 @@ function selfTest() {
   if (!compare(growth, 'Doanh thu giảm 12% trong quý II.').differences.some((d) => d.kind === 'polarity')) fail('không bắt được tăng -> giảm quanh 12%');
   if (compare(growth, 'Quý II, doanh thu tăng 12%.').differences.length) fail('false positive khi chỉ đảo trật tự câu');
   if (compare(growth, 'Doanh thu tăng thêm 12% trong quý II.').reviews.length !== 1) fail('không đánh dấu REVIEW khi từ trước số thay đổi');
+  if (!compare('Chi phí giảm tối đa 15% năm nay.', 'Chi phí giảm tối thiểu 15% năm nay.').differences.some((d) => d.kind === 'polarity' && d.before === 'tối đa' && d.after === 'tối thiểu')) fail('không bắt được tối đa -> tối thiểu quanh 15%');
+  if (!compare('Thời gian xử lý chưa tới 10 phút.', 'Thời gian xử lý hơn 10 phút.').differences.some((d) => d.kind === 'polarity' && d.before === 'chưa tới' && d.after === 'hơn')) fail('không bắt được chưa tới -> hơn quanh 10');
 
   const straight = 'Anh Minh nói "giữ nguyên".';
   const curly = 'Anh Minh nói “giữ nguyên”.';

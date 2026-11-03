@@ -93,7 +93,13 @@ function selfTest() {
   ].join('\n');
   const songFindings = lintText(songLyrics).filter((f) => ['title-case', 'phrase-reuse'].includes(f.id));
   if (songFindings.length) { console.error(`SELF-TEST FAIL — false positive trên metatag/Chorus bài hát: ${JSON.stringify(songFindings)}`); process.exit(1); }
-  console.log(`SELF-TEST PASS — bắt đủ ${expect.length + 2} nhóm vi phạm, không báo sai frontmatter/code/câu đối lập đơn lẻ/lời bài hát`);
+  const transDirty = 'Việc triển khai phần mềm mới đóng vai trò quan trọng trong doanh nghiệp. Thông qua việc tiến hành kiểm tra một cách nhanh chóng, hệ thống được vận hành bởi đội ngũ nội bộ, qua đó giúp tiết kiệm chi phí.';
+  if (!lintText(transDirty).some((f) => f.id === 'translationese-cluster')) { console.error('SELF-TEST FAIL — không bắt được translationese-cluster'); process.exit(1); }
+  const transClean = 'Việc áp dụng quy định mới bắt đầu từ thứ Hai tuần sau. Nhân viên tiến hành kiểm tra lại hồ sơ trước khi nộp.';
+  if (lintText(transClean).some((f) => f.id === 'translationese-cluster')) { console.error('SELF-TEST FAIL — false positive translationese-cluster khi chỉ có 2 dấu hiệu'); process.exit(1); }
+  const buzzDirty = 'Sản phẩm mang lại giải pháp toàn diện với hệ sinh thái liền mạch, trở thành chìa khóa then chốt giúp mở khóa tiềm năng cho doanh nghiệp.';
+  if (!lintText(buzzDirty).some((f) => f.id === 'ai-buzzword-cluster')) { console.error('SELF-TEST FAIL — không bắt được ai-buzzword-cluster'); process.exit(1); }
+  console.log(`SELF-TEST PASS — bắt đủ ${expect.length + 4} nhóm vi phạm, không báo sai frontmatter/code/câu đối lập đơn lẻ/văn hành chính/lời bài hát`);
   process.exit(0);
 }
 
