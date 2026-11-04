@@ -111,6 +111,22 @@ function compareContexts(before, after) {
   return { differences, reviews };
 }
 
+// Share of syllable tokens changed (Levenshtein distance / longer length). 0 = identical.
+export function computeEditRatio(before, after) {
+  const ta = before.normalize('NFC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  const tb = after.normalize('NFC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  if (!ta.length && !tb.length) return 0;
+  let prev = Array.from({ length: tb.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= ta.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= tb.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ta[i - 1] === tb[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return Number((prev[tb.length] / Math.max(ta.length, tb.length, 1)).toFixed(4));
+}
+
 export function compare(before, after, keep = [], options = {}) {
   const left = collect(before, keep, options);
   const right = collect(after, keep, options);
@@ -125,5 +141,15 @@ export function compare(before, after, keep = [], options = {}) {
     }
   }
   const context = compareContexts(before, after);
-  return { differences: [...differences, ...context.differences], reviews: context.reviews };
+  const edit_ratio = computeEditRatio(before, after);
+  const allDiffs = [...differences, ...context.differences];
+  if (options.maxEditRatio !== undefined && options.maxEditRatio !== null && edit_ratio > options.maxEditRatio) {
+    allDiffs.push({
+      kind: 'edit_ratio',
+      token: 'edit_ratio',
+      before: `<= ${(options.maxEditRatio * 100).toFixed(1)}%`,
+      after: `${(edit_ratio * 100).toFixed(1)}%`,
+    });
+  }
+  return { differences: allDiffs, reviews: context.reviews, edit_ratio };
 }

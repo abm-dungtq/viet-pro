@@ -6,11 +6,13 @@
 // Rules map to references/review/punctuation.md, capitalization.md, anti-ai.md.
 
 import { readFileSync } from 'node:fs';
-import { lintText } from './lib/lint.mjs';
+import { computeRouteHint, lintText } from './lib/lint.mjs';
 
-function report(file, findings) {
-  if (!findings.length) { console.log(`OK    ${file} — 0 vi phạm`); return; }
+function report(file, findings, showRoute = false, rawText = '') {
+  const suffix = showRoute ? ` (route_hint: ${computeRouteHint(rawText, findings)})` : '';
+  if (!findings.length) { console.log(`OK    ${file} — 0 vi phạm${suffix}`); return; }
   for (const f of findings) console.log(`${f.level} ${file}:${f.line} [${f.id}] ${JSON.stringify(f.excerpt)}`);
+  if (showRoute) console.log(`INFO  ${file}:0 [route-hint] "${computeRouteHint(rawText, findings)}"`);
 }
 
 // ---------------- self-test ----------------
@@ -99,30 +101,48 @@ function selfTest() {
   if (lintText(transClean).some((f) => f.id === 'translationese-cluster')) { console.error('SELF-TEST FAIL — false positive translationese-cluster khi chỉ có 2 dấu hiệu'); process.exit(1); }
   const buzzDirty = 'Sản phẩm mang lại giải pháp toàn diện với hệ sinh thái liền mạch, trở thành chìa khóa then chốt giúp mở khóa tiềm năng cho doanh nghiệp.';
   if (!lintText(buzzDirty).some((f) => f.id === 'ai-buzzword-cluster')) { console.error('SELF-TEST FAIL — không bắt được ai-buzzword-cluster'); process.exit(1); }
-  console.log(`SELF-TEST PASS — bắt đủ ${expect.length + 4} nhóm vi phạm, không báo sai frontmatter/code/câu đối lập đơn lẻ/văn hành chính/lời bài hát`);
+  const nfdDirty = `Câu này chứa chữ ${'tiếng Việt'.normalize('NFD')} hệ tổ hợp NFD.`;
+  if (!lintText(nfdDirty).some((f) => f.id === 'unicode-nfd')) { console.error('SELF-TEST FAIL — không bắt được unicode-nfd'); process.exit(1); }
+  if (lintText('Câu này chứa chữ tiếng Việt dựng sẵn NFC chuẩn.').some((f) => f.id === 'unicode-nfd')) { console.error('SELF-TEST FAIL — báo nhầm unicode-nfd trên chữ NFC'); process.exit(1); }
+  const hedgeDirty = 'Giải pháp này có thể sẽ góp phần cải thiện năng suất và dường như có xu hướng giảm chi phí.';
+  if (!lintText(hedgeDirty).some((f) => f.id === 'hedging-pileup')) { console.error('SELF-TEST FAIL — không bắt được hedging-pileup'); process.exit(1); }
+  const toneDirty = 'Không khí hoà bình tạo nên sự hài hòa và tinh thần khoẻ khoắn cho người dân.';
+  if (!lintText(toneDirty).some((f) => f.id === 'inconsistent-tone-mark')) { console.error('SELF-TEST FAIL — không bắt được inconsistent-tone-mark'); process.exit(1); }
+  const toneClean = 'Hôm qua anh mua món quà rất quý cho bà goá ở đầu ngõ để chúc sức khỏe và sự hài hòa.';
+  if (lintText(toneClean).some((f) => f.id === 'inconsistent-tone-mark')) { console.error('SELF-TEST FAIL — báo nhầm inconsistent-tone-mark trên âm đầu qu-/g-'); process.exit(1); }
+  const isoDirty = 'Khi dữ liệu đầu vào bị lệch, hệ thống sẽ báo lỗi ngay lập tức. Khi nhân viên nhập sai mã hàng, phần mềm sẽ khóa phiếu xuất kho. Khi quản lý duyệt trễ hạn, đơn hàng sẽ tự động chuyển trạng thái chờ.';
+  if (!lintText(isoDirty).some((f) => f.id === 'isomorphic-sentence')) { console.error('SELF-TEST FAIL — không bắt được isomorphic-sentence'); process.exit(1); }
+  if (computeRouteHint(clean) !== 'light' || computeRouteHint(dirty) !== 'heavy' || computeRouteHint(hedgeDirty) !== 'standard') {
+    console.error('SELF-TEST FAIL — computeRouteHint phân loại sai light/standard/heavy');
+    process.exit(1);
+  }
+  console.log(`SELF-TEST PASS — bắt đủ ${expect.length + 8} nhóm vi phạm, không báo sai frontmatter/code/câu đối lập đơn lẻ/văn hành chính/lời bài hát`);
   process.exit(0);
 }
 
 // ---------------- main ----------------
 const args = process.argv.slice(2);
-const usage = 'Usage: node lint-vietnamese-content.mjs <file.md> ... [--keep "Tên riêng"]... | --self-test';
+const usage = 'Usage: node lint-vietnamese-content.mjs <file.md> ... [--keep "Tên riêng"]... [--route-hint] | --self-test';
 if (!args.length) { console.error(usage); process.exit(2); }
 if (args[0] === '--self-test') selfTest();
 
 const keep = [];
 const files = [];
+let showRoute = false;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--keep') {
     if (i + 1 >= args.length) { console.error(usage); process.exit(2); }
     keep.push(args[++i]);
-  } else files.push(args[i]);
+  } else if (args[i] === '--route-hint') showRoute = true;
+  else files.push(args[i]);
 }
 if (!files.length) { console.error(usage); process.exit(2); }
 
 let hasError = false;
 for (const file of files) {
-  const findings = lintText(readFileSync(file, 'utf8'), { keep });
-  report(file, findings);
+  const rawText = readFileSync(file, 'utf8');
+  const findings = lintText(rawText, { keep });
+  report(file, findings, showRoute, rawText);
   if (findings.some((f) => f.level === 'ERROR')) hasError = true;
 }
 process.exit(hasError ? 1 : 0);

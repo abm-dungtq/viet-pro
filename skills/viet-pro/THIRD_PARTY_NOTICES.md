@@ -1,6 +1,6 @@
 # Third-party notices
 
-Viết Pro 5.5.1 includes an adapted Vietnamese reference based on Humanizer 3.1.0.
+Viết Pro 5.8.0 includes an adapted Vietnamese reference based on Humanizer 3.1.0, and deterministic design concepts inspired by epoko77-ai/im-not-ai (MIT), Nanako0129/sepia (MIT), Jakeschincariol/linkedin-agent-skill (MIT) and AgriciDaniel/claude-seo (MIT).
 
 ## Humanizer
 

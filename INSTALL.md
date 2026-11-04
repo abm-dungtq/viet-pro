@@ -5,7 +5,7 @@ Viết Pro (`viet-pro`) chạy trên **Claude Code**, **OpenAI Codex** và **Goo
 ```text
 skills/viet-pro/          nguồn skill chuẩn (SKILL.md, references/, scripts/)
 SKILL_SHA256SUMS          checksum từng file của skill, installer dùng để kiểm tra
-dist/viet-pro-5.7.0.zip   gói phát hành
+dist/viet-pro-5.8.0.zip   gói phát hành
 SHA256SUMS                checksum các gói zip
 ```
 
@@ -14,15 +14,15 @@ SHA256SUMS                checksum các gói zip
 ## 1. Cài tự động (khuyến nghị)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.7.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.8.0/install.sh | bash
 ```
 
-Lệnh trên tải đúng tag `v5.7.0`, kiểm tra checksum của skill, rồi cài cho mọi host phát hiện được trên máy (dựa vào sự tồn tại của `~/.claude`, `~/.agents` hoặc `~/.codex`, `~/.gemini` và `~/.gemini/antigravity-cli`).
+Lệnh trên tải đúng tag `v5.8.0`, kiểm tra checksum của skill, rồi cài cho mọi host phát hiện được trên máy (dựa vào sự tồn tại của `~/.claude`, `~/.agents` hoặc `~/.codex`, `~/.gemini` và `~/.gemini/antigravity-cli`).
 
 Chỉ định host hoặc tuỳ chọn khác bằng cách thêm tham số sau `bash -s --`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.7.0/install.sh | bash -s -- --claude --codex
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.8.0/install.sh | bash -s -- --claude --codex
 ```
 
 | Tuỳ chọn | Tác dụng |

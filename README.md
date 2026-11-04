@@ -1,4 +1,4 @@
-# Viết Pro (viet-pro v5.7.0)
+# Viết Pro (viet-pro v5.8.0)
 
 Bạn giao cho AI viết một bài đăng Facebook hay bản tin công ty bằng tiếng Việt. Ba giây sau, màn hình hiện ra một văn bản đúng chính tả nhưng mở đầu bằng *"Trong bối cảnh kỷ nguyên số hiện nay"*, giữa bài lặp đi lặp lại *"Việc triển khai giải pháp đóng vai trò then chốt thông qua việc tối ưu hóa một cách toàn diện"*, tự ý đổi con số *"giảm tối đa 15%"* thành *"giảm tối thiểu 15%"*, rồi kết bằng câu đơn tách dòng *"Và đó mới là điều đáng suy ngẫm."*
 
@@ -29,14 +29,14 @@ Và đó mới là điều đáng suy ngẫm."
   - WARN [dramatic-closer-repeat]: "Và đó mới là..." (mẫu 2)
 ```
 
-**Bản thảo sau khi qua Viết Pro (`v5.7.0`):**
+**Bản thảo sau khi qua Viết Pro (`v5.8.0`):**
 
 ```text
 "Khóa học nội bộ kéo dài 6 tuần và có 62% nhân viên hoàn thành. Từ tuần thứ tư, khi học viên lấy thẳng dữ liệu đơn hàng thật ra thực hành thay vì làm bài mẫu, tỷ lệ hoàn đơn trên mẫu 120 khách hàng giảm 18% tính đến ngày 10/09/2026 [1]."
 
 → Báo cáo từ lint_vietnamese & compare_preserved:
-  - OK: 0 vi phạm trình bày và văn phong
-  - PASS: Bảo toàn đủ dữ kiện (6 tuần, 62%, 18%, 120, 10/09/2026, [1], giữ nguyên chiều "giảm" trước 18%)
+  - OK: 0 vi phạm trình bày và văn phong (route_hint: light)
+  - PASS: Bảo toàn đủ dữ kiện (6 tuần, 62%, 18%, 120, 10/09/2026, [1], giữ nguyên chiều "giảm" trước 18%, edit_ratio: 68.5%)
   - Biên tập: Hạ mức khẳng định về đúng phạm vi của nguồn dữ liệu
 ```
 
@@ -50,8 +50,8 @@ Các mô hình suy luận sâu như **Gemini 4 Argon**, **Claude Opus** hay **Op
 
 Ở tầng biên tập, Viết Pro tích hợp bản Việt hóa của **Humanizer 3.1.0 (26 mẫu dấu hiệu AI)** kết hợp với bộ cẩm nang chống văn dịch (`translationese-vi.md`). Thay vì cấm đoán máy móc từng từ đơn lẻ khiến câu văn bị cụt, bộ lọc `scripts/lib/lint.mjs` phân tầng xử lý theo ngữ cảnh:
 - **5 mẫu dàn cảnh mạnh (Mẫu 1 - 5)** gồm điệp cấu trúc *"Không phải X, mà là Y"*, câu kết một dòng tạo kịch tính giả, châm ngôn tự chế mơ hồ, mở bài dàn cảnh *"Trong bối cảnh..."* và dựng đối thủ rơm *"Nhiều người cho rằng..."* được chỉ điểm để viết lại ngay từ lần xuất hiện đầu tiên.
-- **Bộ cảm biến cụm văn dịch (`translationese-cluster`) và cụm sáo ngữ (`ai-buzzword-cluster`)** chỉ phát cảnh báo khi một đoạn văn xuôi tụ từ **3 dấu hiệu trở lên** (như bọc động từ bằng *"việc/sự"*, *"một cách + tính từ"*, *"thông qua việc"*, bị động *"được... bởi"*, động từ rỗng *"tiến hành/thực hiện"*, hay các cụm *"tối ưu hóa toàn diện"*, *"hệ sinh thái liền mạch"*).
-- Khi chạy kiểm chứng bằng `tests/corpus/measure-lint.mjs` trên kho văn bản người viết gồm truyện ngắn của **Nam Cao, Thạch Lam, Hồ Biểu Chánh** và **văn bản hành chính nhà nước**, cả hai bộ cảm biến cụm này đều đạt tỷ lệ báo nhầm **0,00 trên 1.000 chữ**.
+- **Bộ cảm biến cụm văn dịch (`translationese-cluster`), cụm sáo ngữ (`ai-buzzword-cluster`), câu đồng cấu (`isomorphic-sentence`) và chồng chất rào đón (`hedging-pileup`)** chỉ phát cảnh báo khi một đoạn văn xuôi tụ từ **3 dấu hiệu trở lên**, 3 câu liên tiếp lặp cùng một khuôn mở đầu, hoặc chồng nhiều lớp từ rào đón dịch thuật (*"có thể sẽ góp phần"*, *"dường như có xu hướng"*). Bộ lọc cũng phát hiện ngay lỗi dính ký tự **Unicode Tổ hợp NFD (`unicode-nfd`)** và lỗi **trộn quy tắc đặt dấu thanh cũ/mới (`inconsistent-tone-mark`: `hoà` vs `hòa`)** trong cùng một bài.
+- Khi chạy kiểm chứng bằng `tests/corpus/measure-lint.mjs` trên kho văn bản người viết gồm truyện ngắn của **Nam Cao, Thạch Lam, Hồ Biểu Chánh** và **văn bản hành chính nhà nước**, toàn bộ các bộ cảm biến trên đều đạt tỷ lệ báo nhầm **0,00 trên 1.000 chữ**.
 
 ### 2. Khóa chặt dữ kiện bằng thuật toán đối chiếu hai chiều
 
@@ -59,17 +59,18 @@ Nỗi sợ lớn nhất khi nhờ AI biên tập lại bài viết là câu văn
 - Tự động bóc tách và kiểm tra số lượng từng URL, đích liên kết Markdown, con số, ngày tháng, nội dung trích dẫn trong ngoặc kép, ký hiệu citation `[1]`, thứ hạng (`#1`, `top 3`) và danh sách tên riêng/thuật ngữ cần khóa qua tham số `--keep`.
 - Khớp ranh giới từ chuẩn Unicode để tên riêng `"An"` không bị nhận nhầm bên trong chữ `"Anh"` và con số `"45.000"` khớp chính xác trong `"45.000đ"` nhưng báo lỗi ngay nếu biến thành `"45.0001"` hoặc `"145.000"`.
 - Quét cửa sổ ngữ cảnh 5 từ quanh mọi con số để bắt lỗi **đảo chiều nghĩa hoặc tráo từ định lượng** dù con số giữ nguyên, chẳng hạn đổi *"tăng 12%"* thành *"giảm 12%"*, đổi *"tối đa 15%"* thành *"tối thiểu 15%"*, đổi *"ít nhất 3 năm"* thành *"nhiều nhất 3 năm"*, hoặc đổi *"chưa tới 10 phút"* thành *"hơn 10 phút"*.
+- Tự động đo và báo cáo **tỷ lệ từ bị thay đổi (`edit_ratio`)** theo khoảng cách Levenshtein, đồng thời cho phép khóa trần tỷ lệ sửa qua `--max-edit-ratio` (hoặc `max_edit_ratio` trong MCP) khi chỉ muốn biên tập nhẹ trên văn bản gốc đã tốt.
 
 ### 3. Đo từng ký tự theo 11 hồ sơ nền tảng và bộ kiểm âm vận Suno AI
 
 Mỗi kênh xuất bản có thuật toán hiển thị và thói quen đọc riêng. Thư mục `references/publishing/` định nghĩa **11 hồ sơ nền tảng** có schema YAML nghiêm ngặt, ghi rõ nguồn tài liệu chính thức, mức độ tin cậy và hạn rà soát định kỳ (`check-freshness.mjs`). Công cụ `check-platform.mjs` đo bản thảo theo đúng thuật toán của từng mạng xã hội:
-- **Facebook (`facebook`)** - Chặn Markdown (`#`, `**bold**`, danh sách gạch đầu dòng) trên trang cá nhân; cảnh báo điểm gập *"Xem thêm"* ở 140 ký tự đầu.
-- **LinkedIn (`linkedin`)** - Giới hạn 3.000 ký tự, kiểm tra điểm gập 140 ký tự đầu, phân biệt giới hạn chính thức và kinh nghiệm truyền miệng.
+- **Facebook (`facebook`)** - Chặn Markdown (`#`, `**bold**`, danh sách gạch đầu dòng) trên trang cá nhân; cảnh báo điểm gập *"Xem thêm"* ở 140 ký tự đầu và cảnh báo lỗi ngắt dòng vụn kiểu *"broetry"* (`broetry-line-breaks`).
+- **LinkedIn (`linkedin`)** - Giới hạn 3.000 ký tự, kiểm tra điểm gập 140 ký tự đầu, cảnh báo ngắt dòng vụn `broetry-line-breaks` ($\ge 5$ dòng câu đơn ngắn liên tiếp) và phân biệt giới hạn chính thức với kinh nghiệm truyền miệng.
 - **X / Twitter (`x-thread`)** - Đếm ký tự có trọng số theo chuẩn `twitter-text v3` (chữ tiếng Việt có dấu và emoji tính trọng số 2, URL tự rút về 23 ký tự).
 - **Threads (`threads`)** - Giới hạn 500 ký tự, tối đa 1 topic tag và 5 link; đếm emoji cờ quốc gia theo đúng số byte UTF-8 như máy chủ Meta.
 - **TikTok & Instagram (`tiktok`, `instagram`)** - Kiểm tra giới hạn caption video/ảnh, cảnh báo điểm gập hiển thị và chặn vượt trần 5 hashtag trên Instagram.
 - **YouTube (`youtube`)** - Đo tiêu đề (100 ký tự), mô tả (5.000 ký tự) và kiểm tra cấu trúc mốc thời gian chapter (bắt đầu từ `00:00`, tối thiểu 3 mốc cách nhau ít nhất 10 giây).
-- **Zalo, Newsletter, Blog SEO, Video (`zalo`, `newsletter`, `blog-seo`, `video-script`)** - Đo độ dài tin nhắn Zalo OA, tiêu đề email, cấu trúc H2/H3 chuẩn SEO và tốc độ đọc văn nói (2,5 - 3 chữ/giây) cho kịch bản thu âm.
+- **Zalo, Newsletter, Blog SEO, Video (`zalo`, `newsletter`, `blog-seo`, `video-script`)** - Đo độ dài tin nhắn Zalo OA, tiêu đề email, kiểm tra mở đoạn trả lời trực diện *Answer-First* ngay sau thẻ H2 (`seo-h2-wall`) và tốc độ đọc văn nói (2,5 - 3 chữ/giây) cho kịch bản thu âm.
 - **Nhạc Suno AI v4.5 - v6 (`suno`)** - Bộ kiểm âm vận `scripts/lib/suno.mjs` riêng cho tiếng Việt, bắt lỗi viết tiếng Việt trong ngoặc vuông `[Điệp khúc]`, bắt chỉ dẫn đạo diễn lọt vào ngoặc đơn `(fade out)` khiến AI hát nhầm thành lời bè, cảnh báo cụm thanh Trắc gãy câu, bộ vần AI sáo mòn (*mưa rơi - chơi vơi*, *đêm thâu - u sầu*), từ tiếng Anh chêm vào câu hát và kiểm tra đủ 3 trụ cột trong Style Prompt.
 
 ### 4. Điều phối 3 cấp độ và cổng kiểm chứng tức thì qua MCP Server
@@ -81,7 +82,7 @@ Bộ định tuyến trong [SKILL.md](skills/viet-pro/SKILL.md) tự động ch�
 ### 5. Kỷ luật kiểm thử thực nghiệm và bảo toàn ngữ cảnh
 
 Mọi thay đổi trong Viết Pro đều phải đi qua hai hàng rào kiểm soát chất lượng trước khi phát hành:
-- **Bộ kiểm thử tất định (`bash tests/run-all.sh`)** chạy tự động 17 nhóm luật lint, 19 hợp đồng hành vi Humanizer, kiểm tra 39 tệp Markdown không có tham chiếu gãy, xác thực 12 hồ sơ nền tảng còn hạn, đối chiếu mã băm `SKILL_SHA256SUMS` trên toàn bộ 51 tệp của gói skill và chạy 21 bài kiểm thử trình cài đặt trong môi trường cô lập.
+- **Bộ kiểm thử tất định (`bash tests/run-all.sh`)** chạy tự động 21 nhóm luật lint, 20 hợp đồng hành vi Humanizer, kiểm tra 39 tệp Markdown không có tham chiếu gãy, xác thực 12 hồ sơ nền tảng còn hạn, đối chiếu mã băm `SKILL_SHA256SUMS` trên toàn bộ 51 tệp của gói skill và chạy 21 bài kiểm thử trình cài đặt trong môi trường cô lập.
 - **Bộ đánh giá hành vi thực tế (`tests/eval/run-eval.mjs`)** chấm điểm trực tiếp đầu ra của mô hình trên 23 bài toán thực tế (từ viết mới, humanize, giữ nguyên văn bản kỹ thuật, chống đảo nghĩa số liệu, từ chối bịa đặt claim thiếu nguồn cho tới giữ nguyên văn phong của Nam Cao, Thạch Lam với tỷ lệ sửa dưới 10%), đồng thời khóa trần tăng trưởng dung lượng Markdown ở mức tối đa **2%** để bảo vệ cửa sổ ngữ cảnh của Agent.
 
 ---
@@ -91,7 +92,7 @@ Mọi thay đổi trong Viết Pro đều phải đi qua hai hàng rào kiểm s
 Mở **Terminal** và chạy lệnh cài đặt tự động:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.7.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.8.0/install.sh | bash
 ```
 
 Trình cài đặt `install.sh` tự động thực hiện 4 bước an toàn:
@@ -189,11 +190,11 @@ Giữ nguyên mọi con số, tên riêng, ngày tháng và đường link.
 
 ### Khung câu lệnh 06 thành phần chuẩn ABM.DungTQ (Dành cho tác vụ cấp độ Tòa soạn)
 
-Khi cần giao những bài viết chiến lược hoặc tài liệu quan trọng, sử dụng khung 06 thành phần để khai thác tối đa sức mạnh của Viết Pro `v5.7.0`:
+Khi cần giao những bài viết chiến lược hoặc tài liệu quan trọng, sử dụng khung 06 thành phần để khai thác tối đa sức mạnh của Viết Pro `v5.8.0`:
 
 ```text
 [1. ROLE - GÁN VAI TRÒ]
-Bạn là Tổng Biên tập Nội dung Tiếng Việt vận hành theo chuẩn skill viet-pro v5.7.0, có 10 năm kinh nghiệm biên tập báo chí, truyền thông doanh nghiệp và kiểm chứng dữ kiện.
+Bạn là Tổng Biên tập Nội dung Tiếng Việt vận hành theo chuẩn skill viet-pro v5.8.0, có 10 năm kinh nghiệm biên tập báo chí, truyền thông doanh nghiệp và kiểm chứng dữ kiện.
 
 [2. TASK - GIAO NHIỆM VỤ]
 Sử dụng skill /viet-pro để biên soạn nội dung theo thông số dưới đây và chạy đầy đủ cổng kiểm chứng MCP (lint_vietnamese, compare_preserved, check_platform) trước khi bàn giao.
@@ -262,11 +263,11 @@ skills/viet-pro/              gói skill chuẩn được cài đặt vào các 
 │   └── archive/              danh mục 42 mẫu cấu trúc bài viết thực tế (2 tệp)
 └── scripts/                  công cụ kiểm tra tất định (Node.js thuần, 0 phụ thuộc ngoài)
     ├── mcp-server.mjs                  MCP server stdio (lint_vietnamese, compare_preserved, check_platform)
-    ├── lint-vietnamese-content.mjs     CLI kiểm tra 17 nhóm lỗi trình bày, văn dịch và dấu vết AI
-    ├── compare-preserved-content.mjs   CLI đối chiếu bảo toàn dữ kiện và cực tính số liệu trước/sau
-    ├── check-platform.mjs              CLI đo giới hạn ký tự theo hồ sơ kênh và âm vận Suno
+    ├── lint-vietnamese-content.mjs     CLI kiểm tra 21 nhóm lỗi trình bày, văn dịch, cấu trúc câu và dấu vết AI
+    ├── compare-preserved-content.mjs   CLI đối chiếu bảo toàn dữ kiện, cực tính số liệu và tỷ lệ sửa edit_ratio
+    ├── check-platform.mjs              CLI đo giới hạn ký tự theo hồ sơ kênh, broetry, SEO và âm vận Suno
     ├── check-x-length.mjs              CLI đếm trọng số ký tự cho chuỗi bài đăng X
-    ├── test-humanizer-contract.mjs     CLI kiểm tra 19 hợp đồng bất biến của Humanizer
+    ├── test-humanizer-contract.mjs     CLI kiểm tra 20 hợp đồng bất biến của Humanizer
     └── lib/                            thư viện hàm thuần (lint.mjs, compare.mjs, profile.mjs, suno.mjs, x-weighted.mjs)
 docs/development/             quy chuẩn nâng cấp, kiểm toán văn phong và hồ sơ nền tảng
 tests/                        bộ kiểm thử tất định (run-all.sh), đo corpus và eval hành vi (23 ca)
@@ -301,6 +302,16 @@ find skills/viet-pro -type f ! -name .DS_Store | LC_ALL=C sort | xargs shasum -a
 ## Lịch sử phiên bản
 
 <details open>
+<summary>5.8.0 - Kiểm tra cấu trúc câu, chuẩn Unicode/dấu thanh tiếng Việt, tỷ lệ sửa edit_ratio và bố cục kênh</summary>
+
+- Nâng `lint.mjs` từ 17 lên **21 nhóm luật** kèm hàm định tuyến `computeRouteHint` (`light / standard / heavy`): thêm `unicode-nfd` (bắt ký tự tổ hợp NFD rời), `inconsistent-tone-mark` (bắt trộn quy tắc bỏ dấu thanh cũ/mới `oa/oe/uy` có loại trừ âm đầu `qu-/g-`), `isomorphic-sentence` (bắt $\ge 3$ câu liên tiếp lặp khuôn mở đầu, lấy cảm hứng từ `lieflat-less-ai-tone`) và `hedging-pileup` (bắt chồng chất từ rào đón dịch thuật, lấy cảm hứng từ `im-not-ai`).
+- Tích hợp phép đo tỷ lệ từ bị sửa `computeEditRatio` và ngưỡng khóa `--max-edit-ratio` (`max_edit_ratio` trong MCP) vào `compare.mjs` và `compare-preserved-content.mjs`.
+- Nâng cấp `check-platform.mjs` (`profile.mjs`): cảnh báo ngắt dòng vụn `broetry-line-breaks` trên LinkedIn/Facebook và kiểm tra mở đoạn trả lời trực diện *Answer-First* (`seo-h2-wall`) sau thẻ H2 trên Blog SEO.
+- Bổ sung kiểm tra mạch đoạn *Outline Test* và *Reflection Tail* (từ `Nanako0129/sepia`) vào `anti-ai.md`, giữ tổng dung lượng Markdown của skill ở mức `149.416 byte` (`+1,76%` so với baseline `5.6.0`, dưới trần `2%`).
+
+</details>
+
+<details>
 <summary>5.7.0 - Tối ưu Gemini 4 Argon, bắt cụm văn dịch và cổng kiểm chứng MCP</summary>
 
 - Bổ sung kỷ luật **Thinking-to-Prose Guardrail** trong `SKILL.md` và `editorial/lead.md`, buộc mô hình chốt chủ thể thật và động từ tiếng Việt ngay từ bước suy luận ngầm để chặn dịch ngược từ dàn ý tiếng Anh.

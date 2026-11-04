@@ -252,6 +252,46 @@ export function checkDraft(profile, fields, { surface } = {}) {
     findings.push(...sunoRes.findings);
     measured.push(...sunoRes.measured);
   }
+  if (profile.meta.id === 'linkedin' || profile.meta.id === 'facebook') {
+    const paras = mainText.replace(/^(```|~~~)[^\n]*\n[\s\S]*?^\1[ \t]*$/gmu, '')
+      .split(/\n\s*\n/u).map((p) => p.trim()).filter((p) => p && !/^(?:#|[-*•]|\d+[.)]|---)/u.test(p));
+    let run = 0;
+    let maxRun = 0;
+    for (const p of paras) {
+      const words = countText(p, 'words');
+      const sents = p.split(/(?<=[.!?])\s+/u).filter(Boolean).length;
+      if (!p.includes('\n') && words > 0 && words <= 18 && sents <= 1) {
+        run++;
+        if (run > maxRun) maxRun = run;
+      } else {
+        run = 0;
+      }
+    }
+    if (maxRun >= 5) {
+      findings.push({
+        level: 'WARN',
+        field: 'broetry-line-breaks',
+        detail: `${maxRun} dòng câu đơn ngắn liên tiếp (<= 18 chữ/dòng); hãy gộp thành đoạn văn tự nhiên thay vì ngắt dòng vụn kiểu broetry`,
+      });
+    }
+  }
+  if (profile.meta.id === 'blog-seo') {
+    const unfenced = mainText.replace(/^(```|~~~)[^\n]*\n[\s\S]*?^\1[ \t]*$/gmu, '');
+    for (const m of unfenced.matchAll(/^##[ \t]+([^\n]+)\n+([^\n#][^\n]*(?:\n(?![ \t]*\n|#)[^\n]*)*)/gmu)) {
+      const h2Title = m[1].trim();
+      if (DRAFT_FIELDS.includes(h2Title.toLowerCase())) continue;
+      const firstPara = m[2].trim();
+      const words = countText(firstPara, 'words');
+      const staged = /^(?:Trong (?:bối cảnh|thời đại|kỷ nguyên)|Hiện nay,?\s+việc|Như chúng ta đã biết)\b/iu.test(firstPara);
+      if (words > 90 || staged) {
+        findings.push({
+          level: 'WARN',
+          field: 'seo-h2-wall',
+          detail: `đoạn mở đầu ngay sau "## ${h2Title.slice(0, 40)}" ${staged ? 'mở bài vòng vo' : `dài ${words} chữ (>90)`}; hãy trả lời trực diện (Answer-First) trong 40-60 chữ đầu`,
+        });
+      }
+    }
+  }
   return { surface: chosen, findings, measured };
 }
 

@@ -12,7 +12,7 @@ import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { compare } from './lib/compare.mjs';
-import { lintText } from './lib/lint.mjs';
+import { computeRouteHint, lintText } from './lib/lint.mjs';
 import { checkDraft, listPlatformIds, loadProfile, splitDraft, validateProfile } from './lib/profile.mjs';
 
 const SELF = fileURLToPath(import.meta.url);
@@ -70,7 +70,7 @@ const TOOLS = [
   {
     name: 'compare_preserved',
     title: 'Đối chiếu dữ kiện trước/sau',
-    description: 'So bản trước và bản sau khi biên tập: URL, số liệu, ngày, trích dẫn, xếp hạng, chuỗi cần giữ và chiều tăng/giảm quanh số liệu. Trả về các khác biệt và các chỗ cần xem lại.',
+    description: 'So bản trước và bản sau khi biên tập: URL, số liệu, ngày, trích dẫn, xếp hạng, chuỗi cần giữ, chiều tăng/giảm quanh số liệu và tỷ lệ sửa đổi (edit_ratio). Trả về các khác biệt và các chỗ cần xem lại.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -78,6 +78,7 @@ const TOOLS = [
         after: { type: 'string', description: 'Bản đã sửa, tối đa 1 MB.' },
         keep: KEEP_SCHEMA,
         strict_quotes: { type: 'boolean', description: 'Coi đổi kiểu dấu ngoặc kép (thẳng/cong) là khác biệt.' },
+        max_edit_ratio: { type: 'number', minimum: 0, maximum: 1, description: 'Ngưỡng tỷ lệ từ bị sửa tối đa cho phép (0..1) khi chỉ muốn biên tập nhẹ.' },
       },
       required: ['before', 'after'],
       additionalProperties: false,
@@ -128,14 +129,21 @@ function rejectUnknown(args, allowed) {
 const HANDLERS = {
   lint_vietnamese(args) {
     rejectUnknown(args, ['text', 'keep']);
-    const findings = lintText(text(args, 'text'), { keep: keepList(args) });
-    return { clean: findings.length === 0, findings };
+    const raw = text(args, 'text');
+    const findings = lintText(raw, { keep: keepList(args) });
+    return { clean: findings.length === 0, route_hint: computeRouteHint(raw, findings), findings };
   },
   compare_preserved(args) {
-    rejectUnknown(args, ['before', 'after', 'keep', 'strict_quotes']);
+    rejectUnknown(args, ['before', 'after', 'keep', 'strict_quotes', 'max_edit_ratio']);
     if (args.strict_quotes !== undefined && typeof args.strict_quotes !== 'boolean') throw new InputError('"strict_quotes" phải là boolean');
-    const { differences, reviews } = compare(text(args, 'before'), text(args, 'after'), keepList(args), { strictQuotes: args.strict_quotes === true });
-    return { preserved: differences.length === 0, differences, reviews };
+    if (args.max_edit_ratio !== undefined && (typeof args.max_edit_ratio !== 'number' || !(args.max_edit_ratio >= 0 && args.max_edit_ratio <= 1))) {
+      throw new InputError('"max_edit_ratio" phải là số trong khoảng 0..1');
+    }
+    const { differences, reviews, edit_ratio } = compare(text(args, 'before'), text(args, 'after'), keepList(args), {
+      strictQuotes: args.strict_quotes === true,
+      maxEditRatio: args.max_edit_ratio,
+    });
+    return { preserved: differences.length === 0, edit_ratio, differences, reviews };
   },
   check_platform(args) {
     rejectUnknown(args, ['platform', 'text', 'surface']);
@@ -326,9 +334,10 @@ async function selfTest() {
 
   const lint = toolText('lint');
   const lintBody = JSON.parse(lint.content[0].text);
-  if (lint.isError !== false || !lintBody.findings.some((f) => f.id === 'chatbot-residue') || !lintBody.findings.some((f) => f.id === 'translationese-cluster')) fail('lint_vietnamese không bắt được chatbot-residue hoặc translationese-cluster');
+  if (lint.isError !== false || lintBody.route_hint !== 'heavy' || !lintBody.findings.some((f) => f.id === 'chatbot-residue') || !lintBody.findings.some((f) => f.id === 'translationese-cluster')) fail('lint_vietnamese không bắt được chatbot-residue, translationese-cluster hoặc route_hint');
   const cmp = toolText('compare');
-  if (cmp.isError !== false || cmp.resultType !== 'complete' || JSON.parse(cmp.content[0].text).preserved !== false) fail('compare_preserved không bắt được tối đa→tối thiểu');
+  const cmpBody = JSON.parse(cmp.content[0].text);
+  if (cmp.isError !== false || cmp.resultType !== 'complete' || cmpBody.preserved !== false || typeof cmpBody.edit_ratio !== 'number') fail('compare_preserved không bắt được tối đa→tối thiểu hoặc thiếu edit_ratio');
   const plat = toolText('platform');
   if (plat.isError !== false) fail(`check_platform lỗi: ${plat.content[0].text}`);
   const platBody = JSON.parse(plat.content[0].text);

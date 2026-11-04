@@ -36,6 +36,7 @@ const checks = [
   ['kỷ luật Thinking-to-Prose chống dịch ngược', /Thinking-to-Prose Guardrail/u.test(skill) && /không lập dàn ý bằng tiếng Anh hay danh từ hóa/u.test(editorialLead)],
   ['cổng kiểm chứng MCP/CLI bắt buộc', /Cổng kiểm chứng bắt buộc trước khi trả bài/u.test(skill) && /lint_vietnamese/u.test(skill)],
   ['tích hợp kiểm tra cụm văn dịch', /translationese-cluster/u.test(skill) && /translationese-cluster/u.test(translationese)],
+  ['kiểm tra mạch đoạn Outline Test và cấu trúc câu đồng cấu', /Outline Test/u.test(router) && /isomorphic-sentence/u.test(skill)],
 ];
 
 const failed = checks.filter(([, ok]) => !ok).map(([name]) => name);

@@ -45,6 +45,14 @@ export const LINE_RULES = [
     id: 'placeholder', level: 'WARN', desc: 'Nghi chỗ trống chưa điền ([Tên công ty], [chèn link], XX%, Lorem ipsum)',
     check: (l) => [...l.matchAll(/\[(?:Tên (?:công ty|doanh nghiệp|thương hiệu|sản phẩm|khách hàng|bạn)|chèn link|điền|placeholder)[^\]\n]*\]|\bLorem ipsum\b|\bXX(?=%|\s?(?:triệu|tỷ|nghìn|đồng|USD)(?![\p{L}\p{N}]))/giu)].map((m) => m[0]),
   },
+  {
+    id: 'unicode-nfd', level: 'WARN', desc: 'Ký tự dấu thanh/dấu mũ tổ hợp rời hệ Unicode NFD; cần chuẩn hóa về NFC',
+    check: (l) => [...l.matchAll(/[\p{L}\p{M}]*[\u0300-\u0303\u0306\u0309\u031B\u0323][\p{L}\p{M}]*/gu)].map((m) => m[0]),
+  },
+  {
+    id: 'hedging-pileup', level: 'WARN', desc: 'Chồng chất nhiều lớp từ rào đón dịch thuật làm câu văn mơ hồ (im-not-ai pattern G)',
+    check: (l) => [...l.replace(/["“][^"”\n]{1,200}["”]|`[^`\n]{1,200}`/gu, ' ').matchAll(/\b(?:có thể sẽ\s+(?:góp phần|mang lại|tạo ra|dẫn đến|mở ra)|dường như\s+(?:có xu hướng|đang dần|có thể|được xem là)|được kỳ vọng\s+(?:sẽ\s+)?(?:mang lại khả năng|góp phần|tạo điều kiện)|có khả năng\s+(?:sẽ\s+)?(?:góp phần|tạo điều kiện|mang lại tiềm năng)|có xu hướng\s+(?:được xem là|được đánh giá là|góp phần vào việc))\b/giu)].map((m) => m[0].trim()),
+  },
 ];
 
 // A leading `---` ... `---` block is YAML frontmatter; an unclosed `---` is ordinary text.
@@ -89,7 +97,7 @@ const TRANSLATIONESE_PATTERNS = [
 const AI_BUZZWORD_RE = /\b(?:tối ưu hóa toàn diện|giải pháp toàn diện|hệ sinh thái liền mạch|trải nghiệm liền mạch|bức tranh toàn cảnh|chìa khóa then chốt|nền tảng vững chắc|khai mở tiềm năng|mở khóa tiềm năng|nâng tầm trải nghiệm|hành trình chuyển đổi(?:\s+số)?|bước ngoặt lịch sử|thay đổi cuộc chơi|định hình tương lai|giải pháp đột phá|công nghệ đột phá|tiêu chuẩn vàng|kim chỉ nam)\b/giu;
 
 function stripQuotedAndKept(text, keep = []) {
-  let out = text.replace(/["“][^"”\n]{1,200}["”]/gu, ' ');
+  let out = text.replace(/["“][^"”\n]{1,200}["”]|`[^`\n]{1,200}`/gu, ' ');
   for (const k of keep) {
     if (!k) continue;
     const escaped = k.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
@@ -139,6 +147,26 @@ function paragraphClusters(text, keep = []) {
         excerpt: `Cụm sáo ngữ AI (${buzzHits.length} cụm): ${buzzHits.slice(0, 4).map((x) => `"${x}"`).join(', ')}`,
         desc: 'Tụ nhiều cụm từ AI/marketing sáo rỗng trong cùng đoạn (humanizer pattern 12, 16)',
       });
+    }
+    const sents = cleaned.split(/(?<=[.!?])\s+/u).map((s) => s.trim()).filter((s) => s.length > 15);
+    const openSig = (s) => {
+      const clause = s.match(/^([\p{L}]+)\s+(?:[\p{L}\p{N}]+\s+){1,10}[\p{L}\p{N}]+,/u);
+      if (clause) return `${clause[1].toLowerCase()}...,`;
+      const pair = s.match(/^([\p{L}]+\s+[\p{L}]+)\b/u);
+      return pair ? pair[1].toLowerCase() : null;
+    };
+    for (let i = 0; i + 2 < sents.length; i++) {
+      const s0 = openSig(sents[i]);
+      if (s0 && s0 === openSig(sents[i + 1]) && s0 === openSig(sents[i + 2])) {
+        findings.push({
+          level: 'WARN',
+          id: 'isomorphic-sentence',
+          line: p.startLine,
+          excerpt: `3 câu liên tiếp mở đầu cùng khuôn "${s0}"`,
+          desc: 'Ba câu liên tiếp trong đoạn lặp cùng cấu trúc mở đầu (lieflat check-structure)',
+        });
+        break;
+      }
     }
   }
   return findings;
@@ -209,6 +237,18 @@ function textRules(text, opts = {}) {
   const reuseTarget = /^\s*\[(?:Intro|Verse|Pre-Chorus|Chorus|Final Chorus|Bridge|Outro|Hook|Refrain)\b/imu.test(text)
     ? dedupeSongLyrics(text)
     : text;
+  const toneTarget = stripQuotedAndKept(reuseTarget, opts.keep);
+  const oldTones = [...toneTarget.matchAll(/\p{L}*(?<![qgQG])(?:o[àáảãạ]|o[èéẻẽẹ]|u[ỳýỷỹỵ])(?![\p{L}\p{M}])/giu)].map((m) => m[0]);
+  const newTones = [...toneTarget.matchAll(/\p{L}*(?<![qgQG])(?:[òóỏõọ][ae]|[ùúủũụ]y)(?![\p{L}\p{M}])/giu)].map((m) => m[0]);
+  if (oldTones.length > 0 && newTones.length > 0) {
+    findings.push({
+      level: 'WARN',
+      id: 'inconsistent-tone-mark',
+      line: 0,
+      excerpt: `Trộn kiểu bỏ dấu cũ ("${oldTones[0]}") và mới ("${newTones[0]}")`,
+      desc: 'Trộn hai quy tắc đặt dấu thanh oa/oe/uy trong cùng văn bản (consistency.md)',
+    });
+  }
   findings.push(...phraseReuse(reuseTarget, opts.keep));
   findings.push(...paragraphClusters(reuseTarget, opts.keep));
   return findings;
@@ -268,4 +308,11 @@ export function lintText(text, opts = {}) {
   });
   findings.push(...textRules(stripProtectedBlocks(text), opts));
   return findings;
+}
+
+export function computeRouteHint(text, findings = lintText(text)) {
+  if (!findings.length) return 'light';
+  const hasHeavySignal = findings.some((f) => f.level === 'ERROR' || ['translationese-cluster', 'ai-buzzword-cluster', 'isomorphic-sentence'].includes(f.id));
+  if (hasHeavySignal || findings.length >= 5) return 'heavy';
+  return 'standard';
 }

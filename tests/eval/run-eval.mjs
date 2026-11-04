@@ -22,6 +22,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statS
 import { homedir, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { computeEditRatio } from '../../skills/viet-pro/scripts/lib/compare.mjs';
 import { checkDraft, loadProfile, splitDraft } from '../../skills/viet-pro/scripts/lib/profile.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -157,19 +158,7 @@ function extract(raw) {
 
 const wordCount = (text) => text.split(/\s+/u).filter((w) => /[\p{L}\p{N}]/u.test(w)).length;
 const countOf = (text, needle) => text.split(needle).length - 1;
-
-// Share of syllable tokens changed (Levenshtein distance / longer length). 0 = identical.
-function editRatio(a, b) {
-  const ta = a.normalize('NFC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
-  const tb = b.normalize('NFC').toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
-  let prev = Array.from({ length: tb.length + 1 }, (_, j) => j);
-  for (let i = 1; i <= ta.length; i++) {
-    const cur = [i];
-    for (let j = 1; j <= tb.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ta[i - 1] === tb[j - 1] ? 0 : 1));
-    prev = cur;
-  }
-  return prev[tb.length] / Math.max(ta.length, tb.length, 1);
-}
+const editRatio = computeEditRatio;
 
 // Deterministic checks. Each returns { ok, detail }.
 function grade(c, raw) {

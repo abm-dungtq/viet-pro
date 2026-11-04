@@ -11,7 +11,7 @@ Humanizer là một lớp biên tập giúp văn xuôi rõ, cụ thể và tự 
 ## Quy trình
 
 1. **Phát hiện:** đánh dấu pattern và đoạn liên quan; pattern mạnh 1-5 có thể đáng sửa từ một lần xuất hiện, pattern yếu cần thành cụm hoặc gây hại rõ.
-2. **Viết lại theo đoạn:** nêu ý chính sớm hơn, thay khái quát bằng chi tiết có sẵn, bỏ nhịp/cấu trúc trang trí. Không cố tình thêm lỗi để "giống người".
+2. **Viết lại theo đoạn:** nêu ý chính sớm hơn, thay khái quát bằng chi tiết có sẵn, bỏ nhịp/cấu trúc trang trí và kiểm tra mạch đoạn (*Outline Test*: đọc nối các câu mở đoạn không được giống một mục lục máy móc; tránh lặp 3 câu đầu đoạn cùng khuôn `isomorphic-sentence` và bỏ đoạn kết rút bài học sáo rỗng *Reflection Tail*). Không cố tình thêm lỗi để "giống người".
 3. **Đối chiếu dữ kiện:** so trước/sau với tên, số, ngày, URL, quote (kể cả dấu bao quanh khi phải giữ nguyên), citation, thứ hạng, quan điểm, CTA được yêu cầu và chi tiết xảy ra đồng thời.
 4. **Trả bản cuối:** mặc định chỉ đưa bản đã sửa và cảnh báo dữ kiện cần thiết. Khi người dùng yêu cầu audit, thêm pattern, đoạn liên quan, lý do sửa và nguy cơ mất dữ kiện.
 

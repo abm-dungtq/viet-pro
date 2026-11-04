@@ -8,7 +8,7 @@
 // not proof the meaning is unchanged.
 
 import { readFileSync } from 'node:fs';
-import { compare } from './lib/compare.mjs';
+import { compare, computeEditRatio } from './lib/compare.mjs';
 
 function selfTest() {
   const fail = (msg) => { console.error(`SELF-TEST FAIL — ${msg}`); process.exit(1); };
@@ -41,8 +41,13 @@ function selfTest() {
     if (keepDiff(`Xem ${k} nhé.`, `Nhé, xem ${k}.`, [k])) fail(`--keep không khớp chuỗi có ký tự đặc biệt: ${k}`);
     if (!keepDiff(`Xem ${k} nhé.`, 'Xem nhé.', [k])) fail(`--keep không bắt được khi mất chuỗi: ${k}`);
   }
+  if (computeEditRatio('Mot hai ba bon', 'Mot hai ba bon') !== 0) fail('edit_ratio của hai câu giống hệt phải bằng 0');
+  const ratioRes = compare('Một hai ba bốn năm sáu bảy tám chín mười.', 'Một hai ba bốn năm sáu bảy tám chín mười một.', [], { maxEditRatio: 0.2 });
+  if (ratioRes.differences.length || !(ratioRes.edit_ratio > 0 && ratioRes.edit_ratio <= 0.2)) fail('maxEditRatio báo sai khi tỷ lệ sửa nằm trong ngưỡng');
+  const overRatio = compare('Một hai ba bốn.', 'Sáu bảy tám chín mười.', [], { maxEditRatio: 0.15 });
+  if (!overRatio.differences.some((d) => d.kind === 'edit_ratio')) fail('--max-edit-ratio không chặn khi tỷ lệ sửa vượt ngưỡng');
 
-  console.log('SELF-TEST PASS — bảo toàn URL, số/ngày, quote, citation, ranking, chuỗi --keep và chiều tăng/giảm quanh số liệu');
+  console.log('SELF-TEST PASS — bảo toàn URL, số/ngày, quote, citation, ranking, chuỗi --keep, chiều tăng/giảm quanh số liệu và ngưỡng edit_ratio');
 }
 
 const args = process.argv.slice(2);
@@ -53,19 +58,26 @@ if (args[0] === '--self-test') {
 const files = [];
 const keep = [];
 let strictQuotes = false;
+let maxEditRatio;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--keep' && args[i + 1]) keep.push(args[++i]);
   else if (args[i] === '--strict-quotes') strictQuotes = true;
-  else files.push(args[i]);
+  else if (args[i] === '--max-edit-ratio' && args[i + 1]) {
+    maxEditRatio = Number(args[++i]);
+    if (!(maxEditRatio >= 0 && maxEditRatio <= 1)) {
+      console.error('--max-edit-ratio cần một số trong khoảng 0..1');
+      process.exit(2);
+    }
+  } else files.push(args[i]);
 }
 if (files.length !== 2) {
-  console.error('Usage: node compare-preserved-content.mjs <before> <after> [--keep "Tên riêng"]... [--strict-quotes]');
+  console.error('Usage: node compare-preserved-content.mjs <before> <after> [--keep "Tên riêng"]... [--strict-quotes] [--max-edit-ratio <0..1>]');
   process.exit(2);
 }
-const { differences, reviews } = compare(readFileSync(files[0], 'utf8'), readFileSync(files[1], 'utf8'), keep, { strictQuotes });
+const { differences, reviews, edit_ratio } = compare(readFileSync(files[0], 'utf8'), readFileSync(files[1], 'utf8'), keep, { strictQuotes, maxEditRatio });
 for (const r of reviews) console.log(`REVIEW [context] ${JSON.stringify(r.token)}: "${r.before.join(' | ')}" -> "${r.after.join(' | ')}"`);
 if (!differences.length) {
-  console.log('PASS — các dữ kiện được bảo toàn');
+  console.log(`PASS — các dữ kiện được bảo toàn (edit_ratio: ${(edit_ratio * 100).toFixed(1)}%)`);
   process.exit(0);
 }
 for (const d of differences) {

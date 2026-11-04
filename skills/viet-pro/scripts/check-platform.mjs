@@ -162,7 +162,17 @@ sources:
   if (!has(sunoCase({ description: 'Indie pop, 80 BPM, female vocals', body: '[Verse]\nEm về' }), 'style-missing-vocal-clarity')) fail('Style chỉ có "vocals" mà thiếu cue phát âm phải bị cảnh báo');
   // Everyday words with two heavy tones ("hiện tại", "điện thoại", "liễu rủ") are normal Vietnamese, not broken-tone clusters.
   if (sunoCase({ description: style, body: '[Verse 1]\nHiện tại em vẫn ở đây\nĐiện thoại im lặng cả ngày\nGọi hồn liễu rủ lê thê bên quê\nLòng ta còn mãi những chiều mưa bay' }).some((f) => f.field === 'broken-tone-cluster')) fail('lời tự nhiên có cặp thanh nặng/hỏi/ngã không được bị cảnh báo');
-  console.log('SELF-TEST PASS — cách đếm, parser hồ sơ, tách trường, tách đoạn, mức ERROR/WARN theo độ tin cậy, khối thiếu, kiểm tra Suno prosody');
+
+  const liProfile = loadProfile(DIR, 'linkedin');
+  const broetryDraft = splitDraft(['Câu một rất ngắn.', 'Câu hai cũng ngắn.', 'Câu ba tách dòng.', 'Câu bốn cụt lủn.', 'Câu năm làm màu.'].join('\n\n'));
+  if (!checkDraft(liProfile, broetryDraft).findings.some((f) => f.field === 'broetry-line-breaks' && f.level === 'WARN')) fail('linkedin không cảnh báo broetry-line-breaks khi có 5 dòng câu đơn ngắn liên tiếp');
+  if (checkDraft(liProfile, splitDraft('Đoạn mở đầu gồm hai câu liền mạch. Kết quả đo thực tế rất rõ ràng.\n\nĐoạn thứ hai trình bày số liệu chi tiết.')).findings.some((f) => f.field === 'broetry-line-breaks')) fail('linkedin báo nhầm broetry-line-breaks trên văn bản bình thường');
+
+  const seoProfile = loadProfile(DIR, 'blog-seo');
+  const seoBad = splitDraft('## title\nCách tối ưu kho hàng\n\n## description\nHướng dẫn chi tiết cách kiểm kê kho hàng giảm thất thoát.\n\n## body\n## Tại sao cần kiểm kê kho định kỳ\nTrong bối cảnh thị trường bán lẻ cạnh tranh khốc liệt hiện nay, các doanh nghiệp phải đối mặt với nhiều thách thức.');
+  if (!checkDraft(seoProfile, seoBad).findings.some((f) => f.field === 'seo-h2-wall' && f.level === 'WARN')) fail('blog-seo không cảnh báo seo-h2-wall khi mở đoạn sau H2 vòng vo');
+
+  console.log('SELF-TEST PASS — cách đếm, parser hồ sơ, tách trường, tách đoạn, mức ERROR/WARN theo độ tin cậy, khối thiếu, kiểm tra Suno prosody, broetry và Answer-First SEO');
 }
 
 function validateAll() {
