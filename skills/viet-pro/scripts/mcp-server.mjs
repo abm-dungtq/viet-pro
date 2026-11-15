@@ -7,8 +7,8 @@
 // The tools take text only: no file paths from the client, no file writes, no network.
 
 import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readFileSync, realpathSync } from 'node:fs';
+import { dirname, join, resolve as pathResolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { compare } from './lib/compare.mjs';
@@ -261,18 +261,22 @@ function onLine(line) {
 }
 
 function serve() {
-  const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
-  rl.on('line', onLine);
-  // On stdin EOF, let pending stdout writes drain; the process then exits on its own.
-  process.stdout.on('error', (e) => {
-    if (e.code !== 'EPIPE') console.error(`viet-pro mcp: stdout lỗi: ${e.message}`);
-    process.exit(0);
+  return new Promise((resolveServe) => {
+    const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
+    rl.on('line', onLine);
+    rl.on('close', () => resolveServe(0));
+    // On stdin EOF, let pending stdout writes drain; the process then exits on its own.
+    process.stdout.on('error', (e) => {
+      if (e.code !== 'EPIPE') console.error(`viet-pro mcp: stdout lỗi: ${e.message}`);
+      rl.close();
+      resolveServe(0);
+    });
+    console.error(`viet-pro mcp ${SERVER_INFO.version} sẵn sàng trên stdio`);
   });
-  console.error(`viet-pro mcp ${SERVER_INFO.version} sẵn sàng trên stdio`);
 }
 
 async function selfTest() {
-  const fail = (msg) => { console.error(`SELF-TEST FAIL — ${msg}`); process.exit(1); };
+  const fail = (msg) => { throw new Error(`SELF-TEST FAIL — ${msg}`); };
   const meta = { _meta: { [VERSION_KEY]: '2026-07-28' } };
   const lines = [
     { jsonrpc: '2.0', id: 'list-first', method: 'tools/list' },
@@ -352,8 +356,34 @@ async function selfTest() {
   console.log('SELF-TEST PASS — server/discover, initialize, tools/list trước initialize, 3 tool, check_platform facebook, chặn "../SKILL" và keep quá lớn, -32022/-32601/-32602/-32700');
 }
 
-if (process.argv[2] === '--self-test') selfTest();
-else if (process.argv.length > 2) {
-  console.error('Usage: node mcp-server.mjs | --self-test');
-  process.exit(2);
-} else serve();
+function isMainModule() {
+  if (!process.argv[1]) return false;
+  try {
+    return realpathSync(pathResolve(process.argv[1])) === realpathSync(SELF);
+  } catch {
+    return pathResolve(process.argv[1]) === SELF;
+  }
+}
+
+export async function runMcpCli(argv = process.argv.slice(2)) {
+  if (argv[0] === '--self-test') {
+    try {
+      await selfTest();
+      return 0;
+    } catch (e) {
+      console.error(e.message);
+      return 1;
+    }
+  }
+  if (argv.length > 0) {
+    console.error('Usage: node mcp-server.mjs | --self-test');
+    return 2;
+  }
+  return serve();
+}
+
+if (isMainModule()) {
+  runMcpCli(process.argv.slice(2)).then((code) => {
+    if (code) process.exitCode = code;
+  });
+}

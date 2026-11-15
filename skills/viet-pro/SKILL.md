@@ -3,7 +3,7 @@ name: viet-pro
 description: "Viết, biên tập, humanize, audit dấu hiệu AI, kiểm chứng và chuyển thể nội dung tiếng Việt chuyên nghiệp cho bài dài, blog, SEO, mạng xã hội, newsletter, kịch bản video và lời bài hát/prompt nhạc Suno. Kích hoạt khi người dùng yêu cầu viết mới, biên tập, rà văn phong tiếng Việt, chống AI slop, kiểm chứng nguồn/claim hoặc định dạng xuất bản theo kênh; không dùng cho dịch ngắn hay chỉnh một câu đơn giản."
 metadata:
   author: ABM-DungTQ
-  version: "5.8.0"
+  version: "6.0.0"
   category: content
   keywords: [vietnamese, writing, editing, humanize, fact-check, publishing, content-engine, suno]
 ---
@@ -56,6 +56,7 @@ Chỉ đọc những phần cần cho yêu cầu hiện tại:
 - Nghiên cứu topic hoặc phân tích dữ liệu: đọc [research/lead.md](references/research/lead.md), rồi đọc `research.md` và/hoặc `analysis.md` theo router.
 - Viết bài: đọc [editorial/lead.md](references/editorial/lead.md), rồi chọn các kỹ thuật liên quan. Tài liệu kỹ thuật dùng `technical.md` thay cho bộ storytelling.
 - Chuyển thể theo kênh: đọc [publishing/lead.md](references/publishing/lead.md), đúng một file kênh và `repurpose-matrix.md` khi làm nhiều kênh.
+- Thể loại doanh nghiệp & sản phẩm: đọc [genres/lead.md](references/genres/lead.md), rồi chọn đúng một hồ sơ thể loại cần viết.
 - Rà soát: đọc [review/lead.md](references/review/lead.md), các reference ngôn ngữ liên quan và `fact-check.md` khi có claim cần kiểm chứng. Mọi văn xuôi công khai chạy kiểm tra Humanizer nhẹ theo `review/anti-ai.md`; chỉ đọc đủ `review/humanizer-patterns.md` khi người dùng yêu cầu humanize/audit dấu hiệu AI hoặc một đoạn có nhiều dấu hiệu đồng thời.
 - Bài mẫu/pattern: chỉ đọc [archive/lead.md](references/archive/lead.md) khi cần bắt chước một cấu trúc đã chọn. Không biến pattern thành công thức bắt buộc.
 - Cải tiến chính skill: tài liệu bảo trì nằm ở `docs/development/` trong repo nguồn https://github.com/abm-dungtq/viet-pro, không đi kèm bản cài. Chỉ dùng khi người dùng yêu cầu sửa hoặc nâng cấp skill.
@@ -91,17 +92,16 @@ Rà theo rủi ro, không dùng checklist như mục tiêu tự thân:
 Humanizer là quy trình biên tập, không phải công cụ xác định văn bản do AI hay con người viết. Pattern mạnh 1-5 có thể đáng sửa từ một lần xuất hiện nếu đúng ngữ cảnh; pattern yếu chỉ sửa khi lặp thành cụm hoặc làm giảm độ rõ. Khi sửa tệp, chỉ thay văn xuôi: giữ nguyên frontmatter, code, lệnh, dữ liệu có cấu trúc và đích URL. Nếu brief yêu cầu giữ nguyên quote/trích dẫn, bảo toàn cả nội dung lẫn kiểu dấu ngoặc bao quanh.
 
 **Cổng kiểm chứng bắt buộc trước khi trả bài (áp dụng cho cả Nhanh, Chuẩn và Tòa soạn):**
-- Nếu môi trường đã kết nối MCP server `viet-pro`, **bắt buộc** gọi công cụ `lint_vietnamese` ngay trên chuỗi bản thảo trong bộ nhớ (kèm `compare_preserved` khi biên tập/humanize và `check_platform` khi viết theo kênh).
-- Nếu làm việc trên tệp hoặc không có MCP, chạy trực tiếp các script trong thư mục `scripts/` của skill (đường dẫn tính từ thư mục chứa file SKILL.md này; trong Claude Code là `${CLAUDE_SKILL_DIR}`):
+- Chạy một lệnh CLI duy nhất trên bản thảo (tạo stamp SHA-256 trong `.viet-pro/stamps/` khi đạt):
 
 ```bash
-node <thư-mục-skill>/scripts/lint-vietnamese-content.mjs <file.md> [--keep "Tên riêng"] [--route-hint]
-node <thư-mục-skill>/scripts/compare-preserved-content.mjs <before.md> <after.md> --keep "Tên riêng" [--strict-quotes] [--max-edit-ratio 0.15]
-node <thư-mục-skill>/scripts/check-x-length.mjs <thread.md>
-node <thư-mục-skill>/scripts/check-platform.mjs <kênh> <bản-thảo.md> [--surface <bề-mặt>]
+viet-pro gate <file.md> [--before <before.md>] [--platform <kênh>] [--surface <bề-mặt>] [--keep "Tên riêng"]
+viet-pro gate --stdin [--platform <kênh>]
 ```
 
-Lint cung cấp tín hiệu tất định (gồm `route_hint`, cụm văn dịch `translationese-cluster`, cụm sáo ngữ `ai-buzzword-cluster`, câu đồng cấu `isomorphic-sentence`, rào đón `hedging-pileup`, lỗi mã `unicode-nfd` và trộn dấu thanh `inconsistent-tone-mark`). WARN không tự động làm bài thất bại nhưng các cụm cảnh báo văn dịch/sáo ngữ phải được viết lại trừ khi thuộc văn bản hành chính/pháp lý; ERROR bắt buộc phải xử lý. Yêu cầu phong cách rõ ràng của người dùng có thể override house style, nhưng không override lỗi sự thật hoặc an toàn.
+- Với bài dài `>= 800` chữ, đa kênh `>= 3` kênh hoặc độ sâu `heavy`, bắt buộc ghi 02-review-ticket.md trước khi bàn giao.
+- Nếu môi trường ngoài không có shell, dùng `viet-pro mcp` làm cầu nối dự phòng.
+- `viet-pro gate` chạy đồng thời kiểm tra tất định (`route_hint`, cụm văn dịch `translationese-cluster`, cụm sáo ngữ `ai-buzzword-cluster`, câu đồng cấu `isomorphic-sentence`, rào đón `hedging-pileup`, lỗi mã `unicode-nfd`, trộn dấu thanh `inconsistent-tone-mark`) và chấm nhịp/biên tập qua Gemini Decisions khi có khóa. WARN không tự động làm bài thất bại nhưng cụm văn dịch/sáo ngữ phải được viết lại trừ văn bản hành chính/pháp lý; ERROR bắt buộc xử lý. Yêu cầu phong cách rõ ràng của người dùng có thể override house style, nhưng không override lỗi sự thật hoặc an toàn.
 
 Sửa tối đa hai vòng có mục tiêu. Sau mỗi vòng Humanizer, đối chiếu tên, số, ngày, URL, trích dẫn, citation, thứ hạng, quan điểm và các chi tiết xảy ra đồng thời. Nếu chất lượng không cải thiện hoặc hai yêu cầu xung đột, dừng và nêu trade-off thay vì viết lại vô hạn.
 

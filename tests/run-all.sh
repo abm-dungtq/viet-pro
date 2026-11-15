@@ -19,6 +19,23 @@ node "$SCRIPTS/compare-preserved-content.mjs" --self-test
 node "$SCRIPTS/test-humanizer-contract.mjs"
 node "$SCRIPTS/check-platform.mjs" --self-test
 node "$SCRIPTS/mcp-server.mjs" --self-test
+node "$SCRIPTS/lib/config.mjs" --self-test
+GEMINI_API_KEY="" VIET_PRO_NO_ENV_FILE=1 node "$SCRIPTS/lib/decisions.mjs" --self-test
+GEMINI_API_KEY="" VIET_PRO_NO_ENV_FILE=1 node "$SCRIPTS/lib/stamp.mjs" --self-test
+GEMINI_API_KEY="" VIET_PRO_NO_ENV_FILE=1 node "$SCRIPTS/lib/gate.mjs" --self-test
+node "$SCRIPTS/hooks/editorial-hook.mjs" --self-test
+node "$SCRIPTS/hooks/agy-hook.mjs" --self-test
+node "$SCRIPTS/hooks/claude-hook.mjs" --self-test
+node "$SCRIPTS/hooks/codex-hook.mjs" --self-test
+node skills/viet-pro/bin/viet-pro.mjs mcp --self-test
+node skills/viet-pro/bin/viet-pro.mjs doctor --json | node -e '
+const d = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+if (d.ok !== true || d.version !== "6.0.0" || typeof d.elapsed_ms !== "number" || !(d.elapsed_ms < 50)) {
+  console.error("FAIL: viet-pro doctor --json", d);
+  process.exit(1);
+}
+console.log("OK: viet-pro doctor --json (" + d.elapsed_ms + "ms)");
+'
 
 step "Lint fixture: bản sau khi humanize và tài liệu kỹ thuật không có vi phạm"
 for f in tests/humanizer/facebook-after.md tests/humanizer/technical.md; do
@@ -39,6 +56,9 @@ node "$SCRIPTS/compare-preserved-content.mjs" tests/humanizer/facebook-before.md
 
 step "Tham chiếu trong skill"
 node tests/check-skill-refs.mjs
+
+step "Ngân sách ngữ cảnh theo tuyến"
+node tests/check-route-budget.mjs
 
 step "Hạn rà soát dữ kiện nền tảng"
 node tests/check-freshness.mjs
@@ -92,8 +112,30 @@ bash tests/install/test-install.sh .
 
 step "Grader của eval trên kết quả đã lưu"
 if [ -f tests/eval/baseline.json ]; then
-  node tests/eval/run-eval.mjs --regrade tests/eval/baseline.json --out "$(mktemp -d)/regrade.json" > /dev/null
-  echo "OK: regrade baseline chạy được"
+  TMP_EVAL="$(mktemp -d)"
+  trap 'rm -rf "$TMP_EVAL"' EXIT
+  node tests/eval/run-eval.mjs --regrade tests/eval/baseline.json --out "$TMP_EVAL/regraded-base.json" > /dev/null
+  node -e '
+    const fs = require("node:fs");
+    const base = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    const cur = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+    const curMap = new Map((cur.cases || []).map((r) => [r.id, r]));
+    const drops = (base.cases || []).filter((b) => b.pass && !curMap.get(b.id)?.pass).map((b) => b.id);
+    if ((cur.summary?.pass ?? 0) < 20 || JSON.stringify(drops) !== JSON.stringify(["no-change-suno"])) {
+      console.error("FAIL: regrade Pass 1 unexpected", { pass: cur.summary?.pass, drops });
+      process.exit(1);
+    }
+    console.log("OK: regrade Pass 1 (pass=" + cur.summary.pass + ", expected baseline drift=" + drops.join(",") + ")");
+  ' tests/eval/baseline.json "$TMP_EVAL/regraded-base.json"
+  cmp_out="$(node tests/eval/run-eval.mjs --regrade tests/eval/baseline.json --compare "$TMP_EVAL/regraded-base.json" --out "$TMP_EVAL/regraded-cmp.json")"
+  echo "$cmp_out"
+  case "$cmp_out" in *"Ngân sách theo tuyến: PASS"*) ;; *) echo "FAIL: regrade Pass 2 thiếu Ngân sách theo tuyến: PASS" >&2; exit 1 ;; esac
+  if node tests/eval/run-eval.mjs --regrade tests/eval/baseline.json --compare "$TMP_EVAL/regraded-base.json" --max-bytes-growth 0.02 --out "$TMP_EVAL/regraded-cap.json" >/dev/null 2>&1; then
+    echo "FAIL: --max-bytes-growth 0.02 phải chặn khi vượt trần 2%" >&2
+    exit 1
+  fi
+  echo "OK: regrade Pass 3 (--max-bytes-growth 0.02 vẫn chặn đúng khi truyền tường minh)"
+  rm -rf "$TMP_EVAL"
 fi
 
 echo ""

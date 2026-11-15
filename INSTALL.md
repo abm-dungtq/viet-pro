@@ -3,9 +3,9 @@
 Viết Pro (`viet-pro`) chạy trên **Claude Code**, **OpenAI Codex** và **Google Antigravity**. AgentKit dùng chung thư mục skill của các host này.
 
 ```text
-skills/viet-pro/          nguồn skill chuẩn (SKILL.md, references/, scripts/)
+skills/viet-pro/          nguồn skill chuẩn (SKILL.md, bin/, references/, scripts/)
 SKILL_SHA256SUMS          checksum từng file của skill, installer dùng để kiểm tra
-dist/viet-pro-5.8.0.zip   gói phát hành
+dist/viet-pro-6.0.0.zip   gói phát hành
 SHA256SUMS                checksum các gói zip
 ```
 
@@ -14,15 +14,15 @@ SHA256SUMS                checksum các gói zip
 ## 1. Cài tự động (khuyến nghị)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.8.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v6.0.0/install.sh | bash
 ```
 
-Lệnh trên tải đúng tag `v5.8.0`, kiểm tra checksum của skill, rồi cài cho mọi host phát hiện được trên máy (dựa vào sự tồn tại của `~/.claude`, `~/.agents` hoặc `~/.codex`, `~/.gemini` và `~/.gemini/antigravity-cli`).
+Lệnh trên tải đúng tag `v6.0.0`, kiểm tra checksum của skill, rồi cài cho mọi host phát hiện được trên máy (dựa vào sự tồn tại của `~/.claude`, `~/.agents` hoặc `~/.codex`, `~/.gemini` và `~/.gemini/antigravity-cli`). Khi cài cho host (không phải `--workspace`), installer tự tạo symlink CLI `~/.local/bin/viet-pro` và dọn các đăng ký MCP `viet-pro` cũ trong cấu hình host mà vẫn giữ nguyên `skillUsage` và các server khác.
 
 Chỉ định host hoặc tuỳ chọn khác bằng cách thêm tham số sau `bash -s --`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.8.0/install.sh | bash -s -- --claude --codex
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v6.0.0/install.sh | bash -s -- --claude --codex
 ```
 
 | Tuỳ chọn | Tác dụng |
@@ -34,6 +34,8 @@ curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.8.0/install.
 | `--all` | Cài cho mọi host phát hiện được (mặc định) |
 | `--workspace`, `-w` | Cài vào dự án hiện tại: `.agents/skills/viet-pro` và `.claude/skills/viet-pro` |
 | `--link`, `-l` | Tạo symlink thay vì copy (chỉ khi chạy `./install.sh` từ repo đã clone) |
+| `--skip-mcp-cleanup` | Giữ nguyên cấu hình MCP `viet-pro` cũ nếu có |
+| `--no-cli-link` | Không tạo symlink CLI `~/.local/bin/viet-pro` |
 | `--ref <tag>` | Cài một tag khác, ví dụ `--ref vX.Y.Z` |
 
 Nếu đã clone repo, chạy trực tiếp:
@@ -85,6 +87,7 @@ Mở phiên mới sau khi cài để host nạp skill.
 ## 4. Kiểm tra cài đặt
 
 ```bash
+viet-pro doctor --json
 node skills/viet-pro/scripts/lint-vietnamese-content.mjs --self-test
 node skills/viet-pro/scripts/compare-preserved-content.mjs --self-test
 node skills/viet-pro/scripts/test-humanizer-contract.mjs
@@ -121,70 +124,40 @@ Mỗi lần phát hành phiên bản mới:
 
 ---
 
-## 6. Công cụ kiểm tra qua MCP
+## 6. MCP dự phòng cho môi trường ngoài không có shell (tuỳ chọn)
 
-`skills/viet-pro/scripts/mcp-server.mjs` là một MCP server chạy qua stdio. Server cung cấp 3 tool chỉ đọc, chỉ nhận văn bản (không đọc file theo đường dẫn, không ghi file, không gọi mạng):
+Từ bản `v6.0.0`, luồng chuẩn chạy trực tiếp qua CLI `viet-pro` (`~/.local/bin/viet-pro`). Plugin Claude Code không tự bật MCP nữa và `install.sh` tự dọn cấu hình MCP `viet-pro` cũ trừ khi truyền `--skip-mcp-cleanup`.
+
+Nếu bạn dùng một môi trường ngoài không có quyền chạy shell, có thể bật cầu nối MCP qua lệnh `viet-pro mcp` (hoặc `node skills/viet-pro/scripts/mcp-server.mjs`). Server chỉ nhận văn bản qua stdio (tối đa 1 MB mỗi trường, không phụ thuộc npm) và hỗ trợ `server/discover` lẫn `initialize`:
 
 | Tool | Tham số | Tác dụng |
 | :--- | :--- | :--- |
-| `lint_vietnamese` | `text`, `keep?` | Tìm dấu hiệu văn AI và lỗi trình bày, như `lint-vietnamese-content.mjs` |
-| `compare_preserved` | `before`, `after`, `keep?`, `strict_quotes?` | Đối chiếu dữ kiện trước/sau khi sửa, như `compare-preserved-content.mjs` |
-| `check_platform` | `platform`, `text`, `surface?` | Đo bản thảo theo hồ sơ kênh, như `check-platform.mjs` |
+| `lint_vietnamese` | `text`, `keep?` | Tìm dấu hiệu văn AI và lỗi trình bày |
+| `compare_preserved` | `before`, `after`, `keep?`, `strict_quotes?` | Đối chiếu dữ kiện trước/sau khi sửa |
+| `check_platform` | `platform`, `text`, `surface?` | Đo bản thảo theo hồ sơ kênh |
 
-Server chỉ cần Node.js, không có phụ thuộc npm. Mỗi trường văn bản tối đa 1 MB. Server hỗ trợ cả client theo spec MCP 2026-07-28 (`server/discover`) lẫn client cũ gửi `initialize`.
-
-**Claude Code cài bằng plugin:** server được khai báo sẵn trong plugin, không cần làm gì thêm. Kiểm tra bằng `claude mcp list`, phải thấy dòng `plugin:viet-pro:viet-pro` ở trạng thái `Connected`.
-
-**Claude Code cài bằng `install.sh`:**
+**Claude Code (chỉ khi thực sự cần MCP ngoài CLI):**
 
 ```bash
-claude mcp add --scope user viet-pro -- node ~/.claude/skills/viet-pro/scripts/mcp-server.mjs
+claude mcp add --scope user viet-pro -- viet-pro mcp
 claude mcp list
 ```
 
-`--scope user` bật server cho mọi dự án; bỏ tham số này thì server chỉ có trong thư mục hiện tại.
-
-**OpenAI Codex** (skill nằm ở `~/.agents/skills/viet-pro` khi cài bằng `install.sh`):
+**OpenAI Codex (tuỳ chọn):**
 
 ```bash
-codex mcp add viet-pro -- node ~/.agents/skills/viet-pro/scripts/mcp-server.mjs
+codex mcp add viet-pro -- viet-pro mcp
 codex mcp list
 ```
 
-**Google Antigravity (App/IDE — Gemini 4 Argon):** thêm vào `~/.gemini/antigravity/mcp_config.json` trong mục `"mcpServers"`:
+**Google Antigravity / Client MCP khác (Cursor, Windsurf...):** thêm một server stdio vào tệp cấu hình của client:
 
 ```json
 {
   "mcpServers": {
     "viet-pro": {
-      "command": "node",
-      "args": ["/Users/<tên-user>/.gemini/config/skills/viet-pro/scripts/mcp-server.mjs"]
-    }
-  }
-}
-```
-
-**Gemini CLI / Antigravity CLI:** thêm vào `~/.gemini/settings.json` trong mục `"mcpServers"`:
-
-```json
-{
-  "mcpServers": {
-    "viet-pro": {
-      "command": "node",
-      "args": ["/Users/<tên-user>/.gemini/antigravity-cli/skills/viet-pro/scripts/mcp-server.mjs"]
-    }
-  }
-}
-```
-
-**Client MCP khác (Cursor, Windsurf...):** khai báo một server stdio với đường dẫn tuyệt đối tới file, ví dụ:
-
-```json
-{
-  "mcpServers": {
-    "viet-pro": {
-      "command": "node",
-      "args": ["/đường/dẫn/tới/viet-pro/scripts/mcp-server.mjs"]
+      "command": "viet-pro",
+      "args": ["mcp"]
     }
   }
 }
@@ -193,5 +166,5 @@ codex mcp list
 Kiểm tra server không cần client:
 
 ```bash
-node skills/viet-pro/scripts/mcp-server.mjs --self-test
+viet-pro mcp --self-test
 ```

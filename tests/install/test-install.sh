@@ -19,6 +19,8 @@ check "codex (~/.agents) có SKILL.md" '[ -f "$H/.agents/skills/viet-pro/SKILL.m
 check "antigravity có SKILL.md" '[ -f "$H/.gemini/config/skills/viet-pro/SKILL.md" ]'
 check "không cài antigravity-cli khi không chọn" '[ ! -e "$H/.gemini/antigravity-cli/skills/viet-pro" ]'
 check "không còn thư mục staging" '[ -z "$(find "$H" -name ".viet-pro.staging-*")" ]'
+check "CLI ~/.local/bin/viet-pro được tạo" '[ -L "$H/.local/bin/viet-pro" ] && [ -x "$H/.local/bin/viet-pro" ]'
+check "CLI doctor --json báo ok:true" 'HOME="$H" "$H/.local/bin/viet-pro" doctor --json | node -e "const d=JSON.parse(require(\"fs\").readFileSync(0,\"utf8\")); process.exit(d.ok===true?0:1)"'
 
 # 2. Cài lại: bản cũ được sao lưu ngoài thư mục skills
 echo "ban-cu" > "$H/.claude/skills/viet-pro/MARKER"
@@ -47,6 +49,7 @@ check "không phát hiện host thì thoát lỗi" '! run'
 new_home; W="$(mktemp -d)"; (cd "$W" && HOME="$H" bash "$REPO/install.sh" --workspace >"$H/out.log" 2>&1)
 check "workspace .agents" '[ -f "$W/.agents/skills/viet-pro/SKILL.md" ]'
 check "workspace .claude" '[ -f "$W/.claude/skills/viet-pro/SKILL.md" ]'
+check "workspace không tạo ~/.local/bin/viet-pro" '[ ! -e "$H/.local/bin/viet-pro" ]'
 
 # 6. Nguồn hỏng: bản cũ giữ nguyên, thoát lỗi
 new_home; mkdir -p "$H/.claude/skills/viet-pro"; echo giu > "$H/.claude/skills/viet-pro/SKILL.md"
@@ -58,6 +61,52 @@ check "bản cũ giữ nguyên khi checksum sai" '[ "$(cat "$H/.claude/skills/vi
 LIST_A="$(cd "$REPO" && find skills/viet-pro -type f ! -name .DS_Store | LC_ALL=C sort)"
 LIST_B="$(awk '{print $2}' "$REPO/SKILL_SHA256SUMS" | LC_ALL=C sort)"
 check "SKILL_SHA256SUMS liệt kê đủ file" '[ "$LIST_A" = "$LIST_B" ]'
+
+# 8. Dọn sạch đăng ký MCP cũ mà giữ nguyên skillUsage và server khác
+new_home
+mkdir -p "$H/.codex" "$H/.gemini/antigravity"
+cat > "$H/.claude.json" <<'JSON'
+{
+  "mcpServers": {
+    "viet-pro": { "command": "node" },
+    "other": { "command": "true" }
+  },
+  "projects": {
+    "/tmp/p": {
+      "mcpServers": {
+        "viet-pro": { "command": "node" },
+        "keep": { "command": "true" }
+      }
+    }
+  },
+  "skillUsage": {
+    "viet-pro": { "usageCount": 7 }
+  }
+}
+JSON
+cat > "$H/.codex/config.toml" <<'TOML'
+[mcp_servers.context7]
+command = "npx"
+
+[mcp_servers.viet-pro]
+command = "node"
+args = ["x"]
+
+[projects."/tmp"]
+trust_level = "trusted"
+TOML
+cat > "$H/.gemini/antigravity/mcp_config.json" <<'JSON'
+{
+  "mcpServers": {
+    "viet-pro": { "command": "node" },
+    "gemini-decisions": { "command": "uv" }
+  }
+}
+JSON
+run --claude --codex --agy
+check "claude gỡ mcpServers.viet-pro nhưng giữ skillUsage" 'node -e "const j=JSON.parse(require(\"fs\").readFileSync(\"$H/.claude.json\",\"utf8\")); process.exit((!j.mcpServers?.[\"viet-pro\"] && j.mcpServers?.other && !j.projects?.[\"/tmp/p\"]?.mcpServers?.[\"viet-pro\"] && j.projects?.[\"/tmp/p\"]?.mcpServers?.keep && j.skillUsage?.[\"viet-pro\"]?.usageCount===7)?0:1)"'
+check "codex gỡ [mcp_servers.viet-pro] và giữ phần còn lại" '! grep -q "viet-pro" "$H/.codex/config.toml" && grep -q "mcp_servers.context7" "$H/.codex/config.toml" && grep -q "trust_level" "$H/.codex/config.toml"'
+check "agy gỡ mcpServers.viet-pro và giữ gemini-decisions" 'node -e "const j=JSON.parse(require(\"fs\").readFileSync(\"$H/.gemini/antigravity/mcp_config.json\",\"utf8\")); process.exit((!j.mcpServers?.[\"viet-pro\"] && j.mcpServers?.[\"gemini-decisions\"])?0:1)"'
 
 echo "TOTAL: $PASS pass, $FAIL fail"
 [ "$FAIL" -eq 0 ]

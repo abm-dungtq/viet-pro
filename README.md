@@ -1,10 +1,10 @@
-# Viết Pro (viet-pro v5.8.0)
+# Viết Pro (viet-pro v6.0.0)
 
 Bạn giao cho AI viết một bài đăng Facebook hay bản tin công ty bằng tiếng Việt. Ba giây sau, màn hình hiện ra một văn bản đúng chính tả nhưng mở đầu bằng *"Trong bối cảnh kỷ nguyên số hiện nay"*, giữa bài lặp đi lặp lại *"Việc triển khai giải pháp đóng vai trò then chốt thông qua việc tối ưu hóa một cách toàn diện"*, tự ý đổi con số *"giảm tối đa 15%"* thành *"giảm tối thiểu 15%"*, rồi kết bằng câu đơn tách dòng *"Và đó mới là điều đáng suy ngẫm."*
 
 Người Việt không nói như vậy và tòa soạn chuyên nghiệp cũng không duyệt những bản nháp làm sai lệch số liệu như vậy.
 
-**Viết Pro (`viet-pro`)** là hệ thống điều phối biên tập, kiểm chứng dữ kiện và chuẩn hóa xuất bản tiếng Việt dành cho **Google Antigravity (Gemini 4 Argon)**, **Claude Code** và **OpenAI Codex**. Thay vì phủ lên câu lệnh một danh sách từ cấm cảm tính, Viết Pro kết hợp quy trình biên tập báo chí với **bộ công cụ kiểm tra tất định bằng mã nguồn (Node.js & MCP Server không phụ thuộc thư viện ngoài)** để biến trợ lý AI thành một tòa soạn tiếng Việt thực thụ.
+**Viết Pro (`viet-pro`)** là hệ thống điều phối biên tập, kiểm chứng dữ kiện và chuẩn hóa xuất bản tiếng Việt dành cho **Google Antigravity**, **Claude Code** và **OpenAI Codex**. Thay vì phủ lên câu lệnh một danh sách từ cấm cảm tính, Viết Pro kết hợp quy trình biên tập báo chí với **bộ công cụ CLI tất định bằng Node.js thuần (không phụ thuộc thư viện ngoài), cổng chấm nhịp Gemini Decisions và bộ hồ sơ thể loại chuyên biệt** để biến trợ lý AI thành một tòa soạn tiếng Việt thực thụ.
 
 ---
 
@@ -21,7 +21,7 @@ Trong bối cảnh thị trường cạnh tranh khốc liệt, việc triển kh
 
 Và đó mới là điều đáng suy ngẫm."
 
-→ Báo cáo từ lint_vietnamese:
+→ Báo cáo từ viet-pro gate:
   - WARN [chatbot-residue]: "Dưới đây là" (mẫu 22)
   - WARN [staged-opener]: "Trong bối cảnh..." (mẫu 4)
   - WARN [translationese-cluster]: 5 dấu hiệu văn dịch tụ trong cùng 1 đoạn
@@ -29,15 +29,16 @@ Và đó mới là điều đáng suy ngẫm."
   - WARN [dramatic-closer-repeat]: "Và đó mới là..." (mẫu 2)
 ```
 
-**Bản thảo sau khi qua Viết Pro (`v5.8.0`):**
+**Bản thảo sau khi qua Viết Pro (`v6.0.0`):**
 
 ```text
 "Khóa học nội bộ kéo dài 6 tuần và có 62% nhân viên hoàn thành. Từ tuần thứ tư, khi học viên lấy thẳng dữ liệu đơn hàng thật ra thực hành thay vì làm bài mẫu, tỷ lệ hoàn đơn trên mẫu 120 khách hàng giảm 18% tính đến ngày 10/09/2026 [1]."
 
-→ Báo cáo từ lint_vietnamese & compare_preserved:
+→ Báo cáo từ viet-pro gate:
   - OK: 0 vi phạm trình bày và văn phong (route_hint: light)
   - PASS: Bảo toàn đủ dữ kiện (6 tuần, 62%, 18%, 120, 10/09/2026, [1], giữ nguyên chiều "giảm" trước 18%, edit_ratio: 68.5%)
   - Biên tập: Hạ mức khẳng định về đúng phạm vi của nguồn dữ liệu
+  - STAMP: Đã cấp stamp SHA-256 trong .viet-pro/stamps/
 ```
 
 ---
@@ -73,17 +74,17 @@ Mỗi kênh xuất bản có thuật toán hiển thị và thói quen đọc ri
 - **Zalo, Newsletter, Blog SEO, Video (`zalo`, `newsletter`, `blog-seo`, `video-script`)** - Đo độ dài tin nhắn Zalo OA, tiêu đề email, kiểm tra mở đoạn trả lời trực diện *Answer-First* ngay sau thẻ H2 (`seo-h2-wall`) và tốc độ đọc văn nói (2,5 - 3 chữ/giây) cho kịch bản thu âm.
 - **Nhạc Suno AI v4.5 - v6 (`suno`)** - Bộ kiểm âm vận `scripts/lib/suno.mjs` riêng cho tiếng Việt, bắt lỗi viết tiếng Việt trong ngoặc vuông `[Điệp khúc]`, bắt chỉ dẫn đạo diễn lọt vào ngoặc đơn `(fade out)` khiến AI hát nhầm thành lời bè, cảnh báo cụm thanh Trắc gãy câu, bộ vần AI sáo mòn (*mưa rơi - chơi vơi*, *đêm thâu - u sầu*), từ tiếng Anh chêm vào câu hát và kiểm tra đủ 3 trụ cột trong Style Prompt.
 
-### 4. Điều phối 3 cấp độ và cổng kiểm chứng tức thì qua MCP Server
+### 4. Điều phối 3 cấp độ và cổng kiểm chứng CLI `viet-pro gate`
 
-Bộ định tuyến trong [SKILL.md](skills/viet-pro/SKILL.md) tự động chọn một trong 3 chế độ vận hành tùy theo độ phức tạp của yêu cầu: **Nhanh** (sửa ngắn và trả ngay trong lượt), **Chuẩn** (chốt brief, soạn thảo, rà sự thật và ngôn ngữ) hoặc **Tòa soạn** (nghiên cứu sâu và chuyển thể đa kênh với hợp đồng bàn giao tệp rõ ràng).
+Bộ định tuyến trong [SKILL.md](skills/viet-pro/SKILL.md) tự động chọn một trong 3 chế độ vận hành tùy theo độ phức tạp của yêu cầu: **Nhanh** (sửa ngắn và trả ngay trong lượt), **Chuẩn** (chốt brief, soạn thảo, rà sự thật và ngôn ngữ) hoặc **Tòa soạn** (nghiên cứu sâu và chuyển thể đa kênh với hợp đồng bàn giao tệp rõ ràng). Ngoài 11 kênh mạng xã hội, thư mục `references/genres/` bổ sung **6 nhóm thể loại công việc & sản phẩm** (bản tin điều hành, email B2B, landing page, quảng cáo trả phí, microcopy giao diện, slide thuyết trình).
 
-Đặc biệt, `scripts/mcp-server.mjs` cung cấp một **MCP Server chạy qua giao thức stdio** (hỗ trợ cả chuẩn MCP hiện đại `2026-07-28` với `server/discover` lẫn chuẩn `initialize` truyền thống). Khi kết nối MCP, Agent gọi trực tiếp 3 công cụ `lint_vietnamese`, `compare_preserved` và `check_platform` **ngay trong bộ nhớ RAM dưới 50 mili-giây** mà không cần tạo bất kỳ tệp nháp tạm nào trên ổ cứng.
+Thay vì phải gọi rời từng công cụ MCP, lệnh CLI `viet-pro gate <file.md>` hợp nhất kiểm tra lint tất định, đối chiếu bảo toàn dữ kiện (`--before`), đo hồ sơ kênh (`--platform`) và gọi Gemini Decisions API trực tiếp qua HTTPS khi có `GEMINI_API_KEY`. Đạt cổng xong, CLI cấp dấu xác thực SHA-256 trong `.viet-pro/stamps/` để các hook cho Antigravity, Claude Code và Codex chặn xuất bản bản thảo chưa qua cổng.
 
 ### 5. Kỷ luật kiểm thử thực nghiệm và bảo toàn ngữ cảnh
 
 Mọi thay đổi trong Viết Pro đều phải đi qua hai hàng rào kiểm soát chất lượng trước khi phát hành:
-- **Bộ kiểm thử tất định (`bash tests/run-all.sh`)** chạy tự động 21 nhóm luật lint, 20 hợp đồng hành vi Humanizer, kiểm tra 39 tệp Markdown không có tham chiếu gãy, xác thực 12 hồ sơ nền tảng còn hạn, đối chiếu mã băm `SKILL_SHA256SUMS` trên toàn bộ 51 tệp của gói skill và chạy 21 bài kiểm thử trình cài đặt trong môi trường cô lập.
-- **Bộ đánh giá hành vi thực tế (`tests/eval/run-eval.mjs`)** chấm điểm trực tiếp đầu ra của mô hình trên 23 bài toán thực tế (từ viết mới, humanize, giữ nguyên văn bản kỹ thuật, chống đảo nghĩa số liệu, từ chối bịa đặt claim thiếu nguồn cho tới giữ nguyên văn phong của Nam Cao, Thạch Lam với tỷ lệ sửa dưới 10%), đồng thời khóa trần tăng trưởng dung lượng Markdown ở mức tối đa **2%** để bảo vệ cửa sổ ngữ cảnh của Agent.
+- **Bộ kiểm thử tất định (`bash tests/run-all.sh`)** chạy tự động toàn bộ self-test của 21 nhóm luật lint, config/decisions/stamp/gate, 4 hook runtime (`editorial`, `agy`, `claude`, `codex`), 20 hợp đồng hành vi Humanizer, `viet-pro doctor --json` dưới 50 mili-giây, kiểm tra toàn bộ tệp Markdown không có tham chiếu gãy, xác thực 12 hồ sơ nền tảng còn hạn, đối chiếu mã băm `SKILL_SHA256SUMS` và chạy bộ kiểm thử trình cài đặt trong môi trường cô lập.
+- **Ngân sách ngữ cảnh theo tuyến (`tests/check-route-budget.mjs`)** giữ phần lõi nạp mặc định dưới **18 KiB** và mỗi tuyến đọc sâu tối đa **22 KiB** (kèm kiểm tra không sót tệp Markdown mồ côi), phối hợp với **bộ đánh giá hành vi thực tế (`tests/eval/run-eval.mjs`)** trên 23 bài toán thực tế.
 
 ---
 
@@ -92,18 +93,19 @@ Mọi thay đổi trong Viết Pro đều phải đi qua hai hàng rào kiểm s
 Mở **Terminal** và chạy lệnh cài đặt tự động:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v5.8.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v6.0.0/install.sh | bash
 ```
 
-Trình cài đặt `install.sh` tự động thực hiện 4 bước an toàn:
-1. Kiểm tra mã băm SHA-256 của toàn bộ 51 tệp trong gói skill đối chiếu với `SKILL_SHA256SUMS`.
+Trình cài đặt `install.sh` tự động thực hiện 5 bước an toàn:
+1. Kiểm tra mã băm SHA-256 của toàn bộ tệp trong gói skill đối chiếu với `SKILL_SHA256SUMS`.
 2. Phát hiện các hệ thống Agent đang có trên máy gồm **Google Antigravity IDE** (`~/.gemini/config/skills`), **Antigravity / Gemini CLI** (`~/.gemini/antigravity-cli/skills`), **Claude Code** (`~/.claude/skills`) và **OpenAI Codex** (`~/.agents/skills`).
 3. Dựng bản mới tại thư mục tạm rồi mới hoán đổi nguyên tử (atomic swap) vào thư mục đích để lỗi mạng giữa chừng không bao giờ làm hỏng bản đang dùng.
 4. Chuyển các bản cài cũ (kể cả đường dẫn Codex cũ `~/.codex/skills/viet-pro`) vào thư mục sao lưu `~/.viet-pro-backups/` bên ngoài vùng quét của Agent.
+5. Tạo symlink CLI `~/.local/bin/viet-pro` trỏ tới bản cài bền vững, cài được hook bằng `viet-pro install-hooks` và tự dọn cấu hình MCP `viet-pro` cũ trong host mà vẫn giữ nguyên `skillUsage` và các server khác.
 
 ### Cài đặt dạng Plugin cho Claude Code
 
-Nếu dùng Claude Code, bạn có thể cài trực tiếp qua hệ thống Plugin Marketplace (đã tích hợp sẵn cấu hình MCP Server):
+Nếu dùng Claude Code, bạn có thể cài trực tiếp qua hệ thống Plugin Marketplace (chỉ cung cấp skill và chuẩn CLI; không tự bật MCP ngầm):
 
 ```bash
 claude plugin marketplace add abm-dungtq/viet-pro
@@ -112,41 +114,9 @@ claude plugin install viet-pro@viet-pro
 
 *(Lưu ý là bạn chỉ nên chọn một trong hai cách cài trên Claude Code để tránh nạp trùng hai bản cùng lúc).*
 
-### Kết nối MCP Server cho các Agent
+### MCP dự phòng cho môi trường ngoài không có shell (tùy chọn)
 
-Để Agent gọi được 3 công cụ kiểm chứng trong bộ nhớ (`lint_vietnamese`, `compare_preserved`, `check_platform`), khai báo MCP Server một lần duy nhất theo công cụ bạn dùng:
-
-- **Google Antigravity IDE (Gemini 4 Argon)** - thêm vào `~/.gemini/antigravity/mcp_config.json`:
-  ```json
-  {
-    "mcpServers": {
-      "viet-pro": {
-        "command": "node",
-        "args": ["/Users/<tên-user>/.gemini/config/skills/viet-pro/scripts/mcp-server.mjs"]
-      }
-    }
-  }
-  ```
-- **Gemini CLI / Antigravity CLI** - thêm vào `~/.gemini/settings.json`:
-  ```json
-  {
-    "mcpServers": {
-      "viet-pro": {
-        "command": "node",
-        "args": ["/Users/<tên-user>/.gemini/antigravity-cli/skills/viet-pro/scripts/mcp-server.mjs"],
-        "trust": true
-      }
-    }
-  }
-  ```
-- **Claude Code** (khi cài bằng `install.sh`):
-  ```bash
-  claude mcp add --scope user viet-pro -- node ~/.claude/skills/viet-pro/scripts/mcp-server.mjs
-  ```
-- **OpenAI Codex**:
-  ```bash
-  codex mcp add viet-pro -- node ~/.agents/skills/viet-pro/scripts/mcp-server.mjs
-  ```
+Từ `v6.0.0`, luồng chính dùng trực tiếp CLI `viet-pro` trên terminal (`viet-pro gate`, `viet-pro lint`, `viet-pro compare`, `viet-pro check-platform`). Chỉ khi làm việc trên một môi trường ngoài không có quyền chạy shell, bạn mới cần khai báo server stdio qua lệnh `viet-pro mcp` (xem cấu hình từng client tại [INSTALL.md](INSTALL.md)).
 
 Xem hướng dẫn chi tiết cho từng hệ điều hành và dự án lẻ tại [INSTALL.md](INSTALL.md).
 
@@ -190,14 +160,14 @@ Giữ nguyên mọi con số, tên riêng, ngày tháng và đường link.
 
 ### Khung câu lệnh 06 thành phần chuẩn ABM.DungTQ (Dành cho tác vụ cấp độ Tòa soạn)
 
-Khi cần giao những bài viết chiến lược hoặc tài liệu quan trọng, sử dụng khung 06 thành phần để khai thác tối đa sức mạnh của Viết Pro `v5.8.0`:
+Khi cần giao những bài viết chiến lược hoặc tài liệu quan trọng, sử dụng khung 06 thành phần để khai thác tối đa sức mạnh của Viết Pro `v6.0.0`:
 
 ```text
 [1. ROLE - GÁN VAI TRÒ]
-Bạn là Tổng Biên tập Nội dung Tiếng Việt vận hành theo chuẩn skill viet-pro v5.8.0, có 10 năm kinh nghiệm biên tập báo chí, truyền thông doanh nghiệp và kiểm chứng dữ kiện.
+Bạn là Tổng Biên tập Nội dung Tiếng Việt vận hành theo chuẩn skill viet-pro v6.0.0, có 10 năm kinh nghiệm biên tập báo chí, truyền thông doanh nghiệp và kiểm chứng dữ kiện.
 
 [2. TASK - GIAO NHIỆM VỤ]
-Sử dụng skill /viet-pro để biên soạn nội dung theo thông số dưới đây và chạy đầy đủ cổng kiểm chứng MCP (lint_vietnamese, compare_preserved, check_platform) trước khi bàn giao.
+Sử dụng skill /viet-pro để biên soạn nội dung theo thông số dưới đây, ghi 02-review-ticket.md (với bài dài hoặc đa kênh) và chạy cổng kiểm chứng viet-pro gate trước khi bàn giao.
 
 [3. DETAILS - CUNG CẤP THÔNG TIN]
 - Kênh xuất bản đích: [LinkedIn / Facebook cá nhân / Blog SEO / Kịch bản Video / Zalo OA / Suno]
@@ -255,22 +225,26 @@ skills/viet-pro/              gói skill chuẩn được cài đặt vào các 
 ├── SKILL.md                  bộ định tuyến trung tâm, thứ tự quyền hạn và cổng kiểm chứng
 ├── THIRD_PARTY_NOTICES.md    thông báo bản quyền MIT (bao gồm Humanizer 3.1.0)
 ├── agents/openai.yaml        cấu hình nhận diện và hiển thị cho OpenAI Codex
+├── bin/viet-pro.mjs          điểm vào CLI thống nhất (cài vào ~/.local/bin/viet-pro)
 ├── references/               tài liệu chuyên môn nạp theo ngữ cảnh (progressive disclosure)
 │   ├── research/             quy trình tra cứu nguồn và phân tích dữ liệu (3 tệp)
 │   ├── editorial/            kỹ thuật xây dựng cốt truyện, nhịp văn, phản bác, kỹ thuật (9 tệp)
+│   ├── genres/               6 hồ sơ thể loại doanh nghiệp & sản phẩm (7 tệp)
 │   ├── publishing/           hồ sơ giới hạn và văn phong của 11 kênh + ma trận đa kênh (13 tệp)
 │   ├── review/               bộ 26 mẫu Humanizer, chống văn dịch, dấu câu, kiểm chứng (9 tệp)
 │   └── archive/              danh mục 42 mẫu cấu trúc bài viết thực tế (2 tệp)
-└── scripts/                  công cụ kiểm tra tất định (Node.js thuần, 0 phụ thuộc ngoài)
-    ├── mcp-server.mjs                  MCP server stdio (lint_vietnamese, compare_preserved, check_platform)
-    ├── lint-vietnamese-content.mjs     CLI kiểm tra 21 nhóm lỗi trình bày, văn dịch, cấu trúc câu và dấu vết AI
-    ├── compare-preserved-content.mjs   CLI đối chiếu bảo toàn dữ kiện, cực tính số liệu và tỷ lệ sửa edit_ratio
-    ├── check-platform.mjs              CLI đo giới hạn ký tự theo hồ sơ kênh, broetry, SEO và âm vận Suno
-    ├── check-x-length.mjs              CLI đếm trọng số ký tự cho chuỗi bài đăng X
+└── scripts/                  công cụ kiểm tra tất định & hook (Node.js thuần, 0 phụ thuộc ngoài)
+    ├── cli/                            các lệnh con của viet-pro (gate, doctor, init, install-hooks...)
+    ├── hooks/                          hook biên tập & xuất bản cho Antigravity, Claude Code, Codex
+    ├── mcp-server.mjs                  cầu nối MCP stdio tùy chọn (chỉ dùng qua viet-pro mcp khi thiếu shell)
+    ├── lint-vietnamese-content.mjs     lớp bao mỏng tương thích ngược cho kiểm tra 21 nhóm lỗi lint
+    ├── compare-preserved-content.mjs   lớp bao mỏng đối chiếu bảo toàn dữ kiện, cực tính và edit_ratio
+    ├── check-platform.mjs              lớp bao mỏng đo giới hạn ký tự kênh, broetry, SEO và âm vận Suno
+    ├── check-x-length.mjs              lớp bao mỏng đếm trọng số ký tự cho chuỗi bài đăng X
     ├── test-humanizer-contract.mjs     CLI kiểm tra 20 hợp đồng bất biến của Humanizer
-    └── lib/                            thư viện hàm thuần (lint.mjs, compare.mjs, profile.mjs, suno.mjs, x-weighted.mjs)
+    └── lib/                            thư viện lõi (config, decisions, stamp, gate, lint, compare, profile, suno, x-weighted)
 docs/development/             quy chuẩn nâng cấp, kiểm toán văn phong và hồ sơ nền tảng
-tests/                        bộ kiểm thử tất định (run-all.sh), đo corpus và eval hành vi (23 ca)
+tests/                        bộ kiểm thử tất định (run-all.sh), check-route-budget.mjs, đo corpus và eval (23 ca)
 ```
 
 ### Chạy bộ kiểm thử tất định (CI)
@@ -302,6 +276,16 @@ find skills/viet-pro -type f ! -name .DS_Store | LC_ALL=C sort | xargs shasum -a
 ## Lịch sử phiên bản
 
 <details open>
+<summary>6.0.0 - Cổng biên tập CLI-first viet-pro gate, stamp chống bỏ sót, 6 hồ sơ thể loại và hook đa runtime</summary>
+
+- Ra mắt giao diện dòng lệnh hợp nhất `bin/viet-pro.mjs` (`~/.local/bin/viet-pro`) với `gate`, `lint`, `compare`, `check-platform`, `check-x-length`, `init`, `verify-stamp`, `install-hooks`, `doctor` và `mcp` (cầu nối tùy chọn cho môi trường không có shell); giảm kích thước plugin và xóa đăng ký MCP ngầm trong `install.sh` (bảo toàn nguyên vẹn `skillUsage`).
+- Tích hợp chấm nhịp và biên tập trực tiếp qua Gemini Decisions HTTPS API (`lib/decisions.mjs`, khóa gửi qua header `x-goog-api-key`, tự bỏ qua khi phát hiện chuỗi giống secret hoặc thiếu key) kết hợp cơ chế cấp stamp SHA-256 tại `.viet-pro/stamps/` (`lib/stamp.mjs`, `lib/gate.mjs`).
+- Bổ sung bộ hook biên tập dùng chung (`scripts/hooks/editorial-hook.mjs`) cùng 3 adapter bản địa cho Google Antigravity (`agy-hook.mjs`), Claude Code (`claude-hook.mjs`) và OpenAI Codex (`codex-hook.mjs`).
+- Mở rộng thư viện ngữ cảnh với 6 hồ sơ thể loại doanh nghiệp & sản phẩm (`references/genres/` gồm `executive-brief`, `b2b-email`, `landing-page`, `paid-ads`, `ui-microcopy`, `slide-deck`) và thay trần tăng 2% toàn kho bằng cổng ngân sách theo tuyến (`CORE <= 18 KiB`, `ROUTE_DELTA <= 22 KiB`, 0 tệp Markdown mồ côi).
+
+</details>
+
+<details>
 <summary>5.8.0 - Kiểm tra cấu trúc câu, chuẩn Unicode/dấu thanh tiếng Việt, tỷ lệ sửa edit_ratio và bố cục kênh</summary>
 
 - Nâng `lint.mjs` từ 17 lên **21 nhóm luật** kèm hàm định tuyến `computeRouteHint` (`light / standard / heavy`): thêm `unicode-nfd` (bắt ký tự tổ hợp NFD rời), `inconsistent-tone-mark` (bắt trộn quy tắc bỏ dấu thanh cũ/mới `oa/oe/uy` có loại trừ âm đầu `qu-/g-`), `isomorphic-sentence` (bắt $\ge 3$ câu liên tiếp lặp khuôn mở đầu, lấy cảm hứng từ `lieflat-less-ai-tone`) và `hedging-pileup` (bắt chồng chất từ rào đón dịch thuật, lấy cảm hứng từ `im-not-ai`).

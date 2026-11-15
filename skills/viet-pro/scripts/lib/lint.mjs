@@ -1,5 +1,29 @@
 // Pure lint rules for Vietnamese content. Importing this file has no side effects.
 
+export const TTS_TAG_RE = /\[(?:nhanh|trầm|nhấn|kể|nghỉ(?:\s+\d+(?:[.,]\d+)?s)?)\]/giu;
+const TTS_TAG_SPAN_RE = new RegExp(`(?:[ \\t]*${TTS_TAG_RE.source}[ \\t]*)+`, 'giu');
+
+export const FIRST_HAND_RE = /(?:mình|tôi|em)\s+(?:đã\s+)?(?:thử|dùng|xài|test)(?:\s+thử)?\s+[^.!?\n]{0,40}(?:\d+\s*(?:ngày|tuần|tháng|năm)|rồi)|sau\s+\d+\s*(?:ngày|tuần|tháng)\s+(?:dùng|sử dụng|xài)/giu;
+
+function stripInlineCode(line, replacement = ' ') {
+  return line.replace(/``[^\n]*?``|`[^`\n]*`/gu, replacement);
+}
+
+export function stripTtsTags(lineOrText) {
+  if (!lineOrText) return lineOrText;
+  let matched = false;
+  const stripped = lineOrText.replace(TTS_TAG_SPAN_RE, (m, offset, str) => {
+    matched = true;
+    const prev = offset > 0 ? str[offset - 1] : '';
+    const next = offset + m.length < str.length ? str[offset + m.length] : '';
+    if (!prev || prev === '\n' || !next || next === '\n') return '';
+    if (/[.,!?;:)\]}”"']/u.test(next)) return '';
+    if (/[(\[{“"']/u.test(prev)) return '';
+    return ' ';
+  });
+  return matched ? stripped : lineOrText;
+}
+
 // Each rule: id, level, description, and a check(line) → array of matched excerpts
 export const LINE_RULES = [
   {
@@ -30,7 +54,13 @@ export const LINE_RULES = [
   },
   {
     id: 'double-space', level: 'WARN', desc: 'Hai khoảng trắng liên tiếp giữa từ',
-    check: (l) => /\S {2,}\S/.test(l.replace(/\|/g, '')) ? [l.trim().slice(0, 40)] : [],
+    check: (l) => {
+      const cleaned = stripInlineCode(l, '_')
+        .replace(/\s*\|\s*/gu, ' | ')
+        .replace(/\| {2,}(?=\|)/gu, '| ')
+        .trim();
+      return /\S {2,}\S/.test(cleaned) ? [cleaned.slice(0, 40)] : [];
+    },
   },
   {
     id: 'title-case', level: 'WARN', desc: 'Nghi Title Case kiểu Anh — tiếng Việt chỉ viết hoa chữ đầu (capitalization.md)',
@@ -176,7 +206,9 @@ function paragraphClusters(text, keep = []) {
 // contained in a --keep string are ignored.
 function phraseReuse(text, keep = []) {
   const keepLower = keep.map((k) => k.toLowerCase());
-  const segments = text.toLowerCase().split(/[.!?;:\n]+/u).map((s) => s.match(/[\p{L}\p{N}]+/gu) || []);
+  const sanitized = stripInlineCode(text.replace(/\[([^\]]*)\]\([^)\n]+\)/gu, '$1'))
+    .replace(/(?:https?|file):\/\/[^\s)>\]]+/giu, ' ');
+  const segments = sanitized.toLowerCase().split(/[.!?;:\n]+/u).map((s) => s.match(/[\p{L}\p{N}]+/gu) || []);
   // found: { at: [[segment, start], ...], len, c }; at holds every occurrence of the span.
   const found = [];
   const words = (f) => segments[f.at[0][0]].slice(f.at[0][1], f.at[0][1] + f.len).join(' ');
@@ -282,10 +314,79 @@ function dedupeSongLyrics(text) {
 
 const SONG_TAG_RE = /^\s*\[(?:Intro|Verse|Pre-Chorus|Chorus|Final Chorus|Bridge|Outro|Hook|Refrain)\b/imu;
 
+function checkBannedPhrases(proseText, bannedPhrases = []) {
+  if (!Array.isArray(bannedPhrases) || !bannedPhrases.length) return [];
+  const normalized = proseText.normalize('NFC');
+  const findings = [];
+  for (const rawPhrase of bannedPhrases) {
+    if (typeof rawPhrase !== 'string') continue;
+    const phrase = rawPhrase.trim().normalize('NFC');
+    if (!phrase) continue;
+    const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&').replace(/\s+/gu, '\\s+');
+    const chars = [...phrase];
+    const guardStart = /[\p{L}\p{N}]/u.test(chars[0]) ? '(?<![\\p{L}\\p{M}\\p{N}])' : '';
+    const guardEnd = /[\p{L}\p{N}]/u.test(chars.at(-1)) ? '(?![\\p{L}\\p{M}\\p{N}])' : '';
+    const re = new RegExp(`${guardStart}${escaped}${guardEnd}`, 'giu');
+    for (const m of normalized.matchAll(re)) {
+      const line = normalized.slice(0, m.index).split('\n').length;
+      findings.push({
+        level: 'ERROR',
+        id: 'banned-phrase',
+        line,
+        excerpt: m[0],
+        desc: 'Cụm từ nằm trong danh sách cấm của dự án (.viet-pro.json)',
+      });
+    }
+  }
+  return findings;
+}
+
+function checkMandatoryCta(text, mandatoryCta) {
+  if (typeof mandatoryCta !== 'string') return [];
+  const cta = mandatoryCta.trim().normalize('NFC');
+  if (!cta) return [];
+  const body = stripFrontmatter(text).normalize('NFC').toLowerCase();
+  if (body.includes(cta.toLowerCase())) return [];
+  return [{
+    level: 'ERROR',
+    id: 'missing-mandatory-cta',
+    line: 0,
+    excerpt: cta,
+    desc: 'Bản thảo thiếu CTA bắt buộc theo cấu hình .viet-pro.json',
+  }];
+}
+
+function stripQuotesAndInlineCodeKeepLines(text) {
+  return text
+    .split('\n')
+    .map((line) => (/^\s*>/u.test(line) ? '' : stripInlineCode(line, ' ').replace(/["“][^"”\n]*["”]/gu, ' ')))
+    .join('\n');
+}
+
+function checkFirstHand(proseText, allowFirstHand, strictFirstHand = false) {
+  if (allowFirstHand !== false) return [];
+  const scanTarget = stripQuotesAndInlineCodeKeepLines(proseText).normalize('NFC');
+  const level = strictFirstHand === true ? 'ERROR' : 'WARN';
+  const findings = [];
+  const re = new RegExp(FIRST_HAND_RE.source, FIRST_HAND_RE.flags);
+  for (const m of scanTarget.matchAll(re)) {
+    const line = scanTarget.slice(0, m.index).split('\n').length;
+    findings.push({
+      level,
+      id: 'unverified-first-hand',
+      line,
+      excerpt: m[0].trim(),
+      desc: 'Phát ngôn trải nghiệm tự thân cần được tác giả xác nhận (allow_first_hand: false)',
+    });
+  }
+  return findings;
+}
+
 export function lintText(text, opts = {}) {
   const findings = [];
   const lines = text.split('\n');
   const isSong = SONG_TAG_RE.test(text);
+  const ttsEnabled = opts.ttsTags !== false;
   let inFence = false;
   let inFrontmatter = hasFrontmatter(lines);
   let draftSection = '';
@@ -299,14 +400,20 @@ export function lintText(text, opts = {}) {
     if (inFence) return;
     const secMatch = line.match(/^##[ \t]+(title|description|caption|body)[ \t]*$/iu);
     if (secMatch) { draftSection = secMatch[1].toLowerCase(); return; }
+    const lineForRules = ttsEnabled ? stripTtsTags(line) : line;
     for (const rule of LINE_RULES) {
       if (isSong && rule.id === 'title-case' && (draftSection === 'title' || draftSection === 'description' || draftSection === 'caption')) continue;
-      for (const excerpt of rule.check(line)) {
+      for (const excerpt of rule.check(lineForRules)) {
         findings.push({ level: rule.level, id: rule.id, line: i + 1, excerpt, desc: rule.desc });
       }
     }
   });
-  findings.push(...textRules(stripProtectedBlocks(text), opts));
+  const protectedStripped = stripProtectedBlocks(text);
+  const proseBody = ttsEnabled ? stripTtsTags(protectedStripped) : protectedStripped;
+  findings.push(...textRules(proseBody, opts));
+  findings.push(...checkBannedPhrases(proseBody, opts.bannedPhrases));
+  findings.push(...checkMandatoryCta(text, opts.mandatoryCta));
+  findings.push(...checkFirstHand(proseBody, opts.allowFirstHand, opts.strictFirstHand));
   return findings;
 }
 

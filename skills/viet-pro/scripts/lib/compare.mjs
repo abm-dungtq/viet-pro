@@ -1,5 +1,9 @@
 // Pure fact-preservation comparison. Importing this file has no side effects.
 
+import { TTS_TAG_RE, stripTtsTags } from './lint.mjs';
+
+const TTS_TAG_EXACT_RE = new RegExp(`^${TTS_TAG_RE.source}$`, 'iu');
+
 // Word pairs whose swap next to an unchanged number reverses the claim.
 const OPPOSITES = [
   ['tăng', 'giảm'], ['cao', 'thấp'], ['hơn', 'kém'], ['trên', 'dưới'], ['trước', 'sau'],
@@ -37,7 +41,8 @@ function countWhole(text, item) {
   return [...text.normalize('NFC').matchAll(re)].length;
 }
 
-function collect(text, keep = [], { strictQuotes = false } = {}) {
+function collect(text, keep = [], { strictQuotes = false, ttsTags = true } = {}) {
+  const factText = ttsTags ? stripTtsTags(text) : text;
   const patterns = {
     url: /https?:\/\/[^\s)>\]]+/gu,
     linkTarget: /\]\((https?:\/\/[^)]+)\)/gu,
@@ -48,12 +53,16 @@ function collect(text, keep = [], { strictQuotes = false } = {}) {
   };
   const found = {};
   for (const [kind, regex] of Object.entries(patterns)) {
-    found[kind] = [...text.matchAll(regex)].map((m) => {
+    const src = kind === 'numberOrDate' ? factText : text;
+    found[kind] = [...src.matchAll(regex)].map((m) => {
       if (kind === 'linkTarget') return m[1];
       if (kind === 'url') return m[0].replace(/[.,;:!?]+$/u, '');
       if (kind === 'quote' && !strictQuotes) return normalizeQuotes(m[0]);
       return m[0];
     });
+    if (kind === 'citation' && ttsTags) {
+      found.citation = found.citation.filter((c) => !TTS_TAG_EXACT_RE.test(c));
+    }
   }
   found.keep = keep.flatMap((item) => Array(countWhole(text, item)).fill(item));
   return found;
@@ -128,8 +137,9 @@ export function computeEditRatio(before, after) {
 }
 
 export function compare(before, after, keep = [], options = {}) {
-  const left = collect(before, keep, options);
-  const right = collect(after, keep, options);
+  const ttsTags = options.ttsTags !== false;
+  const left = collect(before, keep, { ...options, ttsTags });
+  const right = collect(after, keep, { ...options, ttsTags });
   const differences = [];
   for (const kind of Object.keys(left)) {
     const a = multiset(left[kind]);
@@ -140,7 +150,7 @@ export function compare(before, after, keep = [], options = {}) {
       }
     }
   }
-  const context = compareContexts(before, after);
+  const context = compareContexts(ttsTags ? stripTtsTags(before) : before, ttsTags ? stripTtsTags(after) : after);
   const edit_ratio = computeEditRatio(before, after);
   const allDiffs = [...differences, ...context.differences];
   if (options.maxEditRatio !== undefined && options.maxEditRatio !== null && edit_ratio > options.maxEditRatio) {

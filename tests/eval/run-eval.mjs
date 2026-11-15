@@ -14,8 +14,8 @@
 // --events-dir keeps codex's raw --json event stream per case, for checking what the model read.
 // The judge always runs on claude.
 // Deterministic checks gate pass/fail; judge scores are advisory and tracked over time.
-// --compare fails on any case that passed in the baseline and fails now, or when the skill's
-// Markdown grows by more than --max-bytes-growth (default 2%).
+// --compare fails on any case that passed in the baseline and fails now, or when the per-route
+// budget check fails (or when Markdown grows past --max-bytes-growth if explicitly passed).
 
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, copyFileSync, existsSync, rmSync } from 'node:fs';
@@ -24,6 +24,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { computeEditRatio } from '../../skills/viet-pro/scripts/lib/compare.mjs';
 import { checkDraft, loadProfile, splitDraft } from '../../skills/viet-pro/scripts/lib/profile.mjs';
+import { checkRouteBudget } from '../check-route-budget.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const SKILL_DIR = join(ROOT, 'skills/viet-pro');
@@ -35,7 +36,7 @@ const END = '<<<HET>>>';
 const FORMAT_NOTE = `\n\nYêu cầu định dạng của bộ kiểm thử: đặt toàn bộ sản phẩm cuối giao cho người đọc giữa một dòng ${START} và một dòng ${END}. Ghi chú, giả định hoặc cảnh báo (nếu có) đặt ngoài cặp dấu này. Không tra cứu web.`;
 
 function parseArgs(argv) {
-  const opts = { concurrency: 3, judge: false, cases: null, model: null, out: null, compare: null, regrade: null, runner: 'claude', maxBytesGrowth: 0.02, eventsDir: null };
+  const opts = { concurrency: 3, judge: false, cases: null, model: null, out: null, compare: null, regrade: null, runner: 'claude', maxBytesGrowth: 0.02, maxBytesGrowthExplicit: false, eventsDir: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => { if (i + 1 >= argv.length) throw new Error(`${a} cần giá trị`); return argv[++i]; };
@@ -47,7 +48,7 @@ function parseArgs(argv) {
     else if (a === '--compare') opts.compare = next();
     else if (a === '--regrade') opts.regrade = next();
     else if (a === '--runner') opts.runner = next();
-    else if (a === '--max-bytes-growth') opts.maxBytesGrowth = Number(next());
+    else if (a === '--max-bytes-growth') { opts.maxBytesGrowth = Number(next()); opts.maxBytesGrowthExplicit = true; }
     else if (a === '--events-dir') opts.eventsDir = next();
     else throw new Error(`Tuỳ chọn không hợp lệ: ${a}`);
   }
@@ -274,21 +275,32 @@ function summarize(results) {
   return { pass, total: results.length, judge_avg, cost_usd: Number(cost.toFixed(4)) };
 }
 
-function compareWith(current, baselinePath, maxBytesGrowth = 0.02) {
+function compareWith(current, baselinePath, optsOrGrowth = {}) {
+  const maxBytesGrowth = typeof optsOrGrowth === 'number' ? optsOrGrowth : (optsOrGrowth.maxBytesGrowth ?? 0.02);
+  const maxBytesGrowthExplicit = typeof optsOrGrowth === 'number' ? true : Boolean(optsOrGrowth.maxBytesGrowthExplicit);
   const base = JSON.parse(readFileSync(baselinePath, 'utf8'));
   const byId = Object.fromEntries(base.cases.map((r) => [r.id, r]));
   const regressions = current.cases.filter((r) => byId[r.id]?.pass && !r.pass).map((r) => r.id);
   const fixed = current.cases.filter((r) => byId[r.id] && !byId[r.id].pass && r.pass).map((r) => r.id);
-  const bytesDelta = base.meta.skill_bytes ? (current.meta.skill_bytes - base.meta.skill_bytes) / base.meta.skill_bytes : 0;
+  const currentBytes = current.meta.skill_bytes_now ?? current.meta.skill_bytes;
+  const bytesDelta = base.meta.skill_bytes ? (currentBytes - base.meta.skill_bytes) / base.meta.skill_bytes : 0;
+  const routeBudget = checkRouteBudget();
   console.log(`\nSo với ${baselinePath}: pass ${base.summary.pass}/${base.summary.total} -> ${current.summary.pass}/${current.summary.total}`);
   console.log(`  Tụt từ pass xuống fail: ${regressions.length ? regressions.join(', ') : 'không có'}`);
   console.log(`  Từ fail lên pass: ${fixed.length ? fixed.join(', ') : 'không có'}`);
-  console.log(`  Dung lượng skill: ${base.meta.skill_bytes} -> ${current.meta.skill_bytes} byte (${(bytesDelta * 100).toFixed(2)}%)`);
-  if (bytesDelta > maxBytesGrowth) console.log(`  Skill phình quá ngưỡng ${(maxBytesGrowth * 100).toFixed(1)}% (đặt bằng --max-bytes-growth)`);
+  console.log(`  Dung lượng skill: ${base.meta.skill_bytes} -> ${currentBytes} byte (${(bytesDelta * 100).toFixed(2)}%)`);
+  console.log(`  Ngân sách theo tuyến: ${routeBudget.ok ? 'PASS' : 'FAIL'} (lõi ${routeBudget.core.bytes}/${routeBudget.core.limit} B, ${routeBudget.routes.length} tuyến <= ${routeBudget.budgets.routeDeltaBytes} B, ${routeBudget.orphans.length} tệp mồ côi)`);
+  if (!routeBudget.ok) {
+    for (const err of routeBudget.errors) console.log(`  Vi phạm ngân sách tuyến: ${err}`);
+  }
+  if (maxBytesGrowthExplicit && bytesDelta > maxBytesGrowth) {
+    console.log(`  Skill phình quá ngưỡng ${(maxBytesGrowth * 100).toFixed(1)}% (đặt bằng --max-bytes-growth)`);
+  }
   if (base.summary.judge_avg && current.summary.judge_avg) {
     for (const k of JUDGE_KEYS) console.log(`  judge ${k}: ${base.summary.judge_avg[k]} -> ${current.summary.judge_avg[k]}`);
   }
-  return regressions.length === 0 && bytesDelta <= maxBytesGrowth;
+  const byteBudgetOk = maxBytesGrowthExplicit ? bytesDelta <= maxBytesGrowth : routeBudget.ok;
+  return regressions.length === 0 && byteBudgetOk;
 }
 
 function report(results) {
@@ -340,7 +352,7 @@ async function main() {
   writeFileSync(outPath, JSON.stringify(out, null, 2) + '\n');
   console.log(`Đã ghi kết quả: ${outPath}`);
 
-  if (opts.compare && !compareWith(out, opts.compare, opts.maxBytesGrowth)) process.exit(1);
+  if (opts.compare && !compareWith(out, opts.compare, opts)) process.exit(1);
 }
 
 main().catch((err) => { console.error(err.message); process.exit(2); });
