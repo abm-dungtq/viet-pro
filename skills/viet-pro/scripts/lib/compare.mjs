@@ -32,8 +32,13 @@ const QUANTITY_WORDS = [
   'tất cả', 'toàn bộ', 'duy nhất', 'hiếm khi', 'thường xuyên',
 ];
 const SHADE_WORDS = [
-  'có thể', 'dường như', 'ước tính', 'khoảng', 'xấp xỉ', 'tạm thời', 'dự kiến', 'có nguy cơ',
+  'có thể', 'có lẽ', 'dường như', 'ước tính', 'khoảng', 'xấp xỉ', 'tầm', 'chừng',
+  'tạm thời', 'dự kiến', 'có nguy cơ', 'chưa', 'vẫn',
+  'tối thiểu', 'tối đa', 'không quá', 'ít nhất', 'nhiều nhất', 'gần như', 'hầu như',
 ];
+const CHI_GUARDED_RE = /(?<![\p{L}\p{M}\p{N}])chỉ(?![\p{L}\p{M}\p{N}])(?!\s+(?:ra|đạo|số|tiêu|định|dẫn|thị|huy|trích|báo|nam|mức|tiết|tay|lối|đường)(?![\p{L}\p{M}\p{N}]))/giu;
+const WEEKDAY_MONTH_RE = /(?<![\p{L}\p{M}\p{N}])(?:thứ\s+(?:hai|ba|tư|bốn|năm|sáu|bảy|[2-7])|chủ\s+nhật|tháng\s+(?:giêng|chạp|một|hai|ba|tư|bốn|năm|sáu|bảy|tám|chín|mười(?:\s+một|\s+hai)?|1[0-2]|[1-9]))(?![\p{L}\p{M}\p{N}])/giu;
+const PROPER_STOP = new Set(['hai', 'ba', 'tư', 'bốn', 'năm', 'sáu', 'bảy', 'giêng', 'chạp', 'chủ', 'nhật']);
 
 function canonNumberToken(raw) {
   let s = raw.trim().replace(/\s+([%₫đ$€£])/gu, '$1').replace(/(\d)\s*(USD|VND|GB|MB|KB)$/iu, (_, d, u) => `${d} ${u}`);
@@ -187,13 +192,104 @@ function reconcileDigitAndWordCounts(beforeClean, afterClean, differences) {
   });
 }
 
+function stripFencedCode(s) {
+  return String(s || '')
+    .replace(/^```[^\n]*\n[\s\S]*?^```[ \t]*$/gmu, '\n')
+    .replace(/^~~~[^\n]*\n[\s\S]*?^~~~[ \t]*$/gmu, '\n');
+}
+
+function collectInlineCode(text) {
+  const unfenced = stripFencedCode(text);
+  const out = [];
+  for (const m of unfenced.matchAll(/``([^`\n]+)``|`([^`\n]+)`/gu)) {
+    const tok = (m[1] ?? m[2] ?? '').trim();
+    if (tok) out.push(tok);
+  }
+  return out;
+}
+
+function countVerbatim(haystack, needle) {
+  if (!needle) return 0;
+  let idx = 0;
+  let count = 0;
+  while (true) {
+    const pos = haystack.indexOf(needle, idx);
+    if (pos === -1) break;
+    count++;
+    idx = pos + needle.length;
+  }
+  return count;
+}
+
 function collectQuantAndShadeReviews(beforeClean, afterClean) {
   const alerts = [];
   for (const [kind, list] of [['quantity_word', QUANTITY_WORDS], ['shade', SHADE_WORDS]]) {
     for (const phrase of list) {
       const b = countWhole(beforeClean, phrase, { caseInsensitive: true });
       const a = countWhole(afterClean, phrase, { caseInsensitive: true });
-      if (b > 0 && a === 0) alerts.push({ kind, token: phrase, before: [`${b} lần`], after: ['0 lần'] });
+      if (b > a) alerts.push({ kind, token: phrase, before: [`${b} lần`], after: [`${a} lần`] });
+    }
+  }
+  const bChi = [...beforeClean.normalize('NFC').matchAll(CHI_GUARDED_RE)].length;
+  const aChi = [...afterClean.normalize('NFC').matchAll(CHI_GUARDED_RE)].length;
+  if (bChi > aChi) alerts.push({ kind: 'shade', token: 'chỉ', before: [`${bChi} lần`], after: [`${aChi} lần`] });
+  return alerts;
+}
+
+function collectWeekdayMonthReviews(beforeClean, afterClean) {
+  const countMap = (text) => {
+    const m = new Map();
+    for (const hit of text.normalize('NFC').matchAll(WEEKDAY_MONTH_RE)) {
+      const k = hit[0].toLowerCase().replace(/\s+/gu, ' ').trim();
+      m.set(k, (m.get(k) || 0) + 1);
+    }
+    return m;
+  };
+  const bm = countMap(beforeClean);
+  const am = countMap(afterClean);
+  const alerts = [];
+  for (const tok of new Set([...bm.keys(), ...am.keys()])) {
+    const b = bm.get(tok) || 0;
+    const a = am.get(tok) || 0;
+    if (b !== a) alerts.push({ kind: 'weekday_month', token: tok, before: [`${b} lần`], after: [`${a} lần`] });
+  }
+  return alerts;
+}
+
+function collectProperNameReviews(beforeClean, afterClean, keep = []) {
+  const keepLower = new Set(keep.map((k) => String(k || '').trim().toLowerCase()).filter(Boolean));
+  const extract = (raw) => {
+    const cleaned = stripFencedCode(raw)
+      .replace(/\]\([^)\n]+\)/gu, ']')
+      .replace(/(?:https?|file):\/\/[^\s)>\]]+/giu, ' ');
+    const counts = new Map();
+    for (const rawLine of cleaned.split('\n')) {
+      const t = rawLine.trim();
+      if (!t) continue;
+      const letters = t.match(/\p{L}/gu) || [];
+      const uppers = t.match(/\p{Lu}/gu) || [];
+      if (letters.length >= 4 && uppers.length / letters.length >= 0.7) continue;
+      for (const m of t.matchAll(/(?<![\p{L}\p{M}\p{N}])[A-ZĐ]{2,10}(?![\p{L}\p{M}\p{N}])/gu)) {
+        const tok = m[0];
+        if (!keepLower.has(tok.toLowerCase())) counts.set(tok, (counts.get(tok) || 0) + 1);
+      }
+      for (const m of t.matchAll(/(?<=[\p{Ll}\p{N},;]\s+)\p{Lu}[\p{Ll}\p{M}]+(?:\s+\p{Lu}[\p{Ll}\p{M}]+)*/gu)) {
+        const tok = m[0].trim();
+        const low = tok.toLowerCase();
+        if (PROPER_STOP.has(low) || keepLower.has(low)) continue;
+        counts.set(tok, (counts.get(tok) || 0) + 1);
+      }
+    }
+    return counts;
+  };
+  const bm = extract(beforeClean);
+  const am = extract(afterClean);
+  const afterLower = afterClean.normalize('NFC').toLowerCase();
+  const alerts = [];
+  for (const [tok, b] of bm) {
+    const a = am.get(tok) || 0;
+    if (b > 0 && a === 0 && !afterLower.includes(tok.toLowerCase())) {
+      alerts.push({ kind: 'proper_name', token: tok, before: [`${b} lần`], after: ['0 lần'] });
     }
   }
   return alerts;
@@ -232,10 +328,48 @@ export function compare(before, after, keep = [], options = {}) {
     }
   }
   const reconciled = reconcileDigitAndWordCounts(beforeClean, afterClean, rawDifferences);
+
+  // inlineCode preservation: ignore moved-to-fenced-code or newly backticked existing identifiers.
+  const bCode = multiset(collectInlineCode(beforeClean));
+  const aCode = multiset(collectInlineCode(afterClean));
+  const codeDiffs = [];
+  for (const tok of new Set([...bCode.keys(), ...aCode.keys()])) {
+    const bc = bCode.get(tok) || 0;
+    const ac = aCode.get(tok) || 0;
+    if (bc > ac) {
+      if (countVerbatim(afterClean, tok) >= bc) continue;
+      codeDiffs.push({ kind: 'inlineCode', token: tok, before: bc, after: ac });
+    } else if (ac > bc) {
+      if (beforeClean.includes(tok)) continue;
+      codeDiffs.push({ kind: 'inlineCode', token: tok, before: bc, after: ac });
+    }
+  }
+
+  // Advisory number_word review when word count changed without a matching digit swap.
+  const wb = countGuardedNumberWords(beforeClean);
+  const wa = countGuardedNumberWords(afterClean);
+  const bDigits = multiset(left.numberOrDate);
+  const aDigits = multiset(right.numberOrDate);
+  const numWordAlerts = [];
+  for (const k of new Set([...wb.keys(), ...wa.keys()])) {
+    const bCnt = wb.get(k) || 0;
+    const aCnt = wa.get(k) || 0;
+    if (bCnt === aCnt) continue;
+    const digitDelta = (bDigits.get(k) || 0) - (aDigits.get(k) || 0);
+    const wordDelta = bCnt - aCnt;
+    if (digitDelta !== 0 && digitDelta === -wordDelta) continue;
+    numWordAlerts.push({ kind: 'number_word', token: `số chữ (${k})`, before: [`${bCnt} lần`], after: [`${aCnt} lần`] });
+  }
+
   const context = compareContexts(beforeClean, afterClean);
-  const advisory = collectQuantAndShadeReviews(beforeClean, afterClean);
+  const advisory = [
+    ...numWordAlerts,
+    ...collectQuantAndShadeReviews(beforeClean, afterClean),
+    ...collectWeekdayMonthReviews(beforeClean, afterClean),
+    ...collectProperNameReviews(beforeClean, afterClean, keep),
+  ];
   const edit_ratio = computeEditRatio(before, after);
-  const allDiffs = [...reconciled, ...context.differences];
+  const allDiffs = [...reconciled, ...codeDiffs, ...context.differences];
   if (options.maxEditRatio !== undefined && options.maxEditRatio !== null && edit_ratio > options.maxEditRatio) {
     allDiffs.push({
       kind: 'edit_ratio',

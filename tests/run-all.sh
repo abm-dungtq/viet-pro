@@ -21,6 +21,8 @@ node "$SCRIPTS/check-platform.mjs" --self-test
 node "$SCRIPTS/lib/seo.mjs" --self-test
 node "$SCRIPTS/mcp-server.mjs" --self-test
 node "$SCRIPTS/lib/config.mjs" --self-test
+node "$SCRIPTS/lib/pptx.mjs" --self-test
+node "$SCRIPTS/lib/score.mjs" --self-test
 GEMINI_API_KEY="" VIET_PRO_NO_ENV_FILE=1 node "$SCRIPTS/lib/decisions.mjs" --self-test
 GEMINI_API_KEY="" VIET_PRO_NO_ENV_FILE=1 node "$SCRIPTS/lib/stamp.mjs" --self-test
 GEMINI_API_KEY="" VIET_PRO_NO_ENV_FILE=1 node "$SCRIPTS/lib/gate.mjs" --self-test
@@ -28,10 +30,11 @@ node "$SCRIPTS/hooks/editorial-hook.mjs" --self-test
 node "$SCRIPTS/hooks/agy-hook.mjs" --self-test
 node "$SCRIPTS/hooks/claude-hook.mjs" --self-test
 node "$SCRIPTS/hooks/codex-hook.mjs" --self-test
+node skills/viet-pro/bin/viet-pro.mjs scan --self-test
 node skills/viet-pro/bin/viet-pro.mjs mcp --self-test
 node skills/viet-pro/bin/viet-pro.mjs doctor --json | node -e '
 const d = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
-if (d.ok !== true || d.version !== "6.1.0" || typeof d.elapsed_ms !== "number" || !(d.elapsed_ms < 50)) {
+if (d.ok !== true || d.version !== "6.2.0" || typeof d.elapsed_ms !== "number" || !(d.elapsed_ms < 50)) {
   console.error("FAIL: viet-pro doctor --json", d);
   process.exit(1);
 }

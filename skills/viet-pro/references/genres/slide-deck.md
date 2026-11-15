@@ -39,3 +39,4 @@ Dùng để soạn nội dung bộ slide thuyết trình trực tiếp (báo cá
 - [ ] Ghi chú người nói (Speaker Notes) tách riêng khỏi nội dung hiển thị?
 - [ ] Bảng và biểu đồ có đủ đơn vị, mốc thời gian và nguồn từ brief?
 - [ ] Trang cuối chốt rõ quyết định cần duyệt hoặc đầu mối hành động?
+- [ ] Chạy `viet-pro scan <deck.pptx>` / `viet-pro lint <deck.pptx>` và `viet-pro compare <truoc.pptx> <sau.pptx>` trước khi bàn giao?

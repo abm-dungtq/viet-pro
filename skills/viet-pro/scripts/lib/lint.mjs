@@ -41,11 +41,11 @@ export const LINE_RULES = [
   {
     id: 'em-dash', level: 'WARN', desc: 'House style viet-pro ưu tiên gạch ngang - có cách hai bên thay cho em-dash/en-dash/horizontal-bar',
     // U+2014 em-dash, U+2013 en-dash, U+2015 horizontal bar — AI hay sinh cả ba
-    check: (l) => [...l.matchAll(/[—–―]/gu)].map((m) => m[0]),
+    check: (l, opts = {}) => (opts.houseStyle === false ? [] : [...l.matchAll(/[—–―]/gu)].map((m) => m[0])),
   },
   {
     id: 'oxford-comma', level: 'WARN', desc: 'House style viet-pro không dùng Oxford comma ", và"',
-    check: (l) => [...l.matchAll(/,\s+và\s/gu)].map((m) => m[0]),
+    check: (l, opts = {}) => (opts.houseStyle === false ? [] : [...l.matchAll(/,\s+và\s/gu)].map((m) => m[0])),
   },
   {
     id: 'space-before-punct', level: 'ERROR', desc: 'Dấu câu phải sát từ phía trước (punctuation.md)',
@@ -62,8 +62,8 @@ export const LINE_RULES = [
   },
   {
     id: 'heading-colon', level: 'WARN', desc: 'House style viet-pro hạn chế dấu hai chấm trong tiêu đề',
-    check: (l) => {
-      if (!/^#{1,6}\s/u.test(l)) return [];
+    check: (l, opts = {}) => {
+      if (opts.houseStyle === false || !/^#{1,6}\s/u.test(l)) return [];
       const cleaned = stripInlineCode(l.replace(/\[([^\]]*)\]\([^)\n]+\)/gu, '$1'), ' ')
         .replace(/(?:https?|file):\/\/\S+/giu, ' ');
       return /^#{1,6}\s.*:\s*\S/u.test(cleaned) || /^#{1,6}\s.*:\s*$/u.test(cleaned)
@@ -130,6 +130,51 @@ export const LINE_RULES = [
       return clean ? [...clean.matchAll(EN_GLOSS_RE)].map((m) => m[0].trim()) : [];
     },
   },
+  {
+    id: 'empty-promise', level: 'WARN', desc: 'Câu hứa suông/câu giờ mở đầu kiểu bài viết AI',
+    check: (l, opts = {}) => {
+      const clean = stripKeep(stripNonQuoteLine(l), opts.keep);
+      return clean ? [...clean.matchAll(/(?<![\p{L}\p{M}\p{N}])(?:hãy cùng (?:tìm hiểu|khám phá|điểm qua|phân tích)|chúng ta hãy cùng|dưới đây là \d+\s+(?:cách|bí quyết|lý do|bước|yếu tố|sai lầm)|không lòng vòng nữa|cùng tìm hiểu ngay)(?![\p{L}\p{M}\p{N}])/giu)].map((m) => m[0].trim()) : [];
+    },
+  },
+  {
+    id: 'self-outline', level: 'WARN', desc: 'Tự thuyết minh dàn ý ("Trong bài viết này, chúng ta sẽ...")',
+    check: (l, opts = {}) => {
+      const clean = stripKeep(stripNonQuoteLine(l), opts.keep);
+      return clean ? [...clean.matchAll(/(?<![\p{L}\p{M}\p{N}])(?:trong (?:bài viết|phần|chương|báo cáo) này,?\s+(?:chúng ta|tôi|mình|bài viết)\s+sẽ\s+(?:cùng\s+)?(?:tìm hiểu|đi qua|phân tích|khám phá|trình bày|làm rõ)|(?:bài viết|phần) này sẽ (?:cùng bạn )?(?:phân tích|làm rõ|đi qua|tổng hợp|khám phá))(?![\p{L}\p{M}\p{N}])/giu)].map((m) => m[0].trim()) : [];
+    },
+  },
+  {
+    id: 'empty-summary-closer', level: 'WARN', desc: 'Mục hoặc câu kết thúc rỗng kiểu giáo án/AI ("## Kết luận", "Chúc bạn học vui...")',
+    check: (l, opts = {}) => {
+      const clean = stripKeep(stripNonQuoteLine(l), opts.keep);
+      if (!clean) return [];
+      const h = clean.match(/^\s*#{1,4}\s*(?:Kết luận|Tổng kết|Lời kết|Tóm lại|Thay lời kết)\s*$/iu);
+      if (h) return [h[0].trim()];
+      return [...clean.matchAll(/(?<![\p{L}\p{M}\p{N}])(?:tóm lại,?\s+[^.!?\n]{2,60}đóng vai trò|nhìn chung,?\s+việc [^.!?\n]{2,60}là yếu tố|chúc bạn\s+[^.!?\n]{2,30}hẹn gặp lại ở bài viết tiếp theo)(?![\p{L}\p{M}\p{N}])/giu)].map((m) => m[0].trim());
+    },
+  },
+  {
+    id: 'engagement-bait', level: 'WARN', desc: 'Câu mồi tương tác sáo rỗng cuối bài mạng xã hội',
+    check: (l, opts = {}) => {
+      const clean = stripKeep(stripNonQuoteLine(l), opts.keep);
+      return clean ? [...clean.matchAll(/(?<![\p{L}\p{M}\p{N}])(?:còn bạn,?\s+(?:bạn nghĩ sao|thì sao)\??[^.!?\n]{0,40}\??|bạn nghĩ sao về (?:vấn đề|chuyện|điều|xu hướng) này\??|hãy để lại bình luận|chia sẻ góc nhìn của bạn|comment (?:cho mình|bên dưới)|đừng quên nhấn thích và chia sẻ|nếu bạn (?:cũng\s+)?đang (?:nghĩ|đứng trước)[^.!?\n]{4,70}(?:thì hãy|cứ nhắn))(?![\p{L}\p{M}\p{N}])/giu)].map((m) => m[0].trim()) : [];
+    },
+  },
+  {
+    id: 'inspirational-slogan', level: 'WARN', desc: 'Khẩu hiệu truyền cảm hứng sáo mòn kiểu AI',
+    check: (l, opts = {}) => {
+      const clean = stripKeep(stripNonQuoteLine(l), opts.keep);
+      return clean ? [...clean.matchAll(/(?<![\p{L}\p{M}\p{N}])(?:hành trình vạn dặm bắt đầu từ|thành công không phải (?:là )?đích đến|hãy là phiên bản tốt nhất của chính mình|tương lai thuộc về những ai|đừng chỉ làm việc chăm chỉ|và đây là câu chuyện của mình)(?![\p{L}\p{M}\p{N}])/giu)].map((m) => m[0].trim()) : [];
+    },
+  },
+  {
+    id: 'vague-authority', level: 'WARN', desc: 'Dẫn uy tín mơ hồ không tên nguồn ("Các nghiên cứu chỉ ra rằng...")',
+    check: (l, opts = {}) => {
+      const clean = stripKeep(stripNonQuoteLine(l), opts.keep);
+      return clean ? [...clean.matchAll(/(?<![\p{L}\p{M}\p{N}])(?:các nghiên cứu chỉ ra rằng|nhiều chuyên gia cho rằng|các nhà nghiên cứu (?:lưu ý|nhận định|cho biết) rằng|giới chuyên môn đánh giá|thực tế đã chứng minh rằng|nhiều khảo sát cho thấy)(?![\p{L}\p{M}\p{N}])/giu)].map((m) => m[0].trim()) : [];
+    },
+  },
 ];
 
 // A leading `---` ... `---` block is YAML frontmatter; an unclosed `---` is ordinary text.
@@ -161,17 +206,28 @@ const FUNCTION_WORDS = new Set('và của là có được cho các những mộ
 
 const TRANSLATIONESE_PATTERNS = [
   /\b(?:việc|sự)\s+(?:triển khai|áp dụng|thực hiện|sử dụng|tối ưu|phát triển|xây dựng|đầu tư|thay đổi|kết hợp|chuyển đổi|phối hợp|kiểm tra|điều chỉnh|mở rộng|nâng cao|cải thiện|tăng cường|đảm bảo|duy trì)\b/giu,
-  /\bmột cách\s+(?:nhanh chóng|chính xác|hiệu quả|toàn diện|liền mạch|rõ ràng|cụ thể|tự nhiên|chủ động|linh hoạt|triệt để|đồng bộ|bền vững|tối ưu|hợp lý|dễ dàng|hệ thống)\b/giu,
+  /(?<![\p{L}\p{M}\p{N}])một cách\s+(?!gọi|khác|nữa|làm|để|viết|nói|hiểu|nhìn|tiếp cận|đơn giản(?![\p{L}\p{M}\p{N}]))\p{Ll}+(?![\p{L}\p{M}\p{N}])/gu,
+  /(?<![\p{L}\p{M}\p{N}])(?:cần|phải|nên)\s+được\s+(?:xem xét|đánh giá|thực hiện|triển khai|áp dụng|xử lý|cân nhắc)(?![\p{L}\p{M}\p{N}])/giu,
   /\bthông qua việc\b/giu,
-  /\bđược\s+(?:\p{L}+\s+){1,5}bởi\b/giu,
+  /\b(?:được|bị|dẫn dắt)\s+(?:\p{L}+\s+){1,5}bởi\b/giu,
   /\b(?:tiến hành|thực hiện việc|đưa ra sự)\s+\p{L}+/giu,
   /\bđóng vai trò\s+(?:quan trọng|then chốt|thiết yếu|quyết định|chủ chốt|trọng tâm)\b/giu,
   /(?:^|[.!?]\s+)(?:Đối với\s+[^,\n.!?;]{2,40}\s+thì|Điều này có nghĩa là)\b/giu,
   /,\s*(?:qua đó|từ đó)\s+(?:giúp|góp phần|thúc đẩy|tạo điều kiện|mang lại|nâng cao|tăng cường|mở ra)\b/giu,
   /\bcủa\s+(?:\p{L}+\s+){1,4}của\s+(?:\p{L}+\s+){1,4}của\b/giu,
   /(?<![\p{L}\p{M}\p{N}])(?:bảng|biểu đồ|số liệu|dữ liệu|báo cáo|công cụ|tính năng|giải pháp|nền tảng|hệ thống)\s+này\s+(?:cho phép bạn|giúp bạn|đảm bảo rằng|chỉ ra rằng|chứng minh rằng)(?![\p{L}\p{M}\p{N}])/giu,
-  /(?<![\p{L}\p{M}\p{N}])(?:nơi|người|điều|lý do|thời điểm)\s+mà(?!\s+(?:không|chưa|vẫn|chẳng|ai|ta|mình|tôi|bạn|họ))(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:nơi|người|điều|lý do|thời điểm|thứ|cái|theo cách)\s+mà(?!\s+(?:không|chưa|vẫn|chẳng|ai|ta|mình|tôi|bạn|họ))(?![\p{L}\p{M}\p{N}])/giu,
   /(?<![\p{L}\p{M}\p{N}])(?:ở cuối ngày|tin tốt là|cuối cùng nhưng không kém phần quan trọng|hy vọng email này tìm thấy|vui lòng tìm thấy tệp đính kèm|với bạn trong tâm trí)(?![\p{L}\p{M}\p{N}])/giu,
+];
+
+const CALQUED_PROSE_PATTERNS = [
+  /(?<![\p{L}\p{M}\p{N}])một cách\s+(?!gọi|khác|nữa|làm|để|viết|nói|hiểu|nhìn|tiếp cận|đơn giản(?![\p{L}\p{M}\p{N}]))\p{Ll}+(?![\p{L}\p{M}\p{N}])/gu,
+  /(?<![\p{L}\p{M}\p{N}])(?:cần|phải|nên)\s+được\s+(?:xem xét|đánh giá|thực hiện|triển khai|áp dụng|xử lý|cân nhắc)(?![\p{L}\p{M}\p{N}])/giu,
+  /\b(?:được|bị|dẫn dắt)\s+(?:\p{L}+\s+){0,5}bởi\b/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:bảng|biểu đồ|số liệu|dữ liệu|báo cáo|công cụ|tính năng|giải pháp|nền tảng|hệ thống)\s+này\s+(?:cho phép bạn|giúp bạn|đảm bảo rằng|chỉ ra rằng|chứng minh rằng)(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:nơi|người|điều|thứ|cái|theo cách)\s+mà(?!\s+(?:không|chưa|vẫn|chẳng|ai|ta|mình|tôi|bạn|họ))(?![\p{L}\p{M}\p{N}])/giu,
+  /(?:^|[.!?]\s+)(?:Đối với\s+[^,\n.!?;]{2,40}\s+thì|Điều này có nghĩa là|Tôi viết email này để|Rất vui được chia sẻ rằng)(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:ở cuối ngày|tin tốt là|cuối cùng nhưng không kém phần quan trọng)(?![\p{L}\p{M}\p{N}])/giu,
 ];
 
 const AI_BUZZWORD_RE = /\b(?:tối ưu hóa toàn diện|giải pháp toàn diện|hệ sinh thái liền mạch|trải nghiệm liền mạch|bức tranh toàn cảnh|chìa khóa then chốt|nền tảng vững chắc|khai mở tiềm năng|mở khóa tiềm năng|nâng tầm trải nghiệm|hành trình chuyển đổi(?:\s+số)?|bước ngoặt lịch sử|thay đổi cuộc chơi|định hình tương lai|giải pháp đột phá|công nghệ đột phá|tiêu chuẩn vàng|kim chỉ nam)\b/giu;
@@ -260,6 +316,19 @@ function paragraphClusters(text, keep = [], isOfficial = false) {
           line: p.startLine,
           excerpt: `Cụm văn dịch (${transHits.length} dấu hiệu): ${transHits.slice(0, 4).map((x) => `"${x}"`).join(', ')}`,
           desc: 'Nhiều cấu trúc dịch sát tiếng Anh tụ trong cùng đoạn (translationese-vi.md)',
+        });
+      }
+      const calquedHits = [];
+      for (const re of CALQUED_PROSE_PATTERNS) {
+        for (const m of cleaned.matchAll(re)) calquedHits.push(m[0].replace(/^[.,!?\s]+/u, '').trim());
+      }
+      if (calquedHits.length >= 2) {
+        findings.push({
+          level: 'WARN',
+          id: 'calqued-prose',
+          line: p.startLine,
+          excerpt: `Câu văn calque tiếng Anh (${calquedHits.length} dấu hiệu): ${calquedHits.slice(0, 3).map((x) => `"${x}"`).join(', ')}`,
+          desc: 'Từ 2 cụm dịch máy/bị động không tác nhân trong cùng đoạn (một cách + tính từ, cần được xem xét, dẫn dắt bởi...)',
         });
       }
     }
@@ -455,6 +524,19 @@ function checkDocumentSignals(text, reuseTarget, opts = {}) {
       desc: 'Pha tạp hư từ khẩu ngữ Bắc/Trung/Nam trong cùng văn bản (consistency.md)',
     });
   }
+  if (opts.chat) {
+    const stiffMatches = [...reuseTarget.matchAll(/(?:^|[.!?\n]\s*)(?:Chào (?:bạn|anh|chị|em|mọi người)\b|Trân trọng|Kính gửi|Xin phép được thông tin|Rất mong nhận được phản hồi|Cảm ơn (?:bạn|anh|chị|em)(?: rất nhiều)? (?:đã|vì))/gimu)];
+    for (const m of stiffMatches) {
+      findings.push({ level: 'WARN', id: 'chat-stiff', line: 0, excerpt: m[0].trim(), desc: 'Tin nhắn mở/kết khách sáo kiểu email' });
+    }
+    const rawLines = reuseTarget.split('\n');
+    if (/^\s*#{1,6}\s/mu.test(reuseTarget) || rawLines.filter((l) => /^\s*[-*+]\s+\S/u.test(l)).length >= 2) {
+      findings.push({ level: 'WARN', id: 'chat-formatted', line: 0, excerpt: 'Dùng heading hoặc gạch đầu dòng trong tin nhắn', desc: 'Tin nhắn ngắn không nên định dạng như văn bản' });
+    }
+    if (allWords > 80) {
+      findings.push({ level: 'WARN', id: 'chat-long', line: 0, excerpt: `${allWords} chữ (>80)`, desc: 'Tin nhắn dài hơn 80 chữ' });
+    }
+  }
   return findings;
 }
 
@@ -470,17 +552,53 @@ function textRules(text, opts = {}) {
   const opener = proseLines.slice(0, 3).find((l) => /^(Hãy tưởng tượng|Trong (?:bối cảnh|thế giới|kỷ nguyên)\b)/iu.test(l));
   if (opener) findings.push({ level: 'WARN', id: 'staged-opener', line: 0, excerpt: opener.slice(0, 90) });
 
-  const contrasts = [...text.matchAll(/không\s+(?:chỉ|phải)\s+[^.!?\n]{0,120}(?:mà\s+còn|mà\s+là)/giu)];
+  const contrasts = [...text.matchAll(/(?:không\s+(?:chỉ|phải)\s+[^.!?\n]{0,120}(?:mà\s+còn|mà\s+là)|không\s+phải(?:\s+là)?\s+[^.!?\n]{3,80}[.!?]\s*Mà(?:\s+đó|\s+chính|\s+là))/giu)];
   if (contrasts.length > 1) findings.push({ level: 'WARN', id: 'contrast-formula-repeat', line: 0, excerpt: `Công thức đối lập xuất hiện ${contrasts.length} lần` });
 
   const boldLabels = [...text.matchAll(/^\s*\*\*[^*\n:]{1,40}:\*\*/gmu)];
   if (boldLabels.length >= 3) findings.push({ level: 'WARN', id: 'decorative-bold-labels', line: 0, excerpt: `${boldLabels.length} đoạn mở bằng nhãn bold` });
 
-  const dramaticClosers = proseLines.filter((l) => l.length <= 100 && /^(Và đó mới là|Đó mới là điều|Không ai (?:còn )?có thể làm ngơ|Hãy để điều đó)/iu.test(l));
-  if (dramaticClosers.length > 1) findings.push({ level: 'WARN', id: 'dramatic-closer-repeat', line: 0, excerpt: `${dramaticClosers.length} câu kết/fragment kịch tính` });
   const isSong = SONG_TAG_RE.test(text);
   const isOfficial = opts.isOfficial ?? OFFICIAL_DOC_RE.test(text);
   const reuseTarget = isSong ? dedupeSongLyrics(text) : text;
+
+  if (!isSong) {
+    const rawLines = reuseTarget.split('\n');
+    const boldHeadingHits = [];
+    const emojiLeadLines = [];
+    rawLines.forEach((rawL, idx) => {
+      const t = rawL.trim();
+      if (/^\*\*[^*\n?:`]{6,95}\*\*$/u.test(t) || /^\*\*\d+[.)]\s+[^*\n?:]{4,90}\*\*[.:!]?$/u.test(t)) {
+        boldHeadingHits.push({ line: idx + 1, excerpt: t.slice(0, 80) });
+      }
+      if (/^(?:[-*•]\s+|#{1,6}\s+)?[\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}]/u.test(t)) {
+        emojiLeadLines.push(idx + 1);
+      }
+    });
+    if (boldHeadingHits.length >= 2) {
+      for (const hit of boldHeadingHits) {
+        findings.push({
+          level: 'WARN',
+          id: 'bold-heading-abuse',
+          line: hit.line,
+          excerpt: hit.excerpt,
+          desc: 'Dùng nhiều dòng in đậm làm tiêu đề mục thay cho Markdown heading',
+        });
+      }
+    }
+    if (emojiLeadLines.length >= 2) {
+      findings.push({
+        level: 'WARN',
+        id: 'emoji-section-lead',
+        line: emojiLeadLines[0],
+        excerpt: `${emojiLeadLines.length} dòng mở đầu bằng emoji`,
+        desc: 'Dùng emoji mở đầu liên tiếp nhiều dòng/mục',
+      });
+    }
+  }
+
+  const dramaticClosers = proseLines.filter((l) => l.length <= 100 && /^(Và đó mới là|Đó mới là điều|Không ai (?:còn )?có thể làm ngơ|Hãy để điều đó)/iu.test(l));
+  if (dramaticClosers.length > 1) findings.push({ level: 'WARN', id: 'dramatic-closer-repeat', line: 0, excerpt: `${dramaticClosers.length} câu kết/fragment kịch tính` });
   const toneTarget = stripQuotedAndKept(reuseTarget, opts.keep);
   const oldTones = [...toneTarget.matchAll(/\p{L}*(?<![qgQG])(?:o[àáảãạ]|o[èéẻẽẹ]|u[ỳýỷỹỵ])(?![\p{L}\p{M}])/giu)].map((m) => m[0]);
   const newTones = [...toneTarget.matchAll(/\p{L}*(?<![qgQG])(?:[òóỏõọ][ae]|[ùúủũụ]y)(?![\p{L}\p{M}])/giu)].map((m) => m[0]);
@@ -493,7 +611,7 @@ function textRules(text, opts = {}) {
       desc: 'Trộn hai quy tắc đặt dấu thanh oa/oe/uy trong cùng văn bản (consistency.md)',
     });
   }
-  findings.push(...phraseReuse(reuseTarget, opts.keep));
+  if (!isOfficial) findings.push(...phraseReuse(reuseTarget, opts.keep));
   findings.push(...paragraphClusters(reuseTarget, opts.keep, isOfficial));
   findings.push(...checkDocumentSignals(text, reuseTarget, { ...opts, isOfficial }));
   return findings;
@@ -600,6 +718,8 @@ export function lintText(text, opts = {}) {
   const lines = text.split('\n');
   const isSong = SONG_TAG_RE.test(text);
   const ttsEnabled = opts.ttsTags !== false;
+  const houseStyle = opts.houseStyle !== undefined ? Boolean(opts.houseStyle) : (opts.register === 'casual' ? false : true);
+  const ruleOpts = { ...opts, houseStyle };
   let inFence = false;
   let inFrontmatter = hasFrontmatter(lines);
   let draftSection = '';
@@ -616,14 +736,14 @@ export function lintText(text, opts = {}) {
     const lineForRules = ttsEnabled ? stripTtsTags(line) : line;
     for (const rule of LINE_RULES) {
       if (isSong && rule.id === 'title-case' && (draftSection === 'title' || draftSection === 'description' || draftSection === 'caption')) continue;
-      for (const excerpt of rule.check(lineForRules, opts)) {
+      for (const excerpt of rule.check(lineForRules, ruleOpts)) {
         findings.push({ level: rule.level, id: rule.id, line: i + 1, excerpt, desc: rule.desc });
       }
     }
   });
   const protectedStripped = stripProtectedBlocks(text);
   const proseBody = ttsEnabled ? stripTtsTags(protectedStripped) : protectedStripped;
-  findings.push(...textRules(proseBody, opts));
+  findings.push(...textRules(proseBody, ruleOpts));
   findings.push(...checkBannedPhrases(proseBody, opts.bannedPhrases));
   findings.push(...checkMandatoryCta(text, opts.mandatoryCta));
   findings.push(...checkFirstHand(proseBody, opts.allowFirstHand, opts.strictFirstHand));
@@ -632,7 +752,18 @@ export function lintText(text, opts = {}) {
 
 export function computeRouteHint(text, findings = lintText(text)) {
   if (!findings.length) return 'light';
-  const hasHeavySignal = findings.some((f) => f.level === 'ERROR' || ['translationese-cluster', 'translationese-filler-density', 'ai-buzzword-cluster', 'isomorphic-sentence'].includes(f.id));
+  const hasHeavySignal = findings.some((f) => f.level === 'ERROR' || [
+    'translationese-cluster',
+    'translationese-filler-density',
+    'ai-buzzword-cluster',
+    'isomorphic-sentence',
+    'calqued-prose',
+    'empty-promise',
+    'self-outline',
+    'empty-summary-closer',
+    'engagement-bait',
+    'vague-authority',
+  ].includes(f.id));
   if (hasHeavySignal || findings.length >= 5) return 'heavy';
   return 'standard';
 }

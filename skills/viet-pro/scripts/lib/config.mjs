@@ -21,6 +21,8 @@ export const DEFAULT_CONFIG = Object.freeze({
   mandatory_cta: '',
   allow_first_hand: true,
   tts_tags: true,
+  house_style: true,
+  max_ai_score: null,
   default_platform: '',
   default_genre: '',
 });
@@ -114,9 +116,14 @@ export function validateConfig(raw) {
       errors.push(`trường "${k}" phải là chuỗi`);
     }
   }
-  for (const k of ['allow_first_hand', 'tts_tags']) {
+  for (const k of ['allow_first_hand', 'tts_tags', 'house_style']) {
     if (raw[k] !== undefined && typeof raw[k] !== 'boolean') {
       errors.push(`trường "${k}" phải là boolean`);
+    }
+  }
+  if (raw.max_ai_score !== undefined && raw.max_ai_score !== null) {
+    if (typeof raw.max_ai_score !== 'number' || !Number.isFinite(raw.max_ai_score) || raw.max_ai_score < 0 || raw.max_ai_score > 100) {
+      errors.push('trường "max_ai_score" phải là null hoặc số trong khoảng 0..100');
     }
   }
   return errors;
@@ -195,6 +202,9 @@ export function selfTest() {
     if (!validateConfig({ pronouns: 'tôi' }).some((e) => e.includes('pronouns'))) fail('không bắt pronouns không phải object');
     if (!validateConfig({ keep_terms: [123] }).some((e) => e.includes('keep_terms'))) fail('không bắt keep_terms sai kiểu');
     if (!validateConfig({ allow_first_hand: 'no' }).some((e) => e.includes('allow_first_hand'))) fail('không bắt allow_first_hand sai kiểu');
+    if (!validateConfig({ house_style: 'yes' }).some((e) => e.includes('house_style'))) fail('không bắt house_style sai kiểu');
+    if (!validateConfig({ max_ai_score: 120 }).some((e) => e.includes('max_ai_score'))) fail('không bắt max_ai_score vượt 100');
+    if (validateConfig({ house_style: false, max_ai_score: 15 }).length) fail('house_style=false & max_ai_score=15 phải hợp lệ');
 
     const badRepo = join(tmp, 'bad');
     mkdirSync(badRepo, { recursive: true });

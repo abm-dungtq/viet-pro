@@ -5,7 +5,7 @@ Viết Pro (`viet-pro`) chạy trên **Claude Code**, **OpenAI Codex** và **Goo
 ```text
 skills/viet-pro/          nguồn skill chuẩn (SKILL.md, bin/, references/, scripts/)
 SKILL_SHA256SUMS          checksum từng file của skill, installer dùng để kiểm tra
-dist/viet-pro-6.0.0.zip   gói phát hành
+dist/viet-pro-6.2.0.zip   gói phát hành
 SHA256SUMS                checksum các gói zip
 ```
 
@@ -14,15 +14,15 @@ SHA256SUMS                checksum các gói zip
 ## 1. Cài tự động (khuyến nghị)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v6.0.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v6.2.0/install.sh | bash
 ```
 
-Lệnh trên tải đúng tag `v6.0.0`, kiểm tra checksum của skill, rồi cài cho mọi host phát hiện được trên máy (dựa vào sự tồn tại của `~/.claude`, `~/.agents` hoặc `~/.codex`, `~/.gemini` và `~/.gemini/antigravity-cli`). Khi cài cho host (không phải `--workspace`), installer tự tạo symlink CLI `~/.local/bin/viet-pro` và dọn các đăng ký MCP `viet-pro` cũ trong cấu hình host mà vẫn giữ nguyên `skillUsage` và các server khác.
+Lệnh trên tải đúng tag `v6.2.0`, kiểm tra checksum của skill, rồi cài cho mọi host phát hiện được trên máy (dựa vào sự tồn tại của `~/.claude`, `~/.agents` hoặc `~/.codex`, `~/.gemini` và `~/.gemini/antigravity-cli`). Khi cài cho host (không phải `--workspace`), installer tự tạo symlink CLI `~/.local/bin/viet-pro` và dọn các đăng ký MCP `viet-pro` cũ trong cấu hình host mà vẫn giữ nguyên `skillUsage` và các server khác.
 
 Chỉ định host hoặc tuỳ chọn khác bằng cách thêm tham số sau `bash -s --`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v6.0.0/install.sh | bash -s -- --claude --codex
+curl -fsSL https://raw.githubusercontent.com/abm-dungtq/viet-pro/v6.2.0/install.sh | bash -s -- --claude --codex
 ```
 
 | Tuỳ chọn | Tác dụng |

@@ -18,7 +18,9 @@ import { compare } from './compare.mjs';
 import { loadProjectConfig } from './config.mjs';
 import { runDecisionsGate } from './decisions.mjs';
 import { computeRouteHint, lintText, stripFrontmatter } from './lint.mjs';
+import { checkSlideDeck, pptxLineLabels, pptxToText, readPptx } from './pptx.mjs';
 import { checkDraft, loadProfile, splitDraft, validateProfile } from './profile.mjs';
+import { scanText } from './score.mjs';
 import {
   getRecentDistinctAttempts,
   recordGateAttempt,
@@ -178,22 +180,27 @@ function buildInput(input, opts = {}) {
   if (typeof input === 'string') {
     const filePath = opts.filePath ? resolve(String(opts.filePath)) : null;
     const rawBytes = Buffer.from(input, 'utf8');
-    return { text: input, rawBytes, filePath };
+    return { text: input, rawBytes, filePath, pptxSlides: null, pptxIndex: null };
   }
   const obj = input && typeof input === 'object' ? input : {};
   const filePath = obj.filePath ? resolve(String(obj.filePath)) : (opts.filePath ? resolve(String(opts.filePath)) : null);
   if (typeof obj.text === 'string') {
-    return { text: obj.text, rawBytes: Buffer.from(obj.text, 'utf8'), filePath };
+    return { text: obj.text, rawBytes: Buffer.from(obj.text, 'utf8'), filePath, pptxSlides: null, pptxIndex: null };
   }
   if (filePath) {
     const rawBytes = readFileSync(filePath);
-    return { text: rawBytes.toString('utf8'), rawBytes, filePath };
+    if (filePath.toLowerCase().endsWith('.pptx')) {
+      const pptxSlides = readPptx(rawBytes);
+      const { text, index: pptxIndex } = pptxToText(pptxSlides);
+      return { text, rawBytes, filePath, pptxSlides, pptxIndex };
+    }
+    return { text: rawBytes.toString('utf8'), rawBytes, filePath, pptxSlides: null, pptxIndex: null };
   }
   throw new Error('runGate cần text hoặc filePath');
 }
 
 export async function runGate(input, opts = {}) {
-  const { text, rawBytes, filePath } = buildInput(input, opts);
+  const { text, rawBytes, filePath, pptxSlides, pptxIndex } = buildInput(input, opts);
   const contentSha256 = sha256Of(rawBytes);
 
   let projectCfg;
@@ -219,6 +226,8 @@ export async function runGate(input, opts = {}) {
   const cfg = projectCfg.config;
   const keep = [...(cfg.keep_terms || []), ...(Array.isArray(opts.keep) ? opts.keep : [])];
   const ttsTags = opts.ttsTags !== undefined ? opts.ttsTags : (cfg.tts_tags !== false);
+  const houseStyle = opts.houseStyle !== undefined ? opts.houseStyle : cfg.house_style;
+  const maxAiScore = opts.maxAiScore !== undefined ? opts.maxAiScore : cfg.max_ai_score;
   const bannedPhrases = opts.bannedPhrases ?? cfg.banned_phrases;
   const mandatoryCta = opts.mandatoryCta ?? cfg.mandatory_cta;
   const allowFirstHand = opts.allowFirstHand !== undefined ? opts.allowFirstHand : cfg.allow_first_hand;
@@ -261,15 +270,34 @@ export async function runGate(input, opts = {}) {
     }
   }
 
-  // Step 3: Deterministic Vietnamese lint
-  const lintFindings = lintText(text, {
+  // Step 3: Deterministic Vietnamese lint + AI score scan
+  const proseLintFindings = lintText(text, {
     keep,
     bannedPhrases,
     mandatoryCta,
     allowFirstHand,
     strictFirstHand,
     ttsTags,
+    houseStyle,
+    register: cfg.register,
   });
+  const slideFindings = pptxSlides ? checkSlideDeck(pptxSlides, pptxIndex) : [];
+  const lintFindings = slideFindings.length ? [...proseLintFindings, ...slideFindings] : proseLintFindings;
+  const aiScoreRes = pptxSlides
+    ? scanText(text, {
+      burst: false,
+      lineLabels: pptxLineLabels(pptxIndex),
+      slideFindings,
+      slidesCount: pptxSlides.length,
+      register: cfg.register,
+      ttsTags,
+    })
+    : scanText(text, { register: cfg.register, ttsTags });
+  const aiScoreSummary = {
+    score: aiScoreRes.score,
+    band: aiScoreRes.band,
+    total_hits: aiScoreRes.total_hits,
+  };
 
   // Step 4: Optional platform limits check
   let platformRes = null;
@@ -296,6 +324,15 @@ export async function runGate(input, opts = {}) {
   const channelsCount = Number.isFinite(Number(opts.channels)) ? Number(opts.channels) : 1;
 
   const lintErrors = lintFindings.filter((f) => f.level === 'ERROR');
+  if (maxAiScore !== null && maxAiScore !== undefined && Number.isFinite(Number(maxAiScore)) && aiScoreRes.score > Number(maxAiScore)) {
+    lintErrors.push({
+      level: 'ERROR',
+      id: 'ai-score-exceeded',
+      line: 0,
+      excerpt: `ai_score=${aiScoreRes.score}/100 > max=${Number(maxAiScore)}`,
+      desc: 'Điểm dấu hiệu AI vượt ngưỡng max_ai_score cho phép',
+    });
+  }
   const platErrFindings = (platformRes?.findings || []).filter((f) => f.level === 'ERROR');
   if (lintErrors.length || platErrFindings.length || platformErrors.length) {
     const errors = [
@@ -312,6 +349,7 @@ export async function runGate(input, opts = {}) {
       content_sha256: contentSha256,
       words,
       route_hint: routeHint,
+      ai_score: aiScoreSummary,
       compare_result: compareResult,
       lint_findings: lintFindings,
       platform: platformId || null,
@@ -358,6 +396,7 @@ export async function runGate(input, opts = {}) {
         content_sha256: contentSha256,
         words,
         route_hint: routeHint,
+        ai_score: aiScoreSummary,
         compare_result: compareResult,
         lint_findings: lintFindings,
         platform: platformId || null,
@@ -390,6 +429,7 @@ export async function runGate(input, opts = {}) {
         content_sha256: contentSha256,
         words,
         route_hint: routeHint,
+        ai_score: aiScoreSummary,
         compare_result: compareResult,
         lint_findings: lintFindings,
         platform: platformId || null,
@@ -483,6 +523,7 @@ export async function runGate(input, opts = {}) {
     decisions_status: decisions.status,
     rhythm_score_0_to_3: decisions.rhythm_score_0_to_3,
     flagged_defects: decisions.flagged_defects || [],
+    ai_score_0_to_100: aiScoreRes.score,
     review_ticket_sha256: ticketSha256,
     rounds_observed: roundsObserved ?? getRecentDistinctAttempts(stampRoot, filePath).length,
   }, opts);
@@ -496,6 +537,7 @@ export async function runGate(input, opts = {}) {
     content_sha256: contentSha256,
     words,
     route_hint: routeHint,
+    ai_score: aiScoreSummary,
     compare_result: compareResult,
     lint_findings: lintFindings,
     platform: platformId || null,
@@ -542,6 +584,9 @@ export function formatGateReport(res) {
     `words=${res.words}`,
     `route=${res.route_hint}`,
   ];
+  if (res.ai_score) {
+    details.push(`ai_score=${res.ai_score.score}/100`);
+  }
   if (res.decisions?.rhythm_score_0_to_3 !== null && res.decisions?.rhythm_score_0_to_3 !== undefined) {
     details.push(`rhythm=${res.decisions.rhythm_score_0_to_3}`);
   }
@@ -683,7 +728,28 @@ export async function selfTest() {
     const r3 = await runGate({ filePath: loopFile }, { cacheDir, endpoint, env: testEnv });
     assert(r3.ok === true && r3.stamp_status === 'delivered_after_max_rounds' && r3.rounds_observed === 3, 'round 3 (>= 3 distinct hashes) must issue delivered_after_max_rounds stamp');
 
-    console.log('SELF-TEST PASS — gate.mjs (short-circuit lint/compare, 02-review-ticket.md, Decisions HTTP, 3-round max cap, git-clean)');
+    // 6. v6.2.0: --max-ai-score short-circuit, --no-house-style, and native .pptx gate
+    const httpBeforeMax = httpHits;
+    const aiSlopFile = join(repo, 'articles', 'slop.md');
+    writeFileSync(aiSlopFile, 'Trong bối cảnh chuyển đổi số hiện nay, bài viết này sẽ phân tích bức tranh toàn cảnh.\n\nCòn bạn thì sao? Hãy để lại bình luận nhé!\n', 'utf8');
+    const maxAiFail = await runGate({ filePath: aiSlopFile }, { cacheDir, endpoint, env: testEnv, maxAiScore: 15 });
+    assert(maxAiFail.ok === false && maxAiFail.stage === 'lint' && httpHits === httpBeforeMax, 'maxAiScore exceeded must short-circuit at lint with 0 extra HTTP calls');
+
+    const emDashFile = join(repo, 'articles', 'literary.md');
+    writeFileSync(emDashFile, 'Câu văn tác phẩm — giữ dấu gạch ngang dài, và cấu trúc tự nhiên.\n', 'utf8');
+    const noHsRes = await runGate({ filePath: emDashFile }, { cacheDir, noDecisions: true, houseStyle: false });
+    assert(noHsRes.ok === true && noHsRes.lint_findings.length === 0, 'houseStyle: false must silence em-dash/oxford-comma in gate');
+
+    const { buildTestPptxBuffer } = await import('./pptx.mjs');
+    const deckFile = join(repo, 'articles', 'deck.pptx');
+    writeFileSync(deckFile, buildTestPptxBuffer([
+      { title: 'Kế hoạch quý IV năm 2026', body: ['Nhóm sản phẩm trình bày sáng thứ Hai'] },
+      { title: 'Chi phí vận hành giảm 12% nhờ tối ưu lịch chạy máy', body: ['Thời gian chờ giảm từ 14 phút xuống 6 phút'] },
+    ]));
+    const pptxRes = await runGate({ filePath: deckFile }, { cacheDir, noDecisions: true });
+    assert(pptxRes.ok === true && pptxRes.ai_score?.score === 0 && pptxRes.content_sha256 === sha256Of(readFileSync(deckFile)), 'clean .pptx must pass gate and stamp binary sha256');
+
+    console.log('SELF-TEST PASS — gate.mjs (short-circuit lint/compare/maxAiScore, 02-review-ticket.md, houseStyle, .pptx, Decisions HTTP, 3-round cap, git-clean)');
   } finally {
     if (server) await new Promise((r) => server.close(r));
     rmSync(tmp, { recursive: true, force: true });

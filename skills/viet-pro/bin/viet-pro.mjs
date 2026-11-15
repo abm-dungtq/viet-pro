@@ -27,8 +27,9 @@ function printHelp() {
 
 Cách dùng:
   viet-pro gate <file.md> [options]        Chạy đủ cổng (compare -> lint -> platform -> ticket -> Decisions -> stamp)
-  viet-pro lint <file.md>... [options]     Kiểm tra lỗi tiếng Việt tất định
-  viet-pro compare <before> <after> [...]  Kiểm tra bảo toàn số liệu, quote, URL, thẻ TTS
+  viet-pro lint <file.md>... [options]     Kiểm tra lỗi tiếng Việt tất định (hỗ trợ .pptx, --no-house-style, --chat)
+  viet-pro scan <file.md|deck.pptx> [opts] Chấm điểm dấu hiệu AI 0-100, kiểm tra slide .pptx (--max <N>, --titles)
+  viet-pro compare <before> <after> [...]  Kiểm tra bảo toàn số liệu, quote, URL, thẻ TTS, mã inline (.md/.pptx)
   viet-pro check-platform <id> <file.md>   Kiểm tra giới hạn kênh phát hành (--validate / --self-test)
   viet-pro check-x-length <thread.md>      Kiểm tra độ dài có trọng số cho X/Twitter
   viet-pro init [dir] [options]            Tạo file cấu hình .viet-pro.json theo mẫu chuẩn
@@ -134,6 +135,8 @@ function runDoctor(argv) {
     'scripts/lib/stamp.mjs',
     'scripts/lib/decisions.mjs',
     'scripts/lib/gate.mjs',
+    'scripts/lib/pptx.mjs',
+    'scripts/lib/score.mjs',
     'scripts/hooks/editorial-hook.mjs',
     'scripts/hooks/agy-hook.mjs',
     'scripts/hooks/claude-hook.mjs',
@@ -196,6 +199,8 @@ async function runGateCli(argv) {
         round: { type: 'string' },
         'no-decisions': { type: 'boolean', default: false },
         'no-tts-tags': { type: 'boolean', default: false },
+        'no-house-style': { type: 'boolean', default: false },
+        'max-ai-score': { type: 'string' },
         config: { type: 'string' },
         'stamp-dir': { type: 'string' },
         'no-git-root': { type: 'boolean', default: false },
@@ -209,7 +214,7 @@ async function runGateCli(argv) {
     return 2;
   }
   if (values.help) {
-    console.log('Usage: viet-pro gate (<file.md> | --stdin | -) [--before <before.md>] [--keep "Tên riêng"]... [--platform <id>] [--surface <id>] [--keyword <từ-khóa>] [--slug <slug>] [--title <meta-title>] [--description <meta-desc>] [--channels <n>] [--review-ticket <path>] [--force-ticket] [--strict-first-hand] [--strict-quotes] [--max-edit-ratio <0..1>] [--round <0|1|2>] [--no-decisions] [--no-tts-tags] [--config <path>] [--stamp-dir <path>] [--json]');
+    console.log('Usage: viet-pro gate (<file.md|deck.pptx> | --stdin | -) [--before <before.md|.pptx>] [--keep "Tên riêng"]... [--platform <id>] [--surface <id>] [--keyword <từ-khóa>] [--slug <slug>] [--title <meta-title>] [--description <meta-desc>] [--channels <n>] [--review-ticket <path>] [--force-ticket] [--strict-first-hand] [--strict-quotes] [--max-edit-ratio <0..1>] [--max-ai-score <0..100>] [--no-house-style] [--round <0|1|2>] [--no-decisions] [--no-tts-tags] [--config <path>] [--stamp-dir <path>] [--json]');
     return 0;
   }
   if ((values.stdin && positionals.length > 0 && positionals[0] !== '-') || (!values.stdin && positionals.length !== 1)) {
@@ -237,7 +242,21 @@ async function runGateCli(argv) {
       console.error(`Không tìm thấy file --before: ${beforePath}`);
       return 2;
     }
-    beforeText = readFileSync(beforePath, 'utf8');
+    if (beforePath.toLowerCase().endsWith('.pptx')) {
+      const { pptxToText, readPptx } = await import('../scripts/lib/pptx.mjs');
+      beforeText = pptxToText(readPptx(beforePath)).text;
+    } else {
+      beforeText = readFileSync(beforePath, 'utf8');
+    }
+  }
+
+  let maxAiScore;
+  if (values['max-ai-score'] !== undefined) {
+    maxAiScore = Number(values['max-ai-score']);
+    if (!Number.isFinite(maxAiScore) || maxAiScore < 0 || maxAiScore > 100) {
+      console.error('--max-ai-score cần một số trong khoảng 0..100');
+      return 2;
+    }
   }
 
   let maxEditRatio;
@@ -286,6 +305,8 @@ async function runGateCli(argv) {
     round,
     noDecisions: values['no-decisions'],
     ttsTags: values['no-tts-tags'] ? false : undefined,
+    houseStyle: values['no-house-style'] ? false : undefined,
+    maxAiScore,
     configPath: values.config ? resolve(values.config) : undefined,
     stampDir: values['stamp-dir'] ? resolve(values['stamp-dir']) : undefined,
     noGitRoot: values['no-git-root'],
@@ -650,6 +671,10 @@ async function main() {
     case 'lint': {
       const { runLintCli } = await import('../scripts/cli/lint-cli.mjs');
       return runLintCli(rest);
+    }
+    case 'scan': {
+      const { runScanCli } = await import('../scripts/cli/scan-cli.mjs');
+      return runScanCli(rest);
     }
     case 'compare': {
       const { runCompareCli } = await import('../scripts/cli/compare-cli.mjs');

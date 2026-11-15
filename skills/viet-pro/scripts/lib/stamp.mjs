@@ -176,6 +176,7 @@ export function writeStamp(stampRoot, data, opts = {}) {
     decisions_status: data.decisions_status ?? null,
     rhythm_score_0_to_3: Number.isFinite(data.rhythm_score_0_to_3) ? data.rhythm_score_0_to_3 : null,
     flagged_defects: Array.isArray(data.flagged_defects) ? data.flagged_defects : [],
+    ai_score_0_to_100: Number.isFinite(data.ai_score_0_to_100) ? data.ai_score_0_to_100 : null,
     review_ticket_sha256: data.review_ticket_sha256 ?? null,
     rounds_observed: Number.isFinite(data.rounds_observed) ? data.rounds_observed : null,
     created_at: data.created_at || new Date().toISOString(),

@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { compare } from './lib/compare.mjs';
 import { computeRouteHint, lintText } from './lib/lint.mjs';
 import { checkDraft, listPlatformIds, loadProfile, splitDraft, validateProfile } from './lib/profile.mjs';
+import { scanText } from './lib/score.mjs';
 
 const SELF = fileURLToPath(import.meta.url);
 const SKILL_DIR = join(dirname(SELF), '..');
@@ -30,6 +31,7 @@ const MAX_KEEP_CHARS = 200;
 const CACHE_HINTS = { ttlMs: 3600000, cacheScope: 'public' };
 const PLATFORM_ID = /^[a-z0-9-]+$/u;
 const INSTRUCTIONS = 'Công cụ kiểm tra văn bản tiếng Việt của viet-pro: lint_vietnamese tìm dấu hiệu văn AI, '
+  + 'scan_vietnamese chấm điểm 0-100 mức văn AI và nhịp câu, '
   + 'compare_preserved đối chiếu dữ kiện giữa bản trước và bản sau khi sửa, check_platform đo bản thảo theo giới hạn của từng kênh. '
   + 'Chỉ nhận văn bản, không đọc file.';
 
@@ -61,6 +63,24 @@ const TOOLS = [
       properties: {
         text: { type: 'string', description: 'Văn bản cần kiểm tra, tối đa 1 MB.' },
         keep: KEEP_SCHEMA,
+      },
+      required: ['text'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true },
+  },
+  {
+    name: 'scan_vietnamese',
+    title: 'Chấm điểm dấu hiệu AI 0-100',
+    description: 'Chấm điểm 0-100 dấu hiệu văn AI tiếng Việt/tiếng Anh, đo độ biến thiên độ dài câu (CV) và liệt kê số liệu tự xưng cần kiểm chứng (to_confirm).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        text: { type: 'string', description: 'Văn bản cần chấm điểm, tối đa 1 MB.' },
+        meta: { type: 'boolean', description: 'Bỏ qua trích dẫn và bảng Markdown khi văn bản đang bàn về quy tắc viết.' },
+        titles: { type: 'boolean', description: 'Chỉ chấm phần tiêu đề (# / in đậm).' },
+        chat: { type: 'boolean', description: 'Kiểm tra theo chế độ tin nhắn ngắn (bắt câu khách sáo và tin nhắn quá dài).' },
+        register: { type: 'string', description: 'Thanh điệu ngữ cảnh (ví dụ editorial, casual, administrative).' },
       },
       required: ['text'],
       additionalProperties: false,
@@ -136,6 +156,20 @@ const HANDLERS = {
     const raw = text(args, 'text');
     const findings = lintText(raw, { keep: keepList(args) });
     return { clean: findings.length === 0, route_hint: computeRouteHint(raw, findings), findings };
+  },
+  scan_vietnamese(args) {
+    rejectUnknown(args, ['text', 'meta', 'titles', 'chat', 'register']);
+    for (const k of ['meta', 'titles', 'chat']) {
+      if (args[k] !== undefined && typeof args[k] !== 'boolean') throw new InputError(`"${k}" phải là boolean`);
+    }
+    const raw = text(args, 'text');
+    const register = text(args, 'register', { optional: true });
+    return scanText(raw, {
+      meta: args.meta === true,
+      titles: args.titles === true,
+      chat: args.chat === true,
+      register,
+    });
   },
   compare_preserved(args) {
     rejectUnknown(args, ['before', 'after', 'keep', 'strict_quotes', 'max_edit_ratio']);
@@ -298,6 +332,7 @@ async function selfTest() {
     { jsonrpc: '2.0', method: 'notifications/initialized' },
     { jsonrpc: '2.0', id: 'ping', method: 'ping', params: meta },
     { jsonrpc: '2.0', id: 'lint', method: 'tools/call', params: { name: 'lint_vietnamese', arguments: { text: 'Chắc chắn rồi! Dưới đây là bài viết.\n\nViệc triển khai hệ thống đóng vai trò quan trọng. Thông qua việc tiến hành kiểm tra một cách nhanh chóng, phần mềm được phát triển bởi đội ngũ nội bộ.\n' } } },
+    { jsonrpc: '2.0', id: 'scan', method: 'tools/call', params: { ...meta, name: 'scan_vietnamese', arguments: { text: 'Trong bối cảnh hiện nay, bài viết này sẽ phân tích vấn đề cốt lõi. Còn bạn thì sao? Hãy để lại bình luận nhé!' } } },
     { jsonrpc: '2.0', id: 'compare', method: 'tools/call', params: { ...meta, name: 'compare_preserved', arguments: { before: 'Doanh thu tăng tối đa 20% năm 2025.', after: 'Doanh thu tăng tối thiểu 20% năm 2025.' } } },
     { jsonrpc: '2.0', id: 'platform', method: 'tools/call', params: { name: 'check_platform', arguments: { platform: 'facebook', text: 'Bài đăng ngắn.' } } },
     { jsonrpc: '2.0', id: 'traversal', method: 'tools/call', params: { name: 'check_platform', arguments: { platform: '../SKILL', text: 'x' } } },
@@ -332,10 +367,10 @@ async function selfTest() {
   };
 
   const list = get('list-first').result;
-  if (list?.tools?.map((t) => t.name).join() !== 'lint_vietnamese,compare_preserved,check_platform') fail('tools/list khi chưa initialize không trả đủ 3 tool');
+  if (list?.tools?.map((t) => t.name).join() !== 'lint_vietnamese,scan_vietnamese,compare_preserved,check_platform') fail('tools/list khi chưa initialize không trả đủ 4 tool');
   if (!list.tools.every((t) => t.inputSchema?.type === 'object' && t.annotations?.readOnlyHint === true)) fail('tool thiếu inputSchema hoặc readOnlyHint');
   const listModern = get('list-modern').result;
-  if (listModern?.resultType !== 'complete' || listModern.tools?.length !== 3 || listModern.ttlMs !== CACHE_HINTS.ttlMs || listModern.cacheScope !== 'public') fail('tools/list kiểu mới thiếu resultType hoặc ttlMs/cacheScope');
+  if (listModern?.resultType !== 'complete' || listModern.tools?.length !== 4 || listModern.ttlMs !== CACHE_HINTS.ttlMs || listModern.cacheScope !== 'public') fail('tools/list kiểu mới thiếu resultType hoặc ttlMs/cacheScope');
   const discover = get('discover').result;
   if (discover?.resultType !== 'complete' || discover.ttlMs !== CACHE_HINTS.ttlMs || discover.cacheScope !== 'public' || !discover.supportedVersions?.includes('2026-07-28') || !discover.capabilities?.tools
     || discover._meta?.['io.modelcontextprotocol/serverInfo']?.version !== SERVER_INFO.version) fail('server/discover sai shape');
@@ -349,6 +384,9 @@ async function selfTest() {
   const lint = toolText('lint');
   const lintBody = JSON.parse(lint.content[0].text);
   if (lint.isError !== false || lintBody.route_hint !== 'heavy' || !lintBody.findings.some((f) => f.id === 'chatbot-residue') || !lintBody.findings.some((f) => f.id === 'translationese-cluster')) fail('lint_vietnamese không bắt được chatbot-residue, translationese-cluster hoặc route_hint');
+  const scan = toolText('scan');
+  const scanBody = JSON.parse(scan.content[0].text);
+  if (scan.isError !== false || scan.resultType !== 'complete' || !(scanBody.score >= 20) || !Array.isArray(scanBody.groups)) fail('scan_vietnamese không trả điểm >= 20 trên văn AI');
   const cmp = toolText('compare');
   const cmpBody = JSON.parse(cmp.content[0].text);
   if (cmp.isError !== false || cmp.resultType !== 'complete' || cmpBody.preserved !== false || typeof cmpBody.edit_ratio !== 'number') fail('compare_preserved không bắt được tối đa→tối thiểu hoặc thiếu edit_ratio');
@@ -363,7 +401,7 @@ async function selfTest() {
   if (get('no-tool').error?.code !== -32602) fail('tool lạ phải trả -32602');
   if (get('unknown').error?.code !== -32601) fail('method lạ phải trả -32601');
   if (get(null)?.error?.code !== -32700) fail('JSON hỏng phải trả -32700');
-  console.log('SELF-TEST PASS — server/discover, initialize, tools/list trước initialize, 3 tool, check_platform facebook, chặn "../SKILL" và keep quá lớn, -32022/-32601/-32602/-32700');
+  console.log('SELF-TEST PASS — server/discover, initialize, tools/list trước initialize, 4 tool (kèm scan_vietnamese), check_platform facebook, chặn "../SKILL" và keep quá lớn, -32022/-32601/-32602/-32700');
 }
 
 function isMainModule() {

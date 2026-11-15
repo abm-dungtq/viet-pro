@@ -1,6 +1,6 @@
 # Third-party notices
 
-Viết Pro 6.1.0 includes an adapted Vietnamese reference based on Humanizer 3.1.0 (plus selective deterministic patterns adapted from Humanizer 4.0.0 without allowing fact invention), Vietnamese linguistic lint and anti-AI prose principles inspired by anhnx000/viet-nhu-nguoi v2.7.0 (MIT), and deterministic design concepts inspired by epoko77-ai/im-not-ai (MIT), Nanako0129/sepia (MIT), Jakeschincariol/linkedin-agent-skill (MIT) and AgriciDaniel/claude-seo (MIT).
+Viết Pro 6.2.0 includes an adapted Vietnamese reference based on Humanizer 3.1.0 (plus selective deterministic patterns adapted from Humanizer 4.0.0 without allowing fact invention), Vietnamese linguistic lint and anti-AI prose principles inspired by anhnx000/viet-nhu-nguoi v2.7.0 (MIT), and deterministic design concepts inspired by epoko77-ai/im-not-ai (MIT), Nanako0129/sepia (MIT), Jakeschincariol/linkedin-agent-skill (MIT) and AgriciDaniel/claude-seo (MIT).
 
 ## Humanizer (3.1.0 & 4.0.0 selective patterns)
 

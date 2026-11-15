@@ -6,8 +6,19 @@
 // number changed in another way; read that sentence in context. Polarity detection is a signal,
 // not proof the meaning is unchanged.
 
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { compare, computeEditRatio } from '../lib/compare.mjs';
+import { buildTestPptxBuffer, pptxToText, readPptx } from '../lib/pptx.mjs';
+
+function readComparableText(filePath) {
+  if (filePath.toLowerCase().endsWith('.pptx')) {
+    return pptxToText(readPptx(filePath)).text;
+  }
+  return readFileSync(filePath, 'utf8');
+}
 
 function selfTest() {
   const fail = (msg) => { throw new Error(`SELF-TEST FAIL — ${msg}`); };
@@ -88,7 +99,64 @@ function selfTest() {
     fail('rơi từ rào đón "có thể" phải phát REVIEW [shade]');
   }
 
-  console.log('SELF-TEST PASS — bảo toàn URL, số/ngày, quote, citation, ranking, chuỗi --keep, chiều tăng/giảm quanh số liệu, thẻ TTS, canonical số, số chữ 2..10, lượng/mức độ và ngưỡng edit_ratio');
+  // v6.2.0: partial drop (b > a) on chưa/chỉ/vẫn + chỉ ra non-trigger
+  const partialChi = compare('Bản này chỉ dùng cho nhóm A và chỉ chạy buổi sáng.', 'Bản này chỉ dùng cho nhóm A và chạy buổi sáng.');
+  if (!partialChi.reviews.some((r) => r.kind === 'shade' && r.token === 'chỉ')) {
+    fail('giảm số lần xuất hiện từ "chỉ" (2 -> 1) phải phát REVIEW [shade]');
+  }
+  if (compare('Báo cáo chỉ ra xu hướng tăng 10%.', 'Báo cáo nêu xu hướng tăng 10%.').reviews.some((r) => r.token === 'chỉ')) {
+    fail('"chỉ ra" là động từ ghép, không được phát REVIEW [shade] "chỉ"');
+  }
+  if (!compare('Hệ thống chưa chạy ổn.', 'Hệ thống chạy ổn.').reviews.some((r) => r.kind === 'shade' && r.token === 'chưa')) {
+    fail('mất "chưa" phải phát REVIEW [shade]');
+  }
+
+  // inlineCode checks
+  if (!compare('Chạy `npm test` trước khi gửi.', 'Chạy kiểm thử trước khi gửi.').differences.some((d) => d.kind === 'inlineCode' && d.token === 'npm test')) {
+    fail('mất inlineCode `npm test` phải báo MISMATCH [inlineCode]');
+  }
+  if (!compare('Chạy kiểm thử trước khi gửi.', 'Chạy `vitest` trước khi gửi.').differences.some((d) => d.kind === 'inlineCode' && d.token === 'vitest')) {
+    fail('bịa thêm inlineCode `vitest` mới phải báo MISMATCH [inlineCode]');
+  }
+  if (compare('Chạy `npm test` ngay.', 'Chạy lệnh sau:\n```bash\nnpm test\n```').differences.length) {
+    fail('chuyển inlineCode sang fenced code block không được báo MISMATCH');
+  }
+  if (compare('Chạy viet-pro scan trước.', 'Chạy `viet-pro scan` trước.').differences.length) {
+    fail('bọc backtick quanh cụm đã có sẵn trong bản gốc không được báo MISMATCH');
+  }
+
+  // number_word, weekday_month, proper_name reviews + .pptx comparison
+  const numWordRes = compare('Ba khách hàng đã ký hợp đồng.', 'Năm khách hàng đã ký hợp đồng.');
+  if (numWordRes.differences.length || !numWordRes.reviews.some((r) => r.kind === 'number_word')) {
+    fail('"Ba khách" -> "Năm khách" phải phát REVIEW [number_word]');
+  }
+  const wmRes = compare('Cuộc họp dời sang thứ tư tuần tới.', 'Cuộc họp dời sang thứ năm tuần tới.');
+  if (!wmRes.reviews.some((r) => r.kind === 'weekday_month' && r.token === 'thứ tư')) {
+    fail('đổi thứ tư -> thứ năm phải phát REVIEW [weekday_month]');
+  }
+  const pnRes = compare('Nhóm Vinalight tuân thủ chuẩn GDPR năm nay.', 'Nhóm đó tuân thủ quy định năm nay.');
+  if (!pnRes.reviews.some((r) => r.kind === 'proper_name' && r.token === 'Vinalight') || !pnRes.reviews.some((r) => r.kind === 'proper_name' && r.token === 'GDPR')) {
+    fail('rơi tên riêng Vinalight / viết tắt GDPR phải phát REVIEW [proper_name]');
+  }
+  if (compare('# BÁO CÁO TÀI CHÍNH\nNội dung giữ nguyên.', '# Báo cáo tài chính\nNội dung giữ nguyên.').reviews.some((r) => r.kind === 'proper_name')) {
+    fail('đổi tiêu đề ALL-CAPS sang viết thường không được phát REVIEW [proper_name]');
+  }
+
+  const tmpDir = mkdtempSync(join(tmpdir(), 'viet-pro-cmp-pptx-'));
+  try {
+    const pBefore = join(tmpDir, 'before.pptx');
+    const pAfterOk = join(tmpDir, 'after-ok.pptx');
+    const pAfterBad = join(tmpDir, 'after-bad.pptx');
+    writeFileSync(pBefore, buildTestPptxBuffer([{ title: 'Doanh thu đạt 12%', body: ['Tăng nhẹ quý II'] }]));
+    writeFileSync(pAfterOk, buildTestPptxBuffer([{ title: 'Doanh thu quý II đạt 12%', body: ['Số liệu đối chiếu kế toán'] }]));
+    writeFileSync(pAfterBad, buildTestPptxBuffer([{ title: 'Doanh thu đạt 18%', body: ['Tăng nhẹ quý II'] }]));
+    if (runCompareCli([pBefore, pAfterOk]) !== 0) fail('.pptx giữ nguyên 12% phải PASS compare');
+    if (runCompareCli([pBefore, pAfterBad]) !== 1) fail('.pptx đổi 12% -> 18% phải MISMATCH');
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
+  }
+
+  console.log('SELF-TEST PASS — bảo toàn URL, số/ngày, quote, citation, ranking, inlineCode, chuỗi --keep, chiều tăng/giảm, thẻ TTS, canonical số, số chữ, lượng/rào đón, thứ/tháng, tên riêng và .pptx');
 }
 
 export function runCompareCli(args = process.argv.slice(2)) {
@@ -117,10 +185,10 @@ export function runCompareCli(args = process.argv.slice(2)) {
     } else files.push(args[i]);
   }
   if (files.length !== 2) {
-    console.error('Usage: node compare-preserved-content.mjs <before> <after> [--keep "Tên riêng"]... [--strict-quotes] [--max-edit-ratio <0..1>]');
+    console.error('Usage: viet-pro compare <before.md|.pptx> <after.md|.pptx> [--keep "Tên riêng"]... [--strict-quotes] [--max-edit-ratio <0..1>]');
     return 2;
   }
-  const { differences, reviews, edit_ratio } = compare(readFileSync(files[0], 'utf8'), readFileSync(files[1], 'utf8'), keep, { strictQuotes, maxEditRatio });
+  const { differences, reviews, edit_ratio } = compare(readComparableText(files[0]), readComparableText(files[1]), keep, { strictQuotes, maxEditRatio });
   for (const r of reviews) console.log(`REVIEW [${r.kind || 'context'}] ${JSON.stringify(r.token)}: "${r.before.join(' | ')}" -> "${r.after.join(' | ')}"`);
   if (!differences.length) {
     console.log(`PASS — các dữ kiện được bảo toàn (edit_ratio: ${(edit_ratio * 100).toFixed(1)}%)`);
@@ -131,4 +199,10 @@ export function runCompareCli(args = process.argv.slice(2)) {
     else console.error(`MISMATCH [${d.kind}] ${JSON.stringify(d.token)}: ${d.before} -> ${d.after}`);
   }
   return 1;
+}
+
+const isEntry = process.argv[1]
+  && realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url));
+if (isEntry) {
+  process.exit(runCompareCli(process.argv.slice(2)));
 }

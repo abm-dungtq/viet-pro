@@ -3,7 +3,7 @@ name: viet-pro
 description: "Viết, biên tập, humanize, audit dấu hiệu AI, kiểm chứng và chuyển thể nội dung tiếng Việt chuyên nghiệp cho bài dài, blog, SEO, mạng xã hội, newsletter, kịch bản video và lời bài hát/prompt nhạc Suno. Kích hoạt khi người dùng yêu cầu viết mới, biên tập, rà văn phong tiếng Việt, chống AI slop, kiểm chứng nguồn/claim hoặc định dạng xuất bản theo kênh; không dùng cho dịch ngắn hay chỉnh một câu đơn giản."
 metadata:
   author: ABM-DungTQ
-  version: "6.1.0"
+  version: "6.2.0"
   category: content
   keywords: [vietnamese, writing, editing, humanize, fact-check, publishing, content-engine, suno]
 ---
@@ -96,6 +96,7 @@ Humanizer là quy trình biên tập, không phải công cụ xác định văn
 
 ```bash
 viet-pro gate <file.md> [--before <before.md>] [--platform <kênh>] [--surface <bề-mặt>] [--keyword "từ khóa"] [--slug "url-slug"] [--keep "Tên riêng"]
+viet-pro scan <file.md|deck.pptx> [--max 10] [--titles] [--chat]
 viet-pro gate --stdin [--platform <kênh>] [--surface <bề-mặt>]
 ```
 

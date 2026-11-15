@@ -1,16 +1,23 @@
 // lint-vietnamese-content.mjs — deterministic checks for Vietnamese content (viet-pro reviewer step 0)
-// Usage:  node lint-vietnamese-content.mjs <file.md> ... [--keep "Tên riêng"]...
-//         node lint-vietnamese-content.mjs --self-test
+// Usage:  viet-pro lint <file.md|.pptx> ... [--keep "Tên riêng"]... [--route-hint] [--no-house-style] [--chat]
+//         viet-pro lint --self-test
 // Output: ERROR/WARN lines. Exit 1 if any ERROR (or self-test failure), else 0.
 // Rules map to references/review/punctuation.md, capitalization.md, anti-ai.md.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loadProjectConfig } from '../lib/config.mjs';
 import { computeRouteHint, lintText } from '../lib/lint.mjs';
+import { buildTestPptxBuffer, checkSlideDeck, pptxLineLabels, pptxToText, readPptx } from '../lib/pptx.mjs';
 
-function report(file, findings, showRoute = false, rawText = '') {
+function report(file, findings, showRoute = false, rawText = '', lineLabels = null) {
   const suffix = showRoute ? ` (route_hint: ${computeRouteHint(rawText, findings)})` : '';
   if (!findings.length) { console.log(`OK    ${file} — 0 vi phạm${suffix}`); return; }
-  for (const f of findings) console.log(`${f.level} ${file}:${f.line} [${f.id}] ${JSON.stringify(f.excerpt)}`);
+  for (const f of findings) {
+    const loc = f.location ? `${f.line} (${f.location})` : (lineLabels?.[f.line] ? `${f.line} (${lineLabels[f.line]})` : f.line);
+    console.log(`${f.level} ${file}:${loc} [${f.id}] ${JSON.stringify(f.excerpt)}`);
+  }
   if (showRoute) console.log(`INFO  ${file}:0 [route-hint] "${computeRouteHint(rawText, findings)}"`);
 }
 
@@ -241,33 +248,128 @@ function selfTest() {
     console.error('SELF-TEST FAIL — computeRouteHint phân loại sai light/standard/heavy');
     return 1;
   }
-  console.log(`SELF-TEST PASS — bắt đủ ${expect.length + 21} nhóm vi phạm, không báo sai frontmatter/code/câu đối lập đơn lẻ/văn hành chính/lời bài hát`);
+
+  // v6.2.0: --no-house-style, --chat, expanded WARN rules, official phraseReuse skip, and native .pptx
+  const literary = 'Đây là câu có em-dash — hay cặp dấu phẩy, và bình thường.\n\n# Mục hai: Giải trình';
+  if (!lintText(literary).some((f) => f.id === 'em-dash' || f.id === 'oxford-comma' || f.id === 'heading-colon')) {
+    console.error('SELF-TEST FAIL — houseStyle mặc định phải bắt em-dash/oxford-comma/heading-colon');
+    return 1;
+  }
+  if (lintText(literary, { houseStyle: false }).length) {
+    console.error('SELF-TEST FAIL — houseStyle: false không tắt rule house style');
+    return 1;
+  }
+  if (lintText(literary, { register: 'casual' }).length) {
+    console.error('SELF-TEST FAIL — register: casual phải mặc định tắt houseStyle');
+    return 1;
+  }
+  if (!lintText('Chào bạn, cảm ơn bạn rất nhiều đã hỏi!\n\n- Ý một\n- Ý hai\n\nTrân trọng!', { chat: true }).some((f) => f.id === 'chat-stiff' || f.id === 'chat-formatted')) {
+    console.error('SELF-TEST FAIL — --chat không bắt câu khách sáo / gạch đầu dòng');
+    return 1;
+  }
+  const v62Slop = [
+    'Trong bài viết này, chúng ta sẽ cùng tìm hiểu vấn đề.',
+    'Hãy cùng khám phá câu chuyện phía sau.',
+    'Các nghiên cứu chỉ ra rằng giải pháp này hiệu quả.',
+    'Phương án cần được xem xét một cách thận trọng trước khi áp dụng.',
+    '**Mục tiêu trọng tâm**',
+    '**Lộ trình thực hiện**',
+    '🚀 Bước một mở đầu nhanh.',
+    '💡 Bước hai kết nối hệ thống.',
+    'Còn bạn thì sao? Hãy để lại bình luận nhé!',
+    'Thành công không phải là đích đến của hành trình này.',
+    '## Kết luận',
+  ].join('\n\n');
+  const v62Ids = new Set(lintText(v62Slop).map((f) => f.id));
+  for (const id of ['self-outline', 'empty-promise', 'vague-authority', 'calqued-prose', 'bold-heading-abuse', 'emoji-section-lead', 'engagement-bait', 'inspirational-slogan', 'empty-summary-closer']) {
+    if (!v62Ids.has(id)) {
+      console.error(`SELF-TEST FAIL — thiếu rule v6.2.0: ${id}`);
+      return 1;
+    }
+  }
+  const officialReuse = [
+    'Số: 05/QD-UBND\nV/v: Ban hành quy chế làm việc',
+    'Thành viên hội đồng thực hiện đúng quy chế làm việc hiện hành.',
+    'Ban kiểm tra rà soát theo đúng quy chế làm việc hiện hành.',
+    'Phòng hành chính báo cáo đúng quy chế làm việc hiện hành.',
+  ].join('\n\n');
+  if (lintText(officialReuse).some((f) => f.id === 'phrase-reuse')) {
+    console.error('SELF-TEST FAIL — không miễn trừ văn hành chính khỏi phrase-reuse');
+    return 1;
+  }
+  const pptxBuf = buildTestPptxBuffer([
+    { title: 'Kế hoạch quý IV', body: ['Ban điều hành'] },
+    { title: 'Tổng quan', body: ['Ý một rất ngắn gọn'] },
+  ]);
+  const pptxParsed = readPptx(pptxBuf);
+  const { index: pptxIndex } = pptxToText(pptxParsed);
+  if (!checkSlideDeck(pptxParsed, pptxIndex).some((f) => f.id === 'slide-label-title')) {
+    console.error('SELF-TEST FAIL — kiểm tra slide .pptx thất bại');
+    return 1;
+  }
+
+  console.log(`SELF-TEST PASS — bắt đủ ${expect.length + 33} nhóm vi phạm, house-style decoupling, --chat và .pptx`);
   return 0;
 }
 
 export function runLintCli(args = process.argv.slice(2)) {
-  const usage = 'Usage: node lint-vietnamese-content.mjs <file.md> ... [--keep "Tên riêng"]... [--route-hint] | --self-test';
+  const usage = 'Usage: viet-pro lint <file.md|.pptx> ... [--keep "Tên riêng"]... [--route-hint] [--no-house-style] [--chat] | --self-test';
   if (!args.length) { console.error(usage); return 2; }
   if (args[0] === '--self-test') return selfTest();
 
   const keep = [];
   const files = [];
   let showRoute = false;
+  let forceNoHouseStyle = false;
+  let chat = false;
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--keep') {
       if (i + 1 >= args.length) { console.error(usage); return 2; }
       keep.push(args[++i]);
     } else if (args[i] === '--route-hint') showRoute = true;
+    else if (args[i] === '--no-house-style') forceNoHouseStyle = true;
+    else if (args[i] === '--chat') chat = true;
     else files.push(args[i]);
   }
   if (!files.length) { console.error(usage); return 2; }
 
   let hasError = false;
   for (const file of files) {
-    const rawText = readFileSync(file, 'utf8');
-    const findings = lintText(rawText, { keep });
-    report(file, findings, showRoute, rawText);
-    if (findings.some((f) => f.level === 'ERROR')) hasError = true;
+    let cfgHouseStyle;
+    let cfgRegister;
+    let cfgKeep = [];
+    try {
+      const { config } = loadProjectConfig(file);
+      cfgHouseStyle = config.house_style;
+      cfgRegister = config.register;
+      cfgKeep = config.keep_terms || [];
+    } catch {
+      // Fall back cleanly if project .viet-pro.json is absent or unreadable during standalone lint
+    }
+    const houseStyle = forceNoHouseStyle ? false : cfgHouseStyle;
+    const mergedKeep = [...cfgKeep, ...keep];
+    if (file.toLowerCase().endsWith('.pptx')) {
+      const slides = readPptx(file);
+      const { text, index } = pptxToText(slides);
+      const lineLabels = pptxLineLabels(index);
+      const findings = [
+        ...lintText(text, { keep: mergedKeep, houseStyle, register: cfgRegister, chat }),
+        ...checkSlideDeck(slides, index),
+      ];
+      report(file, findings, showRoute, text, lineLabels);
+      if (findings.some((f) => f.level === 'ERROR')) hasError = true;
+    } else {
+      const rawText = readFileSync(file, 'utf8');
+      const findings = lintText(rawText, { keep: mergedKeep, houseStyle, register: cfgRegister, chat });
+      report(file, findings, showRoute, rawText);
+      if (findings.some((f) => f.level === 'ERROR')) hasError = true;
+    }
   }
   return hasError ? 1 : 0;
+}
+
+const isEntry = process.argv[1]
+  && realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url));
+if (isEntry) {
+  process.exit(runLintCli(process.argv.slice(2)));
 }
