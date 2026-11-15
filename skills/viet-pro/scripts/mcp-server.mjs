@@ -92,9 +92,13 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        platform: { type: 'string', pattern: '^[a-z0-9-]+$', description: 'Mã kênh, ví dụ facebook, x-thread, threads.' },
+        platform: { type: 'string', pattern: '^[a-z0-9-]+$', description: 'Mã kênh, ví dụ facebook, x-thread, threads, blog-seo.' },
         text: { type: 'string', description: 'Bản thảo, tối đa 1 MB.' },
-        surface: { type: 'string', description: 'Bề mặt trong hồ sơ kênh (ví dụ post, video). Mặc định là bề mặt đầu tiên.' },
+        surface: { type: 'string', description: 'Bề mặt trong hồ sơ kênh (ví dụ post, video, article, pillar, comparison). Mặc định là bề mặt đầu tiên.' },
+        keyword: { type: 'string', description: 'Từ khóa chính (tùy chọn, dùng cho blog-seo).' },
+        slug: { type: 'string', description: 'Slug URL ASCII viết thường (tùy chọn, dùng cho blog-seo).' },
+        title: { type: 'string', description: 'Meta title ghi đè frontmatter (tùy chọn, dùng cho blog-seo).' },
+        description: { type: 'string', description: 'Meta description ghi đè frontmatter (tùy chọn, dùng cho blog-seo).' },
       },
       required: ['platform', 'text'],
       additionalProperties: false,
@@ -146,12 +150,18 @@ const HANDLERS = {
     return { preserved: differences.length === 0, edit_ratio, differences, reviews };
   },
   check_platform(args) {
-    rejectUnknown(args, ['platform', 'text', 'surface']);
+    rejectUnknown(args, ['platform', 'text', 'surface', 'keyword', 'slug', 'title', 'description']);
     const platform = text(args, 'platform');
     const ids = listPlatformIds(PROFILE_DIR);
     if (!PLATFORM_ID.test(platform) || !ids.includes(platform)) throw new InputError(`không có hồ sơ kênh "${platform}"; chọn: ${ids.join(', ')}`);
     const draft = text(args, 'text');
     const surface = text(args, 'surface', { optional: true });
+    const meta = {
+      keyword: text(args, 'keyword', { optional: true }),
+      slug: text(args, 'slug', { optional: true }),
+      title: text(args, 'title', { optional: true }),
+      description: text(args, 'description', { optional: true }),
+    };
     let profile;
     try {
       profile = loadProfile(PROFILE_DIR, platform);
@@ -162,7 +172,7 @@ const HANDLERS = {
     if (problems.length) throw new InputError(`hồ sơ kênh "${platform}" chưa đúng schema: ${problems.join('; ')}`);
     let result;
     try {
-      result = checkDraft(profile, splitDraft(draft), { surface });
+      result = checkDraft(profile, splitDraft(draft), { surface, meta });
     } catch (e) {
       throw new InputError(e.message);
     }

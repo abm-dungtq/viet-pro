@@ -129,6 +129,7 @@ function runDoctor(argv) {
     'scripts/lib/lint.mjs',
     'scripts/lib/compare.mjs',
     'scripts/lib/profile.mjs',
+    'scripts/lib/seo.mjs',
     'scripts/lib/config.mjs',
     'scripts/lib/stamp.mjs',
     'scripts/lib/decisions.mjs',
@@ -181,6 +182,11 @@ async function runGateCli(argv) {
         keep: { type: 'string', multiple: true, default: [] },
         platform: { type: 'string' },
         surface: { type: 'string' },
+        keyword: { type: 'string' },
+        slug: { type: 'string' },
+        title: { type: 'string' },
+        description: { type: 'string' },
+        stdin: { type: 'boolean', default: false },
         channels: { type: 'string' },
         'review-ticket': { type: 'string' },
         'force-ticket': { type: 'boolean', default: false },
@@ -203,15 +209,15 @@ async function runGateCli(argv) {
     return 2;
   }
   if (values.help) {
-    console.log('Usage: viet-pro gate <file.md> [--before <before.md>] [--keep "Tên riêng"]... [--platform <id>] [--surface <id>] [--channels <n>] [--review-ticket <path>] [--force-ticket] [--strict-first-hand] [--strict-quotes] [--max-edit-ratio <0..1>] [--round <0|1|2>] [--no-decisions] [--no-tts-tags] [--config <path>] [--stamp-dir <path>] [--json]');
+    console.log('Usage: viet-pro gate (<file.md> | --stdin | -) [--before <before.md>] [--keep "Tên riêng"]... [--platform <id>] [--surface <id>] [--keyword <từ-khóa>] [--slug <slug>] [--title <meta-title>] [--description <meta-desc>] [--channels <n>] [--review-ticket <path>] [--force-ticket] [--strict-first-hand] [--strict-quotes] [--max-edit-ratio <0..1>] [--round <0|1|2>] [--no-decisions] [--no-tts-tags] [--config <path>] [--stamp-dir <path>] [--json]');
     return 0;
   }
-  if (positionals.length !== 1) {
-    console.error('Usage: viet-pro gate <file.md> [options]');
+  if ((values.stdin && positionals.length > 0 && positionals[0] !== '-') || (!values.stdin && positionals.length !== 1)) {
+    console.error('Usage: viet-pro gate (<file.md> | --stdin | -) [options]');
     return 2;
   }
 
-  const targetArg = positionals[0];
+  const targetArg = values.stdin ? '-' : positionals[0];
   let input;
   if (targetArg === '-') {
     input = { text: readFileSync(0, 'utf8') };
@@ -267,6 +273,10 @@ async function runGateCli(argv) {
     keep: values.keep,
     platform: values.platform,
     surface: values.surface,
+    keyword: values.keyword,
+    slug: values.slug,
+    seoTitle: values.title,
+    seoDescription: values.description,
     channels,
     reviewTicket: values['review-ticket'] ? resolve(values['review-ticket']) : undefined,
     forceTicket: values['force-ticket'],

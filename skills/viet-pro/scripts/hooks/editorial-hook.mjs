@@ -36,7 +36,7 @@ const NON_DELIVERABLE_EXT_RE =
   /\.(?:js|mjs|cjs|mts|cts|ts|tsx|jsx|py|go|rs|json|jsonl|yaml|yml|toml|sh|zsh|css|html|sql|lock)$/iu;
 
 const NON_DELIVERABLE_NAME_RE =
-  /(?:^|\/)(?:(?:README|CHANGELOG|CONTRIBUTING|LICENSE|INSTALL|CLAUDE|AGENTS|GEMINI|SKILL|00-brief|02-review-ticket|handoff-log)\.md|(?:SKILL_SHA256SUMS|SHA256SUMS)(?:\.md)?)$/iu;
+  /(?:^|\/)(?:(?:README|CHANGELOG|CONTRIBUTING|LICENSE|THIRD_PARTY_NOTICES|INSTALL|CLAUDE|AGENTS|GEMINI|SKILL|00-brief|02-review-ticket|handoff-log)\.md|(?:SKILL_SHA256SUMS|SHA256SUMS)(?:\.md)?)$/iu;
 
 const NON_DELIVERABLE_SEGMENT_RE =
   /(?:^|\/)(?:plans|docs|tests|references|examples|\.agents|\.claude|\.codex|\.gemini|\.viet-pro|\.git|node_modules)\//iu;
@@ -495,7 +495,7 @@ export function selfTest() {
 
     // 1. Coding/docs session without writing skill must never trigger Stop reminders or create session files
     const codeSession = 'coding-session-1';
-    for (const rel of ['src/app.mjs', 'README.md', 'plans/p1.md', '02-review-ticket.md', 'docs/guide.md', 'handoff-log.md']) {
+    for (const rel of ['src/app.mjs', 'README.md', 'THIRD_PARTY_NOTICES.md', 'plans/p1.md', '02-review-ticket.md', 'docs/guide.md', 'handoff-log.md']) {
       const f = join(repo, rel);
       writeFileSync(f, 'Nội dung kỹ thuật bất kỳ.\n', 'utf8');
       const postRes = evaluateHookEvent({
@@ -546,6 +546,14 @@ export function selfTest() {
       filePath: article,
     });
     assert(readSessionState(writeSession).touchedDeliverables.includes(article), 'article.md must be tracked');
+    assert(
+      isDeliverableContentFile(
+        join(tmp, 'skills', 'viet-pro', 'THIRD_PARTY_NOTICES.md'),
+        `Viết Pro 6.1.0 ghi công bản quyền MIT.\n${'Permission is hereby granted to any person obtaining a copy. '.repeat(12)}`,
+        { writingSkillActive: true },
+      ) === false,
+      'THIRD_PARTY_NOTICES.md must never be treated as a deliverable',
+    );
 
     // Unstamped PreToolUse must deny on tqd-publish, gws docs, mcp_vieneu_*, call_mcp_tool vieneu
     const pubDeny = evaluateHookEvent({

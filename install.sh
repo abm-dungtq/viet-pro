@@ -8,7 +8,7 @@ set -euo pipefail
 
 REPO_URL="https://github.com/abm-dungtq/viet-pro.git"
 SKILL_NAME="viet-pro"
-DEFAULT_REF="v6.0.0"
+DEFAULT_REF="v6.1.0"
 REF="${VIET_PRO_REF:-$DEFAULT_REF}"
 REF_EXPLICIT=false
 INSTALL_MODE="copy" # copy | symlink
@@ -69,7 +69,7 @@ while [[ $# -gt 0 ]]; do
     --skip-mcp-cleanup) SKIP_MCP_CLEANUP=true; shift ;;
     --no-cli-link) NO_CLI_LINK=true; shift ;;
     --ref)
-      [[ $# -ge 2 ]] || die "--ref cần một tag, ví dụ --ref v6.0.0"
+      [[ $# -ge 2 ]] || die "--ref cần một tag, ví dụ --ref v6.1.0"
       REF="$2"; REF_EXPLICIT=true; shift 2 ;;
     --help|-h) print_help; exit 0 ;;
     *) echo "Lỗi: Tuỳ chọn không hợp lệ '$1'" >&2; print_help; exit 1 ;;

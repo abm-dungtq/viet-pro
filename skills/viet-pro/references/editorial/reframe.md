@@ -12,40 +12,31 @@
 ```
 Mô tả hiện tượng bằng ví dụ cụ thể
     ↓
-Đặt tên ngắn gọn, đáng nhớ (ngoặc kép)
+Gọi đúng bản chất bằng cụm từ tiếng Việt bình thường (tránh nhét ngoặc kép tạo nhãn tự chế hàng loạt)
     ↓
-Dùng tên đó xuyên suốt bài — nó trở thành concept
+Dùng lại nhất quán trong mạch bài nếu thực sự cần trục dẫn
 ```
 
 **Ví dụ:**
 ```
-✅ "khoán trắng tư duy" — nhân viên copy AI 100%, không kiểm tra
-✅ "zombie công sở" — năng suất cao, báo cáo đẹp, bên trong rỗng
-✅ "nồi áp suất" — áp lực từ mọi phía trong nghiên cứu khoa học
+✅ Duyệt tự động — nhân viên dán nguyên đầu ra AI vào báo cáo mà không đối chiếu số liệu
+✅ Rỗng năng suất — báo cáo tuần dày đặc đầu việc nhưng doanh thu thuần không nhúc nhích
+✅ Kẹt hai đầu — áp lực vừa phải giữ KPI ngắn hạn vừa phải đạt chuẩn kiểm toán
 ```
 
-**Cấm:** Tên quá dài (>4 từ) hoặc quá trừu tượng. Tên tốt = hình ảnh + cảm xúc.
+**Cấm:** Gắn ngoặc kép trang trí lên từ phổ thông hoặc tự bịa nhãn kiểu "zombie công sở" trên 1-2 câu ngắn khiến bài mang giọng kịch tính hóa kiểu AI. Chỉ giữ 1 thuật ngữ cốt lõi khi nó thực sự giúp bài rõ hơn.
 
 ### 1.1 Hệ thống khái niệm (Concept System)
 
-Khi bài cần >1 concept, các concept phải liên kết logic thành hệ thống, dùng chung 1 "ngôn ngữ" hoặc 1 phép ẩn dụ xuyên suốt.
-
-**Công thức:**
-```
-Concept A (quen thuộc) → Concept B (lật góc) → Concept C (nâng tầm)
-Tất cả dùng chung 1 hệ thống ngôn ngữ.
-```
+Khi bài cần >1 khái niệm dẫn dắt, dùng chung một hệ ẩn dụ tự nhiên thay vì đặt nhiều nhãn ngoặc kép rời rạc.
 
 **Ví dụ:**
 ```
-✅ "phép cộng" → "phép nhân" → "phép lũy thừa"
-    Tất cả dùng ngôn ngữ toán học, xoay quanh "cơ số phải lớn hơn 1"
-
-❌ "phép nhân" + "cánh cửa" + "tảng băng"
-    Ba ẩn dụ không liên kết → rời rạc, không thành hệ thống
+✅ phép cộng -> phép nhân -> phép lũy thừa
+   Cùng dùng ngôn ngữ tích lũy toán học, xoay quanh điều kiện nền phải đủ lớn.
 ```
 
-**Cấm:** >3 concept/bài. Hệ thống quá phức tạp sẽ mất tập trung.
+**Cấm:** Xếp nhiều ẩn dụ hoặc nhãn trong ngoặc kép trong cùng một bài ngắn; tối đa 1-2 trục khái niệm rõ ràng.
 
 ---
 

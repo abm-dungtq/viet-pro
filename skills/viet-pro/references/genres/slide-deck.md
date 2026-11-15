@@ -8,13 +8,13 @@ Dùng để soạn nội dung bộ slide thuyết trình trực tiếp (báo cá
 
 1. **Mạch toàn bộ deck**
    Sắp xếp theo trình tự: bối cảnh hoặc bài toán hiện tại, dữ kiện chứng minh, giải pháp hoặc phương án lựa chọn, kế hoạch triển khai và quyết định chốt ở trang cuối.
-2. **Quy chuẩn từng slide (1 slide = 1 thông điệp)**
-   Mỗi trang tách riêng hai phần để dễ dàn trang và thuyết trình:
+2. **Quy chuẩn từng slide (1 slide = 1 thông điệp, Assertion-Evidence)**
+   Mỗi trang tách riêng hai phần để vừa nhìn nhanh trên màn hình vừa giữ đủ mạch lập luận:
    - **Nội dung hiển thị trên slide:**
-     - **Tiêu đề nhận định (Action Title):** một câu kết luận hoàn chỉnh nêu thông điệp chính của slide ("Chi phí giao hàng tăng 14% do đơn lẻ tăng gấp đôi"), không dùng nhãn mục lục chung chung.
-     - **Thân slide:** tối đa 3-4 ý ngắn (mỗi ý 6-12 chữ) hoặc 1 bảng/biểu đồ cốt lõi chứng minh cho tiêu đề.
+     - **Tiêu đề nhận định (Action Title):** một câu kết luận hoàn chỉnh khẳng định thông điệp chính của slide (*"Chi phí giao hàng tăng 14% do đơn lẻ tăng gấp đôi"*), không dùng nhãn danh từ rỗng (*"Tổng quan"*, *"Thực trạng"*).
+     - **Thân slide:** tối đa 3-4 gạch đầu dòng đồng nhất từ loại (parallel bullets, 6-12 chữ/ý) hoặc 1 bảng/biểu đồ cốt lõi chứng minh trực tiếp cho tiêu đề.
    - **Ghi chú người nói (Speaker Notes):**
-     Đặt ở khối riêng bên dưới thân slide để chứa lập luận chi tiết, số liệu phụ trợ, câu chuyển tiếp sang trang sau và phương án trả lời câu hỏi.
+     Đặt ở khối `> Speaker Notes:` bên dưới thân slide. Ghi đầy đủ lập luận chuyển ý, ví dụ minh họa, số liệu phụ trợ và câu dự phòng hỏi-đáp thay vì nhồi chữ lên mặt slide.
 3. **Slide mở và slide kết**
    Trang bìa ghi chủ đề, đối tượng trình bày và ngày/phiên bản. Trang cuối chốt quyết định cần duyệt hoặc bảng hành động gồm việc cần làm, người phụ trách và hạn hoàn thành.
 

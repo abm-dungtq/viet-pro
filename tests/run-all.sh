@@ -18,6 +18,7 @@ node "$SCRIPTS/lint-vietnamese-content.mjs" --self-test
 node "$SCRIPTS/compare-preserved-content.mjs" --self-test
 node "$SCRIPTS/test-humanizer-contract.mjs"
 node "$SCRIPTS/check-platform.mjs" --self-test
+node "$SCRIPTS/lib/seo.mjs" --self-test
 node "$SCRIPTS/mcp-server.mjs" --self-test
 node "$SCRIPTS/lib/config.mjs" --self-test
 GEMINI_API_KEY="" VIET_PRO_NO_ENV_FILE=1 node "$SCRIPTS/lib/decisions.mjs" --self-test
@@ -30,7 +31,7 @@ node "$SCRIPTS/hooks/codex-hook.mjs" --self-test
 node skills/viet-pro/bin/viet-pro.mjs mcp --self-test
 node skills/viet-pro/bin/viet-pro.mjs doctor --json | node -e '
 const d = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
-if (d.ok !== true || d.version !== "6.0.0" || typeof d.elapsed_ms !== "number" || !(d.elapsed_ms < 50)) {
+if (d.ok !== true || d.version !== "6.1.0" || typeof d.elapsed_ms !== "number" || !(d.elapsed_ms < 50)) {
   console.error("FAIL: viet-pro doctor --json", d);
   process.exit(1);
 }
@@ -81,6 +82,8 @@ expect_exit 1 instagram tests/platform/instagram-6-hashtags.md "ERROR [instagram
 expect_exit 0 suno tests/platform/suno-ok.md "PASS"
 expect_exit 1 suno tests/platform/suno-bad.md "ERROR [suno/custom] vietnamese-in-brackets"
 expect_exit 0 linkedin tests/platform/linkedin-long-fold.md "WARN [linkedin/post] fold_chars"
+expect_exit 0 blog-seo tests/platform/blog-seo-ok.md "PASS"
+expect_exit 1 blog-seo tests/platform/blog-seo-bad.md "ERROR [blog-seo/article]"
 
 step "Manifest checksum của skill"
 sha256_check SKILL_SHA256SUMS

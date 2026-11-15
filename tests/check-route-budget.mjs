@@ -108,7 +108,12 @@ export function buildRoutes(skillDir = DEFAULT_SKILL_DIR) {
   routes['review-humanize-deep'] = [
     'references/review/lead.md',
     'references/review/humanizer-patterns.md',
+  ];
+
+  routes['review-vietnamese-voice'] = [
+    'references/review/lead.md',
     'references/review/translationese-vi.md',
+    'references/review/document-tics.md',
   ];
 
   routes['review-language-fact'] = [

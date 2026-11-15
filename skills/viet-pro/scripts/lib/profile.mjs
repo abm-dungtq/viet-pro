@@ -9,6 +9,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { xWeightedLength } from './x-weighted.mjs';
 import { checkSunoDraft } from './suno.mjs';
+import { checkSeoGeoDraft, extractFirstH1 } from './seo.mjs';
 
 export const SCHEMA = 'viet-pro/platform-profile@1';
 export const METHODS = ['graphemes', 'utf16', 'utf8_bytes', 'utf8_bytes_emoji', 'x_weighted', 'words'];
@@ -153,27 +154,62 @@ const LINK = /https?:\/\/[^\s)>\]]+/gu;
 // may itself start with a `---` separator, and its first post may look like `Lưu ý: ...`.
 // Headings inside ``` or ~~~ fences are ignored.
 const FRONTMATTER_KEYS = new Set(['title', 'description', 'platform', 'surface', 'channel', 'slug', 'date',
-  'tags', 'author', 'lang', 'language', 'keywords', 'canonical', 'summary', 'draft', 'layout', 'category', 'categories', 'image']);
-export function splitDraft(text) {
-  let src = text.replace(/\r\n/gu, '\n').normalize('NFC');
-  const lines = src.split('\n');
-  if (lines[0]?.trim() === '---') {
-    const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
-    const isKey = (l) => FRONTMATTER_KEYS.has(l.match(/^([a-z_]+):(?:\s|$)/u)?.[1]);
-    const block = lines.slice(1, end);
-    if (end > 1 && isKey(block[0]) && block.every((l) => !l.trim() || isKey(l) || /^\s+- /u.test(l))) src = lines.slice(end + 1).join('\n');
+  'tags', 'author', 'lang', 'language', 'keywords', 'keyword', 'meta_title', 'meta_description',
+  'canonical', 'summary', 'draft', 'layout', 'category', 'categories', 'image']);
+const FRONTMATTER_SYM = Symbol.for('vietPro.frontmatter');
+
+function unquoteYamlScalar(raw) {
+  const s = raw.trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    return s.slice(1, -1).replace(/\\(.)/gu, '$1').trim();
   }
+  return s;
+}
+
+function parseFrontmatterBlock(text) {
+  const src = text.replace(/\r\n/gu, '\n').normalize('NFC');
+  const lines = src.split('\n');
+  if (lines[0]?.trim() !== '---') return { bodySrc: src, fm: {} };
+  const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
+  const keyRe = /^([a-z_]+):(?:\s*(.*))?$/u;
+  const block = lines.slice(1, end);
+  const firstKey = block[0]?.match(keyRe)?.[1];
+  if (end <= 1 || !FRONTMATTER_KEYS.has(firstKey) || !block.every((l) => !l.trim() || FRONTMATTER_KEYS.has(l.match(keyRe)?.[1]) || /^\s+- /u.test(l))) {
+    return { bodySrc: src, fm: {} };
+  }
+  const fm = Object.create(null);
+  let lastKey = null;
+  for (const l of block) {
+    const m = l.match(keyRe);
+    if (m && FRONTMATTER_KEYS.has(m[1])) {
+      lastKey = m[1];
+      const val = (m[2] || '').trim();
+      if (val) fm[lastKey] = unquoteYamlScalar(val);
+    } else if (lastKey && /^\s+- (.+)$/u.test(l) && !fm[lastKey]) {
+      fm[lastKey] = unquoteYamlScalar(l.replace(/^\s+- /u, ''));
+    }
+  }
+  return { bodySrc: lines.slice(end + 1).join('\n'), fm };
+}
+
+export function extractFrontmatter(text) {
+  return { ...parseFrontmatterBlock(text).fm };
+}
+
+export function splitDraft(text) {
+  const { bodySrc: src, fm } = parseFrontmatterBlock(text);
+  const attach = (obj) => Object.defineProperty(obj, FRONTMATTER_SYM, { value: fm, enumerable: false });
   const fences = [...src.matchAll(/^(```|~~~)[^\n]*\n[\s\S]*?^\1[ \t]*$/gmu)].map((m) => [m.index, m.index + m[0].length]);
   const heading = new RegExp(`^##[ \\t]+(${DRAFT_FIELDS.join('|')})[ \\t]*$`, 'gimu');
   const marks = [...src.matchAll(heading)].filter((m) => !fences.some(([a, b]) => m.index > a && m.index < b));
-  if (!marks.length) return { body: src.trim() };
+  if (!marks.length) return attach({ body: src.trim() });
   const fields = {};
   marks.forEach((m, i) => {
     const key = m[1].toLowerCase();
     const chunk = src.slice(m.index + m[0].length, i + 1 < marks.length ? marks[i + 1].index : src.length).trim();
     fields[key] = fields[key] ? `${fields[key]}\n\n${chunk}` : chunk;
   });
-  return fields;
+  return attach(fields);
 }
 
 export function surfacesOf(profile) {
@@ -184,23 +220,36 @@ export function surfacesOf(profile) {
 // Limits with confidence F only ever produce WARN, and so do fold_chars and max_topic_tags (Threads
 // keeps the first topic tag rather than rejecting the post). max_duration_s is skipped.
 // A limit with `scope: whole` measures the whole text even when the profile splits posts by `---`.
-export function checkDraft(profile, fields, { surface } = {}) {
+export function checkDraft(profile, fields, { surface, meta = {} } = {}) {
   const surfaces = surfacesOf(profile);
   const chosen = surface || surfaces[0];
   if (surface && !surfaces.includes(surface)) throw new Error(`surface "${surface}" không có; chọn: ${surfaces.join(', ') || '(không có)'}`);
   const findings = [];
   const measured = [];
   const missing = new Set();
+  const fm = fields[FRONTMATTER_SYM] || {};
+  const pickMeta = (...vals) => vals.find((v) => typeof v === 'string' && v.trim())?.trim() || '';
   const all = Object.values(fields).join('\n');
   const mainText = fields.body ?? fields.caption ?? '';
+  const isBlogSeo = profile.meta.id === 'blog-seo';
+  const firstTitleLine = fields.title?.split('\n').map((t) => t.trim()).find(Boolean) || '';
+  const h1Fallback = isBlogSeo
+    ? extractFirstH1(mainText.replace(/^(```|~~~)[^\n]*\n[\s\S]*?^\1[ \t]*$/gmu, ''))
+    : '';
+  const resolvedMeta = {
+    keyword: pickMeta(meta.keyword, fm.keyword),
+    slug: pickMeta(meta.slug, fm.slug),
+    title: pickMeta(meta.title, fm.meta_title, fm.title, firstTitleLine, h1Fallback),
+    description: pickMeta(meta.description, fm.meta_description, fm.description),
+  };
   const segments = profile.meta.segments === '---'
     ? mainText.split(/^[ \t]*---[ \t]*$/mu).map((seg) => seg.trim()).filter(Boolean)
     : null;
   const target = {
     max_chars: mainText,
     max_caption_chars: fields.caption ?? fields.body,
-    max_title_chars: fields.title,
-    max_description_chars: fields.description,
+    max_title_chars: isBlogSeo ? (fields.title ?? (resolvedMeta.title || undefined)) : fields.title,
+    max_description_chars: isBlogSeo ? (fields.description ?? (resolvedMeta.description || undefined)) : fields.description,
     fold_chars: mainText,
   };
   for (const l of profile.limits.filter((x) => x.surface === chosen)) {
@@ -276,21 +325,9 @@ export function checkDraft(profile, fields, { surface } = {}) {
     }
   }
   if (profile.meta.id === 'blog-seo') {
-    const unfenced = mainText.replace(/^(```|~~~)[^\n]*\n[\s\S]*?^\1[ \t]*$/gmu, '');
-    for (const m of unfenced.matchAll(/^##[ \t]+([^\n]+)\n+([^\n#][^\n]*(?:\n(?![ \t]*\n|#)[^\n]*)*)/gmu)) {
-      const h2Title = m[1].trim();
-      if (DRAFT_FIELDS.includes(h2Title.toLowerCase())) continue;
-      const firstPara = m[2].trim();
-      const words = countText(firstPara, 'words');
-      const staged = /^(?:Trong (?:bối cảnh|thời đại|kỷ nguyên)|Hiện nay,?\s+việc|Như chúng ta đã biết)\b/iu.test(firstPara);
-      if (words > 90 || staged) {
-        findings.push({
-          level: 'WARN',
-          field: 'seo-h2-wall',
-          detail: `đoạn mở đầu ngay sau "## ${h2Title.slice(0, 40)}" ${staged ? 'mở bài vòng vo' : `dài ${words} chữ (>90)`}; hãy trả lời trực diện (Answer-First) trong 40-60 chữ đầu`,
-        });
-      }
-    }
+    const seoRes = checkSeoGeoDraft(fields, { surface: chosen, countText, meta: resolvedMeta });
+    findings.push(...seoRes.findings);
+    measured.push(...seoRes.measured);
   }
   return { surface: chosen, findings, measured };
 }

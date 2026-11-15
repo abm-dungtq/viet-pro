@@ -64,8 +64,31 @@ function selfTest() {
   if (!(computeEditRatio('Hôm nay doanh thu đạt 12 tỷ.', '[nhanh] Hôm nay doanh thu đạt 12 tỷ. [nghỉ 1s]') > 0)) {
     fail('computeEditRatio phải giữ nguyên cách tính trên văn bản gốc');
   }
+  if (compare('Chi phí là 1.200 USD và 45.000đ.', 'Chi phí là 1,200 USD và 45000đ.').differences.length) {
+    fail('canonicalize số hàng nghìn (1.200 <-> 1,200 / 45.000đ <-> 45000đ) phải khớp');
+  }
+  if (!compare('Tỷ lệ 42,5%.', 'Tỷ lệ 425%.').differences.some((d) => d.kind === 'numberOrDate')) {
+    fail('canonicalize số thập phân không được làm gộp 42,5% thành 425%');
+  }
+  if (compare('Quy trình gồm 3 bước chính.', 'Quy trình gồm ba bước chính.').differences.length) {
+    fail('"3 bước" <-> "ba bước" phải được đối soát tương đương');
+  }
+  if (compare('Suốt năm tháng qua doanh số ổn định.', 'Thời gian qua doanh số ổn định.').differences.length) {
+    fail('bỏ từ chữ số đơn lẻ không gắn số đối ứng ("năm tháng") không được sinh MISMATCH ảo');
+  }
+  if (!compare('Anh ấy làm ở đó 5 năm.', 'Anh ấy làm ở đó nhiều tháng.').differences.some((d) => d.token === '5')) {
+    fail('"5 năm" bị mất số 5 phải báo MISMATCH');
+  }
+  const quantAlert = compare('Hầu hết cửa hàng đã mở lại.', 'Các cửa hàng đã mở lại.');
+  if (quantAlert.differences.length || !quantAlert.reviews.some((r) => r.kind === 'quantity_word' && r.token === 'hầu hết')) {
+    fail('rơi từ lượng từ "hầu hết" phải phát REVIEW [quantity_word]');
+  }
+  const shadeAlert = compare('Doanh thu có thể tăng thêm 10%.', 'Doanh thu tăng thêm 10%.');
+  if (shadeAlert.differences.length || !shadeAlert.reviews.some((r) => r.kind === 'shade' && r.token === 'có thể')) {
+    fail('rơi từ rào đón "có thể" phải phát REVIEW [shade]');
+  }
 
-  console.log('SELF-TEST PASS — bảo toàn URL, số/ngày, quote, citation, ranking, chuỗi --keep, chiều tăng/giảm quanh số liệu, thẻ TTS và ngưỡng edit_ratio');
+  console.log('SELF-TEST PASS — bảo toàn URL, số/ngày, quote, citation, ranking, chuỗi --keep, chiều tăng/giảm quanh số liệu, thẻ TTS, canonical số, số chữ 2..10, lượng/mức độ và ngưỡng edit_ratio');
 }
 
 export function runCompareCli(args = process.argv.slice(2)) {
@@ -98,7 +121,7 @@ export function runCompareCli(args = process.argv.slice(2)) {
     return 2;
   }
   const { differences, reviews, edit_ratio } = compare(readFileSync(files[0], 'utf8'), readFileSync(files[1], 'utf8'), keep, { strictQuotes, maxEditRatio });
-  for (const r of reviews) console.log(`REVIEW [context] ${JSON.stringify(r.token)}: "${r.before.join(' | ')}" -> "${r.after.join(' | ')}"`);
+  for (const r of reviews) console.log(`REVIEW [${r.kind || 'context'}] ${JSON.stringify(r.token)}: "${r.before.join(' | ')}" -> "${r.after.join(' | ')}"`);
   if (!differences.length) {
     console.log(`PASS — các dữ kiện được bảo toàn (edit_ratio: ${(edit_ratio * 100).toFixed(1)}%)`);
     return 0;

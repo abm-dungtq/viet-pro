@@ -12,6 +12,8 @@ Chọn đúng một hồ sơ khi viết tài liệu công việc hoặc sản ph
 | Mẫu quảng cáo trả phí Meta, Google, TikTok, LinkedIn | `paid-ads.md` | `editorial/hook-close.md`, file kênh |
 | Nhãn nút, thông báo lỗi, hướng dẫn giao diện | `ui-microcopy.md` | `review/lead.md` |
 | Nội dung trang trình bày và ghi chú người nói | `slide-deck.md` | `editorial/hook-close.md`, `review/lead.md` |
+| Tin nhắn cá nhân, trao đổi công việc 1-1, CSKH trực tiếp | `personal-chat.md` | `review/lead.md` |
+| Bài so sánh đối chiếu sản phẩm, giải pháp (A vs B) | `comparison-vs.md` | `editorial/hook-close.md`, `review/lead.md` |
 
 ## Cách phối hợp kiểm duyệt và cấu hình
 

@@ -281,7 +281,10 @@ export async function runGate(input, opts = {}) {
       if (schemaErrors.length) {
         platformErrors.push(`Hồ sơ kênh "${platformId}" sai schema: ${schemaErrors.join('; ')}`);
       } else {
-        platformRes = checkDraft(profile, splitDraft(text), { surface: opts.surface });
+        platformRes = checkDraft(profile, splitDraft(text), {
+          surface: opts.surface,
+          meta: { keyword: opts.keyword, slug: opts.slug, title: opts.seoTitle, description: opts.seoDescription },
+        });
       }
     } catch (err) {
       platformErrors.push(err.message);
@@ -513,7 +516,7 @@ export function formatGateReport(res) {
   const lines = [];
   const label = res.file_path || '<stdin>';
   for (const r of res.compare_result?.reviews || []) {
-    lines.push(`REVIEW [context] ${JSON.stringify(r.token)}: "${r.before.join(' | ')}" -> "${r.after.join(' | ')}"`);
+    lines.push(`REVIEW [${r.kind || 'context'}] ${JSON.stringify(r.token)}: "${r.before.join(' | ')}" -> "${r.after.join(' | ')}"`);
   }
   for (const f of res.lint_findings || []) {
     lines.push(`${f.level} ${label}:${f.line} [${f.id}] ${JSON.stringify(f.excerpt)}`);

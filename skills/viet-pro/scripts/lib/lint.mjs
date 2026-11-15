@@ -9,6 +9,18 @@ function stripInlineCode(line, replacement = ' ') {
   return line.replace(/``[^\n]*?``|`[^`\n]*`/gu, replacement);
 }
 
+function stripNonQuoteLine(line) {
+  if (/^\s*>/u.test(line)) return '';
+  return stripInlineCode(line, ' __Q__ ').replace(/["“][^"”\n]{1,300}["”]|«[^»\n]{1,300}»/gu, ' __Q__ ');
+}
+
+const OFFICIAL_DOC_RE = /^\s*(?:số:\s*\d+\s*\/|v\/v(?![\p{L}\p{M}\p{N}])|kính gửi:|cộng hòa xã hội chủ nghĩa|căn cứ\s+(?:luật|nghị định|thông tư|quyết định|bộ luật)|điều\s+\d+[.:]\s+\p{Lu})/imu;
+
+const PROMPT_INJECTION_RE = /<\/?(?:skill|system|instructions?)>|(?:bỏ qua|quên)\s+(?:mọi|tất cả|toàn bộ|các)\s+(?:hướng dẫn|chỉ dẫn|chỉ thị)\s+(?:trước đó|ở trên)|\bignore\s+(?:all\s+|any\s+)?(?:the\s+)?(?:previous|prior|above)\s+instructions\b/giu;
+const VOICE_TAG_RE = /(?:^|[.!?]\s+)(?:Nói\s+(?:cho\s+thật|thật\s+nhé|gọn|trắng\s+ra|thẳng(?:\s+ra)?)\s*:|(?:Thành\s+thật|Thật\s+lòng|Công\s+bằng|Thẳng\s+thắn|Thú\s+thật)\s+mà\s+nói\s*,|(?:Hiểu|Nói)\s+(?:một\s+cách\s+)?(?:đơn\s+giản|nôm\s+na)\s+(?:là|thì)(?![\p{L}\p{M}\p{N}])|Điều\s+(?:mình|tôi)\s+(?:chỉ\s+)?muốn\s+nói\s+là\s*:)/giu;
+const PLEONASM_VI_RE = /(?<![\p{L}\p{M}\p{N}])(?:hiện nay đang|đang trong quá trình|hoàn toàn đầy đủ|vẫn còn đang|các những|mọi tất cả|tái\s+\p{L}+\s+lại)(?![\p{L}\p{M}\p{N}])/giu;
+const EN_GLOSS_RE = /\p{L}*[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]\p{L}*[ \t]\(((?!(?:le|la|les|du|des|un|une)\s)[a-z][a-z -]{2,28})\)/gu;
+
 export function stripTtsTags(lineOrText) {
   if (!lineOrText) return lineOrText;
   let matched = false;
@@ -50,7 +62,14 @@ export const LINE_RULES = [
   },
   {
     id: 'heading-colon', level: 'WARN', desc: 'House style viet-pro hạn chế dấu hai chấm trong tiêu đề',
-    check: (l) => /^#{1,6}\s.*:\s*\S/.test(l) || /^#{1,6}\s.*:\s*$/.test(l) ? [l.trim().slice(0, 60)] : [],
+    check: (l) => {
+      if (!/^#{1,6}\s/u.test(l)) return [];
+      const cleaned = stripInlineCode(l.replace(/\[([^\]]*)\]\([^)\n]+\)/gu, '$1'), ' ')
+        .replace(/(?:https?|file):\/\/\S+/giu, ' ');
+      return /^#{1,6}\s.*:\s*\S/u.test(cleaned) || /^#{1,6}\s.*:\s*$/u.test(cleaned)
+        ? [l.trim().slice(0, 60)]
+        : [];
+    },
   },
   {
     id: 'double-space', level: 'WARN', desc: 'Hai khoảng trắng liên tiếp giữa từ',
@@ -82,6 +101,34 @@ export const LINE_RULES = [
   {
     id: 'hedging-pileup', level: 'WARN', desc: 'Chồng chất nhiều lớp từ rào đón dịch thuật làm câu văn mơ hồ (im-not-ai pattern G)',
     check: (l) => [...l.replace(/["“][^"”\n]{1,200}["”]|`[^`\n]{1,200}`/gu, ' ').matchAll(/\b(?:có thể sẽ\s+(?:góp phần|mang lại|tạo ra|dẫn đến|mở ra)|dường như\s+(?:có xu hướng|đang dần|có thể|được xem là)|được kỳ vọng\s+(?:sẽ\s+)?(?:mang lại khả năng|góp phần|tạo điều kiện)|có khả năng\s+(?:sẽ\s+)?(?:góp phần|tạo điều kiện|mang lại tiềm năng)|có xu hướng\s+(?:được xem là|được đánh giá là|góp phần vào việc))\b/giu)].map((m) => m[0].trim()),
+  },
+  {
+    id: 'prompt-injection-tag', level: 'ERROR', desc: 'Phát hiện thẻ giả hệ thống hoặc câu lệnh chèn chỉ thị (humanizer 4.0.0 / viet-nhu-nguoi)',
+    check: (l) => {
+      const clean = stripNonQuoteLine(l);
+      return clean ? [...clean.matchAll(PROMPT_INJECTION_RE)].map((m) => m[0].trim()) : [];
+    },
+  },
+  {
+    id: 'voice-tag', level: 'WARN', desc: 'Nhãn rào giọng đầu câu/đoạn thay vì nói thẳng ý chính (document-tics.md)',
+    check: (l, opts = {}) => {
+      const clean = stripKeep(stripNonQuoteLine(l), opts.keep);
+      return clean ? [...clean.matchAll(VOICE_TAG_RE)].map((m) => m[0].replace(/^[.!?]\s+/u, '').trim()) : [];
+    },
+  },
+  {
+    id: 'pleonasm-vi', level: 'WARN', desc: 'Cụm từ thừa nghĩa lặp lại (translationese-vi.md)',
+    check: (l, opts = {}) => {
+      const clean = stripKeep(stripNonQuoteLine(l), opts.keep);
+      return clean ? [...clean.matchAll(PLEONASM_VI_RE)].map((m) => m[0].trim()) : [];
+    },
+  },
+  {
+    id: 'unnecessary-english-gloss', level: 'WARN', desc: 'Chêm chú thích tiếng Anh viết thường sau từ tiếng Việt đã rõ nghĩa',
+    check: (l, opts = {}) => {
+      const clean = stripKeep(stripNonQuoteLine(l), opts.keep);
+      return clean ? [...clean.matchAll(EN_GLOSS_RE)].map((m) => m[0].trim()) : [];
+    },
   },
 ];
 
@@ -122,12 +169,36 @@ const TRANSLATIONESE_PATTERNS = [
   /(?:^|[.!?]\s+)(?:Đối với\s+[^,\n.!?;]{2,40}\s+thì|Điều này có nghĩa là)\b/giu,
   /,\s*(?:qua đó|từ đó)\s+(?:giúp|góp phần|thúc đẩy|tạo điều kiện|mang lại|nâng cao|tăng cường|mở ra)\b/giu,
   /\bcủa\s+(?:\p{L}+\s+){1,4}của\s+(?:\p{L}+\s+){1,4}của\b/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:bảng|biểu đồ|số liệu|dữ liệu|báo cáo|công cụ|tính năng|giải pháp|nền tảng|hệ thống)\s+này\s+(?:cho phép bạn|giúp bạn|đảm bảo rằng|chỉ ra rằng|chứng minh rằng)(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:nơi|người|điều|lý do|thời điểm)\s+mà(?!\s+(?:không|chưa|vẫn|chẳng|ai|ta|mình|tôi|bạn|họ))(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:ở cuối ngày|tin tốt là|cuối cùng nhưng không kém phần quan trọng|hy vọng email này tìm thấy|vui lòng tìm thấy tệp đính kèm|với bạn trong tâm trí)(?![\p{L}\p{M}\p{N}])/giu,
 ];
 
 const AI_BUZZWORD_RE = /\b(?:tối ưu hóa toàn diện|giải pháp toàn diện|hệ sinh thái liền mạch|trải nghiệm liền mạch|bức tranh toàn cảnh|chìa khóa then chốt|nền tảng vững chắc|khai mở tiềm năng|mở khóa tiềm năng|nâng tầm trải nghiệm|hành trình chuyển đổi(?:\s+số)?|bước ngoặt lịch sử|thay đổi cuộc chơi|định hình tương lai|giải pháp đột phá|công nghệ đột phá|tiêu chuẩn vàng|kim chỉ nam)\b/giu;
 
-function stripQuotedAndKept(text, keep = []) {
-  let out = text.replace(/["“][^"”\n]{1,200}["”]|`[^`\n]{1,200}`/gu, ' ');
+const FILLER_PATTERNS = [
+  /(?<![\p{L}\p{M}\p{N}])của\s+(?:bạn|tôi|chúng tôi|chúng ta|mình|họ)(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])một(?!\s+(?:mình|chút|vài|số|hai|ba))(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:các|những)(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])được(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])có thể(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])sẽ(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])đã(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])rằng(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:cho phép|giúp)(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:điều này|nó)(?![\p{L}\p{M}\p{N}])/giu,
+  /(?<![\p{L}\p{M}\p{N}])(?:việc|sự)(?![\p{L}\p{M}\p{N}])/giu,
+];
+
+const SLANG_PILEUP_RE = /(?<![\p{L}\p{M}\p{N}])(?:ổn áp|keo l[ìỳ]|mãi đỉnh|đỉnh nóc|kịch trần|bay phấp phới|chốt đơn|xịn xò|cực phẩm|hết nước chấm|nhức nách|ảo ma|ét ô ét|ra dẻ|over hợp|tới công chuyện|u là trời|gét gô|xu cà na|slay)(?![\p{L}\p{M}\p{N}])/giu;
+const DIALECT_MARKERS = [
+  ['Bắc', /(?<![\p{L}\p{M}\p{N}])(?:nhỉ|đấy nhé|thế nhỉ|chứ lị|vậy nhỉ|nhể|giời ơi)(?![\p{L}\p{M}\p{N}])/giu],
+  ['Trung', /(?<![\p{L}\p{M}\p{N}])(?:mô tê|răng rứa|rứa đó|rứa|chừ|chi mô|hỉ)(?![\p{L}\p{M}\p{N}])/giu],
+  ['Nam', /(?<![\p{L}\p{M}\p{N}])(?:nghen|dzậy|hen|hông|hổng|bển|trển|ngoải|dìa|ổng)(?![\p{L}\p{M}\p{N}])/giu],
+];
+
+function stripKeep(text, keep = []) {
+  let out = text;
   for (const k of keep) {
     if (!k) continue;
     const escaped = k.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
@@ -136,7 +207,29 @@ function stripQuotedAndKept(text, keep = []) {
   return out;
 }
 
-function paragraphClusters(text, keep = []) {
+function stripQuotedAndKept(text, keep = []) {
+  return stripKeep(text.replace(/["“][^"”\n]{1,200}["”]|«[^»\n]{1,300}»|`[^`\n]{1,200}`/gu, ' '), keep);
+}
+
+function extractPureProseParagraphs(text) {
+  const paragraphs = [];
+  let current = '';
+  for (const raw of text.split('\n')) {
+    const t = raw.trim();
+    const skip = !t || t.startsWith('#') || t.startsWith('|') || t.startsWith('>')
+      || /^[-*_]{3,}$/u.test(t) || /^(?:[-*•+]|\d+[.)])\s/u.test(t)
+      || /^\*\*[^*\n:]{1,40}:\*\*/u.test(t) || /^\[[^\]]+\]$/u.test(t);
+    if (skip) {
+      if (current) { paragraphs.push(current); current = ''; }
+      continue;
+    }
+    current = current ? `${current} ${t}` : t;
+  }
+  if (current) paragraphs.push(current);
+  return paragraphs;
+}
+
+function paragraphClusters(text, keep = [], isOfficial = false) {
   const findings = [];
   const lines = text.split('\n');
   const paragraphs = [];
@@ -155,18 +248,20 @@ function paragraphClusters(text, keep = []) {
 
   for (const p of paragraphs) {
     const cleaned = stripQuotedAndKept(p.text, keep);
-    const transHits = [];
-    for (const re of TRANSLATIONESE_PATTERNS) {
-      for (const m of cleaned.matchAll(re)) transHits.push(m[0].replace(/^[.,!?\s]+/u, '').trim());
-    }
-    if (transHits.length >= 3) {
-      findings.push({
-        level: 'WARN',
-        id: 'translationese-cluster',
-        line: p.startLine,
-        excerpt: `Cụm văn dịch (${transHits.length} dấu hiệu): ${transHits.slice(0, 4).map((x) => `"${x}"`).join(', ')}`,
-        desc: 'Nhiều cấu trúc dịch sát tiếng Anh tụ trong cùng đoạn (translationese-vi.md)',
-      });
+    if (!isOfficial) {
+      const transHits = [];
+      for (const re of TRANSLATIONESE_PATTERNS) {
+        for (const m of cleaned.matchAll(re)) transHits.push(m[0].replace(/^[.,!?\s]+/u, '').trim());
+      }
+      if (transHits.length >= 3) {
+        findings.push({
+          level: 'WARN',
+          id: 'translationese-cluster',
+          line: p.startLine,
+          excerpt: `Cụm văn dịch (${transHits.length} dấu hiệu): ${transHits.slice(0, 4).map((x) => `"${x}"`).join(', ')}`,
+          desc: 'Nhiều cấu trúc dịch sát tiếng Anh tụ trong cùng đoạn (translationese-vi.md)',
+        });
+      }
     }
     const buzzHits = [...cleaned.matchAll(AI_BUZZWORD_RE)].map((m) => m[0].trim());
     if (buzzHits.length >= 3) {
@@ -246,6 +341,123 @@ function phraseReuse(text, keep = []) {
   });
 }
 
+function checkDocumentSignals(text, reuseTarget, opts = {}) {
+  const findings = [];
+  const isSong = SONG_TAG_RE.test(text);
+  const isOfficial = opts.isOfficial ?? OFFICIAL_DOC_RE.test(text);
+  const pureParas = extractPureProseParagraphs(reuseTarget);
+  const cleanProseText = stripQuotedAndKept(
+    pureParas.join('\n').replace(/\[([^\]]*)\]\([^)\n]+\)/gu, '$1').replace(/(?:https?|file):\/\/\S+/giu, ' '),
+    opts.keep,
+  );
+  const proseWords = cleanProseText.match(/[\p{L}\p{N}]+/gu) || [];
+
+  if (!isSong && !isOfficial && proseWords.length >= 80) {
+    let fillerHits = 0;
+    for (const re of FILLER_PATTERNS) {
+      fillerHits += [...cleanProseText.matchAll(re)].length;
+    }
+    const perThousand = Math.round((fillerHits / proseWords.length) * 1000);
+    if (perThousand >= 115) {
+      findings.push({
+        level: 'WARN',
+        id: 'translationese-filler-density',
+        line: 0,
+        excerpt: `Mật độ hư từ dịch thuật ${perThousand}/1.000 chữ (${fillerHits}/${proseWords.length})`,
+        desc: 'Mật độ hư từ dịch thuật ("một", "các", "những", "được", "sẽ", "đã", "của bạn", "việc/sự"...) quá cao',
+      });
+    }
+  }
+
+  const colonText = cleanProseText.replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/gu, ' ');
+  const colonCount = (colonText.match(/:/gu) || []).length;
+  const colonPerThousand = proseWords.length ? (colonCount / proseWords.length) * 1000 : 0;
+  if (colonCount >= 4 && proseWords.length >= 60 && colonPerThousand >= 22) {
+    findings.push({
+      level: 'WARN',
+      id: 'colon-density',
+      line: 0,
+      excerpt: `${colonCount} dấu hai chấm trong văn xuôi (${Math.round(colonPerThousand)}/1.000 chữ)`,
+      desc: 'Lạm dụng dấu hai chấm giải thích giữa đoạn văn xuôi (document-tics.md)',
+    });
+  }
+
+  if (!isSong && !isOfficial) {
+    const choppyRun = pureParas.reduce((best, para) => {
+      const cleanPara = stripQuotedAndKept(
+        para.replace(/\[([^\]]*)\]\([^)\n]+\)/gu, '$1').replace(/(?:https?|file):\/\/\S+/giu, ' '),
+        opts.keep,
+      );
+      const parts = cleanPara.split(/(\.{2,}|[.!?]+)(?=\s|$)/u);
+      let cur = 0;
+      let localBest = 0;
+      for (let i = 0; i + 1 < parts.length; i += 2) {
+        const s = parts[i].trim();
+        const punct = parts[i + 1];
+        const wc = s ? (s.match(/[\p{L}\p{N}]+/gu) || []).length : 0;
+        if (punct === '.' && wc >= 1 && wc <= 6) {
+          cur++;
+          if (cur > localBest) localBest = cur;
+        } else {
+          cur = 0;
+        }
+      }
+      return Math.max(best, localBest);
+    }, 0);
+    const shortParaLines = pureParas.filter((p) => {
+      const wc = (stripQuotedAndKept(p, opts.keep).match(/[\p{L}\p{N}]+/gu) || []).length;
+      const ends = (p.match(/[.!?]+(?:\s|$)/gu) || []).length;
+      return wc >= 1 && wc <= 7 && ends <= 1;
+    }).length;
+    if (choppyRun >= 4 || (pureParas.length >= 5 && shortParaLines >= 5 && shortParaLines / pureParas.length >= 0.7)) {
+      findings.push({
+        level: 'WARN',
+        id: 'choppy-sentences',
+        line: 0,
+        excerpt: choppyRun >= 4 ? `${choppyRun} câu ngắn <=6 chữ liên tiếp` : `${shortParaLines}/${pureParas.length} đoạn ngắn cụt nhịp`,
+        desc: 'Chuỗi câu ngắn rời rạc tạo nhịp giật cục kiểu AI (humanizer-patterns.md)',
+      });
+    }
+  }
+
+  const allClean = stripQuotedAndKept(
+    reuseTarget.replace(/\[([^\]]*)\]\([^)\n]+\)/gu, '$1').replace(/(?:https?|file):\/\/\S+/giu, ' '),
+    opts.keep,
+  );
+  const allWords = (allClean.match(/[\p{L}\p{N}]+/gu) || []).length || 1;
+  const slangHits = [...allClean.matchAll(SLANG_PILEUP_RE)].map((m) => m[0].toLowerCase().trim());
+  const distinctSlang = new Set(slangHits).size;
+  if (distinctSlang >= 3 && slangHits.length * 25 >= allWords) {
+    findings.push({
+      level: 'WARN',
+      id: 'slang-pileup',
+      line: 0,
+      excerpt: `${distinctSlang} từ lóng mạng dày đặc (${[...new Set(slangHits)].slice(0, 4).join(', ')})`,
+      desc: 'Nhồi từ lóng mạng xã hội dày đặc gây gượng gạo (document-tics.md)',
+    });
+  }
+
+  const regionCounts = [];
+  let totalDialectHits = 0;
+  for (const [region, re] of DIALECT_MARKERS) {
+    const matches = [...allClean.matchAll(re)].map((m) => m[0].toLowerCase().trim());
+    if (matches.length > 0) {
+      regionCounts.push(`${region}: ${matches[0]}`);
+      totalDialectHits += matches.length;
+    }
+  }
+  if (regionCounts.length >= 2 && totalDialectHits >= 3) {
+    findings.push({
+      level: 'WARN',
+      id: 'dialect-mix',
+      line: 0,
+      excerpt: `Trộn khẩu ngữ vùng miền (${regionCounts.join('; ')})`,
+      desc: 'Pha tạp hư từ khẩu ngữ Bắc/Trung/Nam trong cùng văn bản (consistency.md)',
+    });
+  }
+  return findings;
+}
+
 // Whole-text rules
 function textRules(text, opts = {}) {
   const findings = [];
@@ -266,9 +478,9 @@ function textRules(text, opts = {}) {
 
   const dramaticClosers = proseLines.filter((l) => l.length <= 100 && /^(Và đó mới là|Đó mới là điều|Không ai (?:còn )?có thể làm ngơ|Hãy để điều đó)/iu.test(l));
   if (dramaticClosers.length > 1) findings.push({ level: 'WARN', id: 'dramatic-closer-repeat', line: 0, excerpt: `${dramaticClosers.length} câu kết/fragment kịch tính` });
-  const reuseTarget = /^\s*\[(?:Intro|Verse|Pre-Chorus|Chorus|Final Chorus|Bridge|Outro|Hook|Refrain)\b/imu.test(text)
-    ? dedupeSongLyrics(text)
-    : text;
+  const isSong = SONG_TAG_RE.test(text);
+  const isOfficial = opts.isOfficial ?? OFFICIAL_DOC_RE.test(text);
+  const reuseTarget = isSong ? dedupeSongLyrics(text) : text;
   const toneTarget = stripQuotedAndKept(reuseTarget, opts.keep);
   const oldTones = [...toneTarget.matchAll(/\p{L}*(?<![qgQG])(?:o[àáảãạ]|o[èéẻẽẹ]|u[ỳýỷỹỵ])(?![\p{L}\p{M}])/giu)].map((m) => m[0]);
   const newTones = [...toneTarget.matchAll(/\p{L}*(?<![qgQG])(?:[òóỏõọ][ae]|[ùúủũụ]y)(?![\p{L}\p{M}])/giu)].map((m) => m[0]);
@@ -282,7 +494,8 @@ function textRules(text, opts = {}) {
     });
   }
   findings.push(...phraseReuse(reuseTarget, opts.keep));
-  findings.push(...paragraphClusters(reuseTarget, opts.keep));
+  findings.push(...paragraphClusters(reuseTarget, opts.keep, isOfficial));
+  findings.push(...checkDocumentSignals(text, reuseTarget, { ...opts, isOfficial }));
   return findings;
 }
 
@@ -403,7 +616,7 @@ export function lintText(text, opts = {}) {
     const lineForRules = ttsEnabled ? stripTtsTags(line) : line;
     for (const rule of LINE_RULES) {
       if (isSong && rule.id === 'title-case' && (draftSection === 'title' || draftSection === 'description' || draftSection === 'caption')) continue;
-      for (const excerpt of rule.check(lineForRules)) {
+      for (const excerpt of rule.check(lineForRules, opts)) {
         findings.push({ level: rule.level, id: rule.id, line: i + 1, excerpt, desc: rule.desc });
       }
     }
@@ -419,7 +632,7 @@ export function lintText(text, opts = {}) {
 
 export function computeRouteHint(text, findings = lintText(text)) {
   if (!findings.length) return 'light';
-  const hasHeavySignal = findings.some((f) => f.level === 'ERROR' || ['translationese-cluster', 'ai-buzzword-cluster', 'isomorphic-sentence'].includes(f.id));
+  const hasHeavySignal = findings.some((f) => f.level === 'ERROR' || ['translationese-cluster', 'translationese-filler-density', 'ai-buzzword-cluster', 'isomorphic-sentence'].includes(f.id));
   if (hasHeavySignal || findings.length >= 5) return 'heavy';
   return 'standard';
 }

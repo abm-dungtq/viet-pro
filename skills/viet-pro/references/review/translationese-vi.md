@@ -1,13 +1,12 @@
 # Văn dịch tiếng Việt
 
-File này dùng để sửa câu bị dịch sát từ tiếng Anh: đúng ngữ pháp nhưng người Việt không nói như vậy. Linter (`scripts/lib/lint.mjs`) tự động phát cảnh báo `translationese-cluster` (mức `WARN`) khi một đoạn văn xuôi tụ từ **3 dấu hiệu trở lên**. Chỉ sửa khi các dấu hiệu xuất hiện **thành cụm** trong một đoạn; không sửa từng từ riêng lẻ, vì từng từ một đều có chỗ dùng đúng.
+File này dùng để sửa câu bị dịch sát từ tiếng Anh: đúng ngữ pháp nhưng người Việt không nói như vậy. Linter (`scripts/lib/lint.mjs`) tự động phát cảnh báo `translationese-cluster` (mức `WARN`) khi một đoạn tụ từ **3 dấu hiệu trở lên** và `translationese-filler-density` khi mật độ hư từ dịch thuật đạt từ **115/1.000 chữ** trở lên. Chỉ sửa khi các dấu hiệu tụ thành cụm hoặc làm câu nặng nề; không cấm từng từ riêng lẻ, và miễn trừ tự động cho văn bản hành chính/pháp lý (`Số: ...`, `Kính gửi:`, `Căn cứ ...`, `Điều ...`).
 
 ## Giữ nguyên khi
 
-- Văn bản hành chính và văn bản pháp lý: "việc", "thực hiện", "đối với" là văn phong chuẩn ở đây.
-- Trích dẫn, tên văn bản, tên chương trình.
-- Thuật ngữ chuyên ngành đã quen trong ngành đó.
-- Giọng mẫu của người dùng có dùng các cấu trúc này.
+- Văn bản hành chính và văn bản pháp lý ("việc", "thực hiện", "đối với", "các", "những" là văn phong chuẩn ở đây).
+- Trích dẫn, tên văn bản, tên chương trình hoặc thuật ngữ chuyên ngành cố định.
+- Giọng mẫu của người dùng chủ đích dùng các cấu trúc này.
 
 ## Dấu hiệu
 
@@ -70,6 +69,18 @@ Sau: "Giá nguyên liệu tăng 10%, nên chi phí sản xuất cũng tăng."
 Dấu hiệu: định ngữ xếp chồng kiểu "the X of the Y of the Z", chủ ngữ bị lạc giữa câu.
 Trước: "Sự hài lòng của khách hàng của chuỗi cửa hàng của công ty tăng lên."
 Sau: "Khách của chuỗi cửa hàng hài lòng hơn trước."
+
+### Mệnh đề quan hệ gượng ("nơi mà", "điều mà") và câu dịch sáo
+
+Dấu hiệu: "where/which/what" dịch thẳng thành *"nơi mà"*, *"lý do mà"*, *"thời điểm mà"*, *"công cụ này cho phép bạn"*, hoặc thành ngữ dịch sát như *"ở cuối ngày"*, *"tin tốt là"*, *"cuối cùng nhưng không kém phần quan trọng"*.
+Trước: "Đây là thời điểm mà bảng số liệu này cho phép bạn kiểm soát chi phí."
+Sau: "Lúc này, bảng số liệu giúp bạn kiểm soát chi phí."
+
+### Từ thừa nghĩa lặp lại (`pleonasm-vi`) và dày đặc hư từ (`translationese-filler-density`)
+
+Dấu hiệu: ghép hai từ đồng nghĩa cạnh nhau (*"hiện nay đang"*, *"đang trong quá trình"*, *"hoàn toàn đầy đủ"*, *"vẫn còn đang"*, *"tái ... lại"*) hoặc nhồi quá nhiều *"một"*, *"các"*, *"những"*, *"được"*, *"sẽ"*, *"đã"*, *"rằng"*, *"của bạn"* làm câu dài lê thê.
+Trước: "Hiện nay hệ thống của bạn vẫn còn đang trong quá trình tái kiểm tra lại toàn bộ các dữ liệu."
+Sau: "Hệ thống đang kiểm tra lại toàn bộ dữ liệu."
 
 ## Cách sửa
 

@@ -58,8 +58,8 @@ Nêu tên/thuật ngữ (treo) → 2-3 đoạn tình huống/bối cảnh khác
 
 | Kiểu | Khi nào | Ví dụ |
 |------|---------|-------|
-| Câu hỏi chiến lược | Phân tích chuyên sâu | "Câu hỏi lớn nhất không phải NIM chạm đáy chưa, mà là ngân hàng nào đủ năng lực giữ NIM ổn định" |
-| One-liner | Essay, bình luận | "Sẽ vẫn có người thông minh, nhưng chỉ những người chọn như vậy" |
+| Câu hỏi chiến lược | Phân tích chuyên sâu | "Biên lãi thuần đã có điểm tựa, nhưng ngân hàng nào giữ được tệp tiền gửi không kỳ hạn khi lãi suất quay đầu?" |
+| One-liner | Essay, bình luận | "Công cụ giống nhau ở mọi phòng ban, khác biệt nằm ở tiêu chuẩn kiểm chứng trước khi ký duyệt." |
 | Callback | Story dài | Quay lại ẩn dụ/hình ảnh mở đầu, khép vòng |
 
 One-liner, câu hỏi và callback là lựa chọn, không phải yêu cầu. Có thể kết ở một dữ kiện, quyết định hoặc hệ quả cụ thể. Tránh recap máy móc và tránh câu kịch tính không thêm thông tin.

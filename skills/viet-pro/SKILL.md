@@ -3,7 +3,7 @@ name: viet-pro
 description: "Viết, biên tập, humanize, audit dấu hiệu AI, kiểm chứng và chuyển thể nội dung tiếng Việt chuyên nghiệp cho bài dài, blog, SEO, mạng xã hội, newsletter, kịch bản video và lời bài hát/prompt nhạc Suno. Kích hoạt khi người dùng yêu cầu viết mới, biên tập, rà văn phong tiếng Việt, chống AI slop, kiểm chứng nguồn/claim hoặc định dạng xuất bản theo kênh; không dùng cho dịch ngắn hay chỉnh một câu đơn giản."
 metadata:
   author: ABM-DungTQ
-  version: "6.0.0"
+  version: "6.1.0"
   category: content
   keywords: [vietnamese, writing, editing, humanize, fact-check, publishing, content-engine, suno]
 ---
@@ -55,9 +55,9 @@ Chỉ đọc những phần cần cho yêu cầu hiện tại:
 
 - Nghiên cứu topic hoặc phân tích dữ liệu: đọc [research/lead.md](references/research/lead.md), rồi đọc `research.md` và/hoặc `analysis.md` theo router.
 - Viết bài: đọc [editorial/lead.md](references/editorial/lead.md), rồi chọn các kỹ thuật liên quan. Tài liệu kỹ thuật dùng `technical.md` thay cho bộ storytelling.
-- Chuyển thể theo kênh: đọc [publishing/lead.md](references/publishing/lead.md), đúng một file kênh và `repurpose-matrix.md` khi làm nhiều kênh.
+- Chuyển thể theo kênh: đọc [publishing/lead.md](references/publishing/lead.md), đúng một file kênh (`blog-seo.md` hỗ trợ bề mặt `article | pillar | comparison` chuẩn SEO + GEO) và `repurpose-matrix.md` khi làm nhiều kênh.
 - Thể loại doanh nghiệp & sản phẩm: đọc [genres/lead.md](references/genres/lead.md), rồi chọn đúng một hồ sơ thể loại cần viết.
-- Rà soát: đọc [review/lead.md](references/review/lead.md), các reference ngôn ngữ liên quan và `fact-check.md` khi có claim cần kiểm chứng. Mọi văn xuôi công khai chạy kiểm tra Humanizer nhẹ theo `review/anti-ai.md`; chỉ đọc đủ `review/humanizer-patterns.md` khi người dùng yêu cầu humanize/audit dấu hiệu AI hoặc một đoạn có nhiều dấu hiệu đồng thời.
+- Rà soát: đọc [review/lead.md](references/review/lead.md), các reference ngôn ngữ liên quan và `fact-check.md` khi có claim cần kiểm chứng. Mọi văn xuôi công khai chạy kiểm tra Humanizer nhẹ theo `review/anti-ai.md`; đọc `translationese-vi.md` + `document-tics.md` cho tuyến rà sâu giọng Việt (`review-vietnamese-voice`) và chỉ đọc đủ `review/humanizer-patterns.md` khi người dùng yêu cầu humanize/audit dấu hiệu AI hoặc một đoạn có nhiều dấu hiệu đồng thời.
 - Bài mẫu/pattern: chỉ đọc [archive/lead.md](references/archive/lead.md) khi cần bắt chước một cấu trúc đã chọn. Không biến pattern thành công thức bắt buộc.
 - Cải tiến chính skill: tài liệu bảo trì nằm ở `docs/development/` trong repo nguồn https://github.com/abm-dungtq/viet-pro, không đi kèm bản cài. Chỉ dùng khi người dùng yêu cầu sửa hoặc nâng cấp skill.
 
@@ -95,8 +95,8 @@ Humanizer là quy trình biên tập, không phải công cụ xác định văn
 - Chạy một lệnh CLI duy nhất trên bản thảo (tạo stamp SHA-256 trong `.viet-pro/stamps/` khi đạt):
 
 ```bash
-viet-pro gate <file.md> [--before <before.md>] [--platform <kênh>] [--surface <bề-mặt>] [--keep "Tên riêng"]
-viet-pro gate --stdin [--platform <kênh>]
+viet-pro gate <file.md> [--before <before.md>] [--platform <kênh>] [--surface <bề-mặt>] [--keyword "từ khóa"] [--slug "url-slug"] [--keep "Tên riêng"]
+viet-pro gate --stdin [--platform <kênh>] [--surface <bề-mặt>]
 ```
 
 - Với bài dài `>= 800` chữ, đa kênh `>= 3` kênh hoặc độ sâu `heavy`, bắt buộc ghi 02-review-ticket.md trước khi bàn giao.

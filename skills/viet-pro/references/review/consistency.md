@@ -57,10 +57,11 @@ Tình huống thực tế không file nào cover.
 
 ## Checklist (chạy sau khi có toàn bộ bài)
 
-- [ ] Không vi phạm punctuation.md?
-- [ ] Không vi phạm natural.md (trừ ngoại lệ kênh đã khai báo)?
-- [ ] editorial/ CỤ THỂ HÓA chứ không MÂU THUẪN review/?
-- [ ] Tone nhất quán đầu-cuối (không nhảy casual ↔ formal)?
+- [ ] Không vi phạm `punctuation.md`?
+- [ ] Không vi phạm `natural.md` (trừ ngoại lệ kênh đã khai báo)?
+- [ ] `editorial/` CỤ THỂ HÓA chứ không MÂU THUẪN `review/`?
+- [ ] Tone nhất quán đầu-cuối (không nhảy casual <-> formal) và không pha tạp khẩu ngữ Bắc/Trung/Nam (`dialect-mix`) ngoài đối thoại nhân vật?
+- [ ] Số liệu giữ trọn chiều và độ chắc chắn khi chuyển đổi (`1.200` hay `1200`, `3 bước` hay `ba bước`, cảnh báo `REVIEW [quantity_word]`/`[shade]` không làm biến đổi nghĩa)?
 - [ ] Thuật ngữ nhất quán (1 khái niệm 1 từ)?
-- [ ] Nhiều kênh: các bản published/ cùng core message, khác format đúng chuẩn kênh?
-- [ ] Phát hiện gap → đã nêu rõ; chỉ cập nhật skill khi có yêu cầu/phê duyệt?
+- [ ] Nhiều kênh: các bản `published/` cùng core message, khác format đúng chuẩn kênh?
+- [ ] Phát hiện gap -> đã nêu rõ; chỉ cập nhật skill khi có yêu cầu/phê duyệt?

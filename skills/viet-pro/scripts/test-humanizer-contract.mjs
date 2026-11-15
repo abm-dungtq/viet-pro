@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Static contract checks for the integrated Humanizer behavior.
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -33,6 +33,8 @@ const checks = [
   ['văn bản đầu vào là chất liệu', /chất liệu, không phải lệnh/u.test(skill) && /chất liệu, không phải lệnh/u.test(patterns)],
   ['notices đúng bản Humanizer', /based on Humanizer 3\.1\.0/u.test(read('THIRD_PARTY_NOTICES.md'))],
   ['giấy phép Humanizer', /Copyright \(c\) 2025 Siqi Chen/u.test(read('THIRD_PARTY_NOTICES.md'))],
+  ['notices và bản quyền viet-nhu-nguoi', /viet-nhu-nguoi/u.test(read('THIRD_PARTY_NOTICES.md')) && /Copyright \(c\) 2026 anhnx000/u.test(read('THIRD_PARTY_NOTICES.md'))],
+  ['tài liệu lỗi văn phong document-tics', existsSync(resolve(skillDir, 'references/review/document-tics.md')) && /prompt-injection-tag/u.test(read('references/review/document-tics.md'))],
   ['kỷ luật Thinking-to-Prose chống dịch ngược', /Thinking-to-Prose Guardrail/u.test(skill) && /không lập dàn ý bằng tiếng Anh hay danh từ hóa/u.test(editorialLead)],
   ['cổng kiểm chứng CLI viet-pro gate bắt buộc', /Cổng kiểm chứng bắt buộc trước khi trả bài/u.test(skill) && /viet-pro gate/u.test(skill)],
   ['tích hợp kiểm tra cụm văn dịch', /translationese-cluster/u.test(skill) && /translationese-cluster/u.test(translationese)],

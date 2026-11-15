@@ -168,10 +168,17 @@ sources:
   if (checkDraft(liProfile, splitDraft('Đoạn mở đầu gồm hai câu liền mạch. Kết quả đo thực tế rất rõ ràng.\n\nĐoạn thứ hai trình bày số liệu chi tiết.')).findings.some((f) => f.field === 'broetry-line-breaks')) fail('linkedin báo nhầm broetry-line-breaks trên văn bản bình thường');
 
   const seoProfile = loadProfile(DIR, 'blog-seo');
-  const seoBad = splitDraft('## title\nCách tối ưu kho hàng\n\n## description\nHướng dẫn chi tiết cách kiểm kê kho hàng giảm thất thoát.\n\n## body\n## Tại sao cần kiểm kê kho định kỳ\nTrong bối cảnh thị trường bán lẻ cạnh tranh khốc liệt hiện nay, các doanh nghiệp phải đối mặt với nhiều thách thức.');
-  if (!checkDraft(seoProfile, seoBad).findings.some((f) => f.field === 'seo-h2-wall' && f.level === 'WARN')) fail('blog-seo không cảnh báo seo-h2-wall khi mở đoạn sau H2 vòng vo');
+  const seoBad = splitDraft('## title\nCách tối ưu kho hàng\n\n## description\nHướng dẫn chi tiết cách kiểm kê kho hàng giảm thất thoát cho cửa hàng bán lẻ hiện đại.\n\n## body\n# Cách tối ưu kho hàng\n\n## Tại sao cần kiểm kê kho định kỳ\nTrong bối cảnh thị trường bán lẻ cạnh tranh khốc liệt hiện nay, các doanh nghiệp phải đối mặt với nhiều thách thức.');
+  const seoBadRes = checkDraft(seoProfile, seoBad, { meta: { keyword: 'kiểm kê kho', slug: 'Cách_Tối_Ưu' } });
+  if (!seoBadRes.findings.some((f) => f.field === 'seo-h2-wall' && f.level === 'WARN')) fail('blog-seo không cảnh báo seo-h2-wall khi mở đoạn sau H2 vòng vo');
+  if (!seoBadRes.findings.some((f) => f.field === 'seo-slug-format' && f.level === 'ERROR')) fail('blog-seo không báo ERROR cho slug chứa dấu tiếng Việt');
+  const seoFm = splitDraft('---\ntitle: "Kiểm kê kho bán lẻ hiệu quả"\ndescription: "Hướng dẫn quy trình kiểm kê kho hàng từng bước giúp giảm thất thoát và tối ưu tồn kho cho chủ cửa hàng bán lẻ."\nslug: "kiem-ke-kho-ban-le"\nkeyword: "kiểm kê kho"\n---\n# Kiểm kê kho bán lẻ hiệu quả\n\nKiểm kê kho định kỳ giúp cửa hàng phát hiện sai lệch tồn kho chỉ trong 15 phút [1].');
+  const seoFmRes = checkDraft(seoProfile, seoFm, { surface: 'article' });
+  if (seoFmRes.findings.some((f) => ['seo-slug-format', 'seo-keyword-missing-title', 'seo-keyword-missing-intro', 'max_title_chars', 'max_description_chars'].includes(f.field))) {
+    fail(`blog-seo frontmatter hợp lệ bị báo nhầm: ${JSON.stringify(seoFmRes.findings)}`);
+  }
 
-  console.log('SELF-TEST PASS — cách đếm, parser hồ sơ, tách trường, tách đoạn, mức ERROR/WARN theo độ tin cậy, khối thiếu, kiểm tra Suno prosody, broetry và Answer-First SEO');
+  console.log('SELF-TEST PASS — cách đếm, parser hồ sơ, tách trường, tách đoạn, mức ERROR/WARN theo độ tin cậy, khối thiếu, kiểm tra Suno prosody, broetry và SEO/GEO 3 tầng');
 }
 
 function validateAll() {
@@ -199,16 +206,38 @@ export function runPlatformCli(args = process.argv.slice(2)) {
     }
   }
   if (args[0] === '--validate') return validateAll();
-  const si = args.indexOf('--surface');
-  const surface = si >= 0 ? args[si + 1] : undefined;
-  const [id, file] = args.filter((_, i) => si < 0 || (i !== si && i !== si + 1));
-  if (!id || !file) {
-    console.error('Usage: node check-platform.mjs <kênh> <draft.md> [--surface <bề-mặt>] | --validate | --self-test');
+  const VALUE_FLAGS = {
+    '--surface': 'surface',
+    '--keyword': 'keyword',
+    '--slug': 'slug',
+    '--title': 'title',
+    '--description': 'description',
+  };
+  const opts = {};
+  const positional = [];
+  for (let i = 0; i < args.length; i++) {
+    const key = VALUE_FLAGS[args[i]];
+    if (key) {
+      if (i + 1 >= args.length) {
+        console.error(`Thiếu giá trị cho ${args[i]}`);
+        return 2;
+      }
+      opts[key] = args[++i];
+    } else {
+      positional.push(args[i]);
+    }
+  }
+  const [id, file] = positional;
+  if (!id || !file || positional.length > 2) {
+    console.error('Usage: node check-platform.mjs <kênh> <draft.md> [--surface <bề-mặt>] [--keyword <từ-khóa>] [--slug <slug>] [--title <tiêu-đề>] [--description <mô-tả>] | --validate | --self-test');
     return 2;
   }
   let result;
   try {
-    result = checkDraft(loadProfile(DIR, id), splitDraft(readFileSync(file, 'utf8')), { surface });
+    result = checkDraft(loadProfile(DIR, id), splitDraft(readFileSync(file, 'utf8')), {
+      surface: opts.surface,
+      meta: { keyword: opts.keyword, slug: opts.slug, title: opts.title, description: opts.description },
+    });
   } catch (e) {
     console.error(e.message);
     return 2;
