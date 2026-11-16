@@ -121,6 +121,13 @@ Mỗi lần phát hành phiên bản mới:
 
 3. Chạy `bash tests/run-all.sh`, phải in `ALL CHECKS PASS`. Khi đổi nội dung skill, chạy thêm `node tests/eval/run-eval.mjs --judge --compare tests/eval/baseline.json` và không để ca nào tụt từ pass xuống fail.
 4. Gắn tag `vX.Y.Z` lên commit đã merge vào `main`, rồi thử lại lệnh cài tự động.
+5. Đóng gói bản phân phối vào `dist/`, cập nhật `SHA256SUMS` và tạo GitHub Release cho tag vừa phát hành.
+
+   ```bash
+   git archive --format=zip --prefix=viet-pro/ HEAD:skills/viet-pro -o dist/viet-pro-X.Y.Z.zip
+   shasum -a 256 dist/viet-pro-X.Y.Z.zip >> SHA256SUMS
+   gh release create vX.Y.Z dist/viet-pro-X.Y.Z.zip
+   ```
 
 ---
 
@@ -133,6 +140,7 @@ Nếu bạn dùng một môi trường ngoài không có quyền chạy shell, c
 | Tool | Tham số | Tác dụng |
 | :--- | :--- | :--- |
 | `lint_vietnamese` | `text`, `keep?` | Tìm dấu hiệu văn AI và lỗi trình bày |
+| `scan_vietnamese` | `text`, `meta?`, `titles?`, `chat?`, `register?` | Chấm điểm dấu hiệu AI `0-100` và tách `to_confirm` |
 | `compare_preserved` | `before`, `after`, `keep?`, `strict_quotes?` | Đối chiếu dữ kiện trước/sau khi sửa |
 | `check_platform` | `platform`, `text`, `surface?` | Đo bản thảo theo hồ sơ kênh |
 
